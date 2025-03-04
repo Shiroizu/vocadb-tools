@@ -1,13 +1,26 @@
-import matplotlib.pyplot as plt
+from datetime import datetime
+
+import plotly.graph_objects as go
 
 
-def graph_values(data: list[tuple[str,int]], xlabel="", ylabel="", title=""):
+def generate_date_graph(
+    data: list[tuple[str, int]],
+    title="Graph",
+    x="Month",
+    y="Count",
+    date_format="%Y-%m-%d",
+):
+    dates, values = zip(*data)
 
-    x, y = zip(*data)
-    plt.bar(x, y)
+    dates = [datetime.strptime(date, date_format) for date in dates]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=dates, y=values, mode="lines+markers", name="Value"))
 
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
+    fig.update_layout(
+        title=title,
+        xaxis_title=x,
+        yaxis_title=y,
+        xaxis={"tickformat": date_format},
+    )
 
-    plt.show()
+    fig.show()

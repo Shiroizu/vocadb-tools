@@ -6,7 +6,7 @@ import requests
 def fetch_json(url: str, session=requests, params=None):
     r = session.get(url, params=params)
     r.raise_for_status()
-    # print(r.url)
+    print(r.url)
     time.sleep(0.5)
     return r.json()
 
