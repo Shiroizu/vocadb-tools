@@ -13,8 +13,14 @@ def generate_date_graph(
     dates, values = zip(*data)
 
     dates = [datetime.strptime(date, date_format) for date in dates]
+
+    sorted_dates_values = sorted(zip(dates, values), key=lambda x: x[0])
+    sorted_dates, sorted_values = zip(*sorted_dates_values)
+
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=dates, y=values, mode="lines+markers", name="Value"))
+    fig.add_trace(
+        go.Scatter(x=sorted_dates, y=sorted_values, mode="lines+markers", name="Value")
+    )
 
     fig.update_layout(
         title=title,

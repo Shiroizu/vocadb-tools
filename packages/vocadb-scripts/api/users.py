@@ -1,6 +1,8 @@
+from utils.cache import cache_with_expiration
 from utils.network import fetch_all_json_items
 
 
+@cache_with_expiration(days=7)
 def get_rated_songs(user_id: int, extra_params=None):
     print(f"Fetching rated songs for user id {user_id}")
     api_url = f"https://vocadb.net/api/users/{user_id}/ratedSongs"
@@ -9,6 +11,7 @@ def get_rated_songs(user_id: int, extra_params=None):
     return rated_songs
 
 
+@cache_with_expiration(days=7)
 def get_followed_artists(user_id: int, extra_params=None):
     print(f"Fetching followed artists for user id {user_id}")
     api_url = f"https://vocadb.net/api/users/{user_id}/followedArtists"
