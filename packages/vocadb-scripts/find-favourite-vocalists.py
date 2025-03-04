@@ -95,12 +95,10 @@ if base_vbs_only:
         else:
             score_by_base_vb[base_name] = [favs, likes, score, base_vb["id"]]
 
-    print(score_by_base_vb)
     unique_vocalists_with_score = [
         [name, *stats] for name, stats in score_by_base_vb.items()
     ]
 
-print(unique_vocalists_with_score)
 unique_vocalists_with_score.sort(key=lambda x: x[3], reverse=True)
 
 
