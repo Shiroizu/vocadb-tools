@@ -10,4 +10,4 @@ Collection of [VocaDB](https://vocadb.net/) related scripts: Edit tools, scripts
 
 3) Run any of the scripts:
 
-`find-favourite-artists.py`
+`find-favourite-vocalists.py`

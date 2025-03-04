@@ -11,8 +11,7 @@ cache = dc.Cache("cache")
 def cache_with_expiration(days=1):
     def decorator(func):
         def wrapper(*args, **kwargs):
-            # Module + Function name for uniqueness
-            key = f"{func.__module__}.{func.__name__}_{args}_{kwargs}"
+            key = f"{func.__name__}_{args}_{kwargs}"
             if key in cache:
                 return cache[key]
             result = func(*args, **kwargs)

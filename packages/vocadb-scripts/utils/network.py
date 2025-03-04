@@ -17,11 +17,15 @@ def fetch_all_json_items(api_url, params: dict | None = None):
     page_size = 50
     params = params if params is not None else {}
     params["maxResults"] = page_size
+    params["getTotalCount"] = True
     while True:
         params["start"] = str(page_size * (page - 1))
-        items = fetch_json(api_url, params=params)["items"]
+        json = fetch_json(api_url, params=params)
+        items = json["items"]
+        totalcount = json["totalCount"]
         if not items:
             return all_items
+        print(f"Page {page}/{1+(totalcount//page_size)}")
         all_items.extend(items)
         page += 1
 
