@@ -11,16 +11,24 @@ def fetch_json(url: str, session=requests, params=None):
     return r.json()
 
 
-def fetch_all_json_items(api_url, extra_params: dict | None = None):
+def fetch_all_json_items(api_url, params: dict | None = None):
     all_items = []
     page = 1
     page_size = 50
-    extra_params = extra_params if extra_params is not None else {}
-    extra_params["maxResults"] = page_size
+    params = params if params is not None else {}
+    params["maxResults"] = page_size
     while True:
-        extra_params["start"] = str(page_size * (page - 1))
-        items = fetch_json(api_url, params=extra_params)["items"]
+        params["start"] = str(page_size * (page - 1))
+        items = fetch_json(api_url, params=params)["items"]
         if not items:
             return all_items
         all_items.extend(items)
         page += 1
+
+
+def fetch_totalcount(api_url, params: dict | None = None) -> int:
+    params = params if params is not None else {}
+    params["maxResults"] = 1
+    params["getTotalCount"] = True
+    totalcount = fetch_json(api_url, params=params)["totalCount"]
+    return int(totalcount)
