@@ -1,5 +1,5 @@
 from utils.cache import cache_with_expiration
-from utils.network import fetch_all_json_items
+from utils.network import fetch_all_json_items, fetch_totalcount
 
 
 @cache_with_expiration(days=7)
@@ -20,3 +20,9 @@ def get_followed_artists(user_id: int, extra_params=None):
         followed_artists = [ar["artist"] for ar in followed_artists]
     print(f"Found total of {len(followed_artists)} followed artists")
     return followed_artists
+
+@cache_with_expiration(days=1000)
+def get_user_count(before_date: str):
+    api_url = "https://vocadb.net/api/users"
+    params = {"joinDateBefore": before_date}
+    return fetch_totalcount(api_url, params=params)
