@@ -1,4 +1,7 @@
+import requests
+
 from utils.cache import cache_with_expiration
+from utils.data import split_list
 from utils.network import fetch_all_json_items, fetch_totalcount
 
 
@@ -26,3 +29,14 @@ def get_user_count(before_date: str):
     api_url = "https://vocadb.net/api/users"
     params = {"joinDateBefore": before_date}
     return fetch_totalcount(api_url, params=params)
+
+def delete_notifications(session: requests.Session, user_id: int, notification_ids: list[str]):
+    print(f"Got total of {len(notification_ids)} notifications to delete.")
+    for sublist in split_list(notification_ids):
+        # https://vocadb.net/api/users/329/messages?messageId=1947289&messageId=1946744&messageId=
+        deletion_url = f"https://vocadb.net/api/users/{user_id}/messages?"
+        query = [f"messageId={notif_id}" for notif_id in sublist]
+        deletion_url += "&".join(query)
+        _ = input(f"Press enter to delete {len(sublist)} notifications")
+        deletion_request = session.delete(deletion_url)
+        deletion_request.raise_for_status()
