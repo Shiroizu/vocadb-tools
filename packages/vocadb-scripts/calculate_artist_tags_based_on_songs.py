@@ -1,5 +1,7 @@
 import argparse
 
+from tabulate import tabulate
+
 from api.artists import get_artist
 from api.songs import get_songs_by_artist
 
@@ -74,7 +76,7 @@ if __name__ == "__main__":
         "onlyWithPvs": only_with_pvs,
         "artistParticipationStatus": participation_status,
     }
-    args = parse_args()
+
     artist_id = args.artist_id
     songs_by_artist = get_songs_by_artist(artist_id, params)
     tag_counts = {}
@@ -102,8 +104,6 @@ if __name__ == "__main__":
             else:
                 tag_counts[tag_id]["entry_count"] += 1
                 tag_counts[tag_id]["votes"] += tag_votes
-
-    from tabulate import tabulate
 
     artist_entry = get_artist(artist_id, fields="Tags")
     artist_entry_tag_ids = [tag["tag"]["id"] for tag in artist_entry["tags"]]

@@ -1,5 +1,8 @@
 from utils.cache import cache_with_expiration
-from utils.network import fetch_json
+from utils.network import fetch_json, fetch_totalcount
+
+ARTIST_API_URL = "https://vocadb.net/api/artists"
+SONG_API_URL = "https://vocadb.net/api/songs"
 
 
 @cache_with_expiration(days=1000)
@@ -8,17 +11,17 @@ def get_base_voicebank(artist_id: int, recursive=True):
     params = {"fields": "baseVoiceBank"}
     next_base_vb_id = artist_id
     while True:
-        url = f"https://vocadb.net/api/artists/{next_base_vb_id}"
+        url = f"{ARTIST_API_URL}/{next_base_vb_id}"
         next_base_vb = fetch_json(url, params=params)
         if "baseVoicebank" in next_base_vb and recursive:
             next_base_vb_id = next_base_vb["baseVoicebank"]["id"]
             continue
         return next_base_vb
 
-
+@cache_with_expiration(days=1)
 def get_artist(artist_id, fields=""):
     params = {"fields": fields} if fields else {}
-    url = f"https://vocadb.net/api/artists/{artist_id}"
+    url = f"{ARTIST_API_URL}/{artist_id}"
     """
     artistType	"Producer"
     createDate	"2011-05-13T18:41:41"
@@ -31,3 +34,11 @@ def get_artist(artist_id, fields=""):
     version	38
     """
     return fetch_json(url, params=params)
+
+
+@cache_with_expiration(days=7)
+def get_song_count(artist_id: int, only_main_songs=False):
+    params = {"artistId[]": artist_id}
+    if only_main_songs:
+        params["artistParticipationStatus"] = "OnlyMainAlbums" # type: ignore
+    return fetch_totalcount(SONG_API_URL, params)
