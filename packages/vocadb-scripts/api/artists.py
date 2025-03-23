@@ -14,3 +14,20 @@ def get_base_voicebank(artist_id: int, recursive=True):
             next_base_vb_id = next_base_vb["baseVoicebank"]["id"]
             continue
         return next_base_vb
+
+
+def get_artist(artist_id, fields=""):
+    params = {"fields": fields} if fields else {}
+    url = f"https://vocadb.net/api/artists/{artist_id}"
+    """
+    artistType	"Producer"
+    createDate	"2011-05-13T18:41:41"
+    defaultName	"Clean Tears"
+    defaultNameLanguage	"English"
+    id	20
+    name	"Clean Tears"
+    pictureMime	"image/jpeg"
+    status	"Approved"
+    version	38
+    """
+    return fetch_json(url, params=params)
