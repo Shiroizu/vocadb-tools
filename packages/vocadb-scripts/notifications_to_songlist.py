@@ -1,6 +1,5 @@
 import argparse
 import datetime
-import json
 import sys
 
 import requests
@@ -148,23 +147,24 @@ if __name__ == "__main__":
     NOTIF_LOG_FILE = "output/notifications.txt"
 
     un, pw = get_credentials(CREDENTIALS_FILE)
-    login = {"UserName": un, "password": pw}
+    login = {"userName": un, "password": pw}
 
     with requests.Session() as session:
         logger.info("Logging in...")
-        login_attempt = session.post("https://vocadb.net/User/Login", data=login)
-        # login_attempt.raise_for_status()
+        login_attempt = session.post("https://vocadb.net/api/users/login", json=login)
+        if login_attempt.status_code == 400:  # noqa: PLR2004
+            logger.error("Login failed! Check your credentials.")
+            sys.exit(1)
+        else:
+            logger.debug("Login successful!")
 
-        try:
-            all_notifications = fetch_notifications(
-                USER_ID,
-                session,
-                include_read=INCLUDE_READ_NOTIFICATIONS,
-                max_notifs=MAX_NOTIFS,
-            )
-        except json.decoder.JSONDecodeError:
-            logger.warning("Wrong credentials")
-            sys.exit(0)
+        all_notifications = fetch_notifications(
+            USER_ID,
+            session,
+            include_read=INCLUDE_READ_NOTIFICATIONS,
+            max_notifs=MAX_NOTIFS,
+        )
+
         new_songs = filter_notifications(all_notifications, session, SKIP_COVERS)
         if not INCLUDE_SEEN:
             new_songs = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_songs)
