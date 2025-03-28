@@ -36,5 +36,8 @@ def create_songlists(session, title, song_ids: list[str], max_length=200):
             "https://vocadb.net/api/songLists", json=songlist
         )
         songlist_request.raise_for_status()
+        songlist_id = songlist_request.json()
+        logger.info(f"Created songlist at https://vocadb.net/SongList/Details/{songlist_id}")
+
         counter += 1
         time.sleep(3)

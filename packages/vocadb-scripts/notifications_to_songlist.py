@@ -89,7 +89,7 @@ def filter_out_seen_song_ids(seen_file: str, new_song_ids: list[str]) -> list[st
         else:
             unseen_song_ids.append(song_id)
 
-    logger.info(f"{removed}/{len(new_song_ids)} ids filtered out")
+    logger.info(f"Filtered out {removed}/{len(new_song_ids)} already seen ids.")
     return unseen_song_ids
 
 
@@ -119,6 +119,11 @@ def parse_args() -> argparse.Namespace:
         help="Skip covers that have original version as entry",
     )
     parser.add_argument(
+        "--include_seen_songs",
+        action="store_true",
+        help="Include already seen songs in the songlist",
+    )
+    parser.add_argument(
         "--songlist_title",
         default="",
         type=str,
@@ -135,6 +140,7 @@ if __name__ == "__main__":
     MAX_SONGLIST_LENGTH = args.max_songlist_length
     MAX_NOTIFS = args.max_notifs
     SKIP_COVERS = args.skip_covers
+    INCLUDE_SEEN = args.include_seen_songs
     SONGLIST_TITLE = args.songlist_title
 
     CREDENTIALS_FILE = "credentials.env"
@@ -160,13 +166,14 @@ if __name__ == "__main__":
             logger.warning("Wrong credentials")
             sys.exit(0)
         new_songs = filter_notifications(all_notifications, session, SKIP_COVERS)
-        new_unseen_song_ids = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_songs)
-        if not new_unseen_song_ids:
-            logger.warning("No new unseen songs found")
+        if not INCLUDE_SEEN:
+            new_songs = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_songs)
+        if not new_songs:
+            logger.warning("No new songs found")
             sys.exit(0)
         if not SONGLIST_TITLE:
             date = str(datetime.datetime.now())[:10]  # YYYY-MM-DD
             songlist_title = f"Songs to check {date}"
         _ = input("Press enter to create the songlist(s)...")
-        create_songlists(session, songlist_title, new_unseen_song_ids)
-        save_file(SEEN_SONG_IDS_FILE, new_unseen_song_ids, append=True)
+        create_songlists(session, songlist_title, new_songs)
+        save_file(SEEN_SONG_IDS_FILE, new_songs, append=True)
