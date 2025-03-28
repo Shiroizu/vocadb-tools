@@ -1,106 +1,85 @@
+import argparse
 import datetime
+import json
 import sys
-import time
 
 import requests
 
+from api.notifications import fetch_notifications, get_notification_body
 from api.songlists import create_songlists
 from api.users import delete_notifications
-from utils.console import get_parameter
+from utils.files import get_credentials, get_lines, save_file
+from utils.logger import get_logger
+from utils.network import fetch_json
 
-user_id = int(get_parameter("VocaDB user id: ", sys.argv, integer=True)) # TODO arg_parser
+logger = get_logger("notifications_to_songlist")
 
-CREDENTIALS_FILE = "credentials.env" # TODO get_credentials
-SEEN_SONG_IDS_FILE = "data/seen song ids.txt" # TODO validate path
-NOTIF_LOG_FILE = "output/notifications.txt" # TODO validate path
-PAGE_SIZE = 50
-MAX_NOTIFS = 400
-CHECK_ONLY_UNREAD = True # TODO move script parameter
-MAX_SONGLIST_LENGTH = 200 # TODO move to script parameter
 
-def get_new_songlinks(session: requests.Session) -> list[str]:
-    # TODO move to api.songlists
+def is_cover_with_original_as_entry(song_id: str) -> bool:
+    url = f"https://vocadb.net/api/songs/{song_id}"
+    entry = fetch_json(url)
+    result = (entry["songType"] == "Cover") and ("originalVersionId" in entry)
+    logger.debug(f"Song {song_id} is a cover with original as entry: {result}")
+    return result
+
+
+def filter_notifications(
+    all_notifications, session: requests.Session, skip_covers=False
+) -> list[str]:
+    """Returns a list of new song IDs from notifications."""
     notification_ids: list[str] = []
     notification_messages: list[str] = []
     new_song_ids: list[str] = []
-    page = 1
+    notification_messages = []
 
-    while True:
-        params = {
-            "inbox": "Notifications",
-            "unread": CHECK_ONLY_UNREAD,
-            "maxResults": PAGE_SIZE,
-            "start": (page - 1) * PAGE_SIZE,
-        }
+    for item in all_notifications:
+        notif_body = get_notification_body(session, item["id"])
+        notification_messages.append(notif_body)
 
-        if CHECK_ONLY_UNREAD:
-            params["start"] = 0
+        if "song" in item["subject"]:
+            song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
+            logger.info(f"\t{item['subject']} https://vocadb.net/S/{song_id}")
 
-        if page * PAGE_SIZE > MAX_NOTIFS:
-            print(f"Max notif count reached {MAX_NOTIFS}")
-            break
+            # Skip duplicate notifs
+            if song_id in new_song_ids:
+                logger.debug("Duplicate notification detected!")
+                continue
 
-        r = session.get(f"https://vocadb.net/api/users/{user_id}/messages", params=params)
-        print(f"Fetched {r.url}")
-        notifs = r.json()["items"]
+            if skip_covers and is_cover_with_original_as_entry(song_id):
+                logger.info("\tSkipping cover song")
+                continue
 
-        if not notifs:
-            break
+            new_song_ids.append(song_id)
 
-        print(f"Found {len(notifs)} notifications")
-        notification_ids.extend([n["id"] for n in notifs])
+        elif "album" in item["subject"]:
+            album_id = notif_body.split("/Al/")[-1].split(")',")[0]
+            logger.info(f"\t{item['subject']} https://vocadb.net/Al/{album_id}")
 
-        for item in notifs:
-            notif_body = session.get(
-                f"https://vocadb.net/api/users/messages/{item['id']}"
-            ).json()["body"]
-            notification_messages.append(notif_body)
-            if "song" in item["subject"]:
-                song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
-                print(f"\t{item['subject']} https://vocadb.net/S/{song_id}")
+        elif "A new artist" in item["subject"]:
+            # A new artist, '[sakkyoku645](https://vocadb.net/Ar/48199)', tagged with funk was just added.
+            start, end = item["subject"].split("', tagged with ")
+            artist_name, artist_url = start.split("](")
+            artist_name = artist_name.split("[")[1]
+            artist_url = artist_url.split(")")[0]
+            tag_name = end.split(" was just")[0]
+            logger.info(
+                f"\tArtist tagged with '{tag_name}': {artist_name} {artist_url}"
+            )
 
-                # Skip duplicate notifs
-                if song_id in new_song_ids:
-                    print("Duplicate notification detected!")
-                    continue
-
-                new_song_ids.append(song_id)
-
-            elif "album" in item["subject"]:
-                album_id = notif_body.split("/Al/")[-1].split(")',")[0]
-                print(f"\t{item['subject']} https://vocadb.net/Al/{album_id}")
-
-            elif "A new artist" in item["subject"]:
-                # A new artist, '[sakkyoku645](https://vocadb.net/Ar/48199)', tagged with funk was just added.
-                start, end = item["subject"].split("', tagged with ")
-                artist_name, artist_url = start.split("](")
-                artist_name = artist_name.split("[")[1]
-                artist_url = artist_url.split(")")[0]
-                tag_name = end.split(" was just")[0]
-                print(f"\tArtist tagged with '{tag_name}': {artist_name} {artist_url}")
-
-            else:
-                print(f"\t{notif_body}")
-
-        page += 1
-        time.sleep(1)
+        else:
+            logger.info(f"\t{notif_body}")
 
     if notification_ids:
-        delete_notifications(session, user_id, notification_ids)
-        with open(NOTIF_LOG_FILE, "a", encoding="utf8") as f:
-            for notif_message in notification_messages:
-                f.write(f"{notif_message}\n")
+        delete_notifications(session, USER_ID, notification_ids)
+        save_file(NOTIF_LOG_FILE, notification_messages, append=True)
 
-    print(f"Found {len(new_song_ids)} new songs to check")
-
+    logger.info(f"Found {len(new_song_ids)} new songs to check")
     return new_song_ids
 
 
-def remove_seen_songs(new_song_ids: list[str]):
-    # TODO use shared list functions
-    with open(SEEN_SONG_IDS_FILE) as f:
-        seen_song_ids = list(set(f.read().splitlines()))
-
+def filter_out_seen_song_ids(seen_file: str, new_song_ids: list[str]) -> list[str]:
+    """Filters seen song IDs out based on the seen song ids -file."""
+    seen_song_ids = get_lines(seen_file)
     unseen_song_ids = []
     removed = 0
 
@@ -110,27 +89,84 @@ def remove_seen_songs(new_song_ids: list[str]):
         else:
             unseen_song_ids.append(song_id)
 
-    print(f"{removed}/{len(new_song_ids)} ids filtered out")
-
-    with open("new song ids.txt", "w") as f:
-        f.write("")  # clear file
-
+    logger.info(f"{removed}/{len(new_song_ids)} ids filtered out")
     return unseen_song_ids
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("user_id", type=int, help="VocaDB user id")
+    parser.add_argument(
+        "--include_read_notifications",
+        action="store_true",
+        help="Also check already read notifications",
+    )
+    parser.add_argument(
+        "--max_songlist_length",
+        default=200,
+        type=int,
+        help="Max songlist length (default 200)",
+    )
+    parser.add_argument(
+        "--max_notifs",
+        default=400,
+        type=int,
+        help="Max notifications to fetch (default)",
+    )
+    parser.add_argument(
+        "--skip_covers",
+        action="store_true",
+        help="Skip covers that have original version as entry",
+    )
+    parser.add_argument(
+        "--songlist_title",
+        default="",
+        type=str,
+        help="Title of the songlist to create. Default is 'Songs to check (date)'",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    with open(CREDENTIALS_FILE) as f:
-        un, pw = f.read().splitlines()
-        login = {"UserName": un, "password": pw}
+    args = parse_args()
+
+    USER_ID = args.user_id
+    INCLUDE_READ_NOTIFICATIONS = args.include_read_notifications
+    MAX_SONGLIST_LENGTH = args.max_songlist_length
+    MAX_NOTIFS = args.max_notifs
+    SKIP_COVERS = args.skip_covers
+    SONGLIST_TITLE = args.songlist_title
+
+    CREDENTIALS_FILE = "credentials.env"
+    SEEN_SONG_IDS_FILE = "data/seen song ids.txt"
+    NOTIF_LOG_FILE = "output/notifications.txt"
+
+    un, pw = get_credentials(CREDENTIALS_FILE)
+    login = {"UserName": un, "password": pw}
 
     with requests.Session() as session:
-        print("Logging in...")
-        session.post("https://vocadb.net/User/Login", data=login)
-        new_songs = get_new_songlinks(session)
-        unseen_songs = remove_seen_songs(new_songs)
-        date = str(datetime.datetime.now())[:10]  # YYYY-MM-DD
-        songlist_title = f"Songs to check {date}"
-        create_songlists(session, songlist_title, unseen_songs)
-        with open(SEEN_SONG_IDS_FILE, "a") as f:
-            for song_id in unseen_songs:
-                f.write(f"{song_id}\n")
+        logger.info("Logging in...")
+        login_attempt = session.post("https://vocadb.net/User/Login", data=login)
+        # login_attempt.raise_for_status()
+
+        try:
+            all_notifications = fetch_notifications(
+                USER_ID,
+                session,
+                include_read=INCLUDE_READ_NOTIFICATIONS,
+                max_notifs=MAX_NOTIFS,
+            )
+        except json.decoder.JSONDecodeError:
+            logger.warning("Wrong credentials")
+            sys.exit(0)
+        new_songs = filter_notifications(all_notifications, session, SKIP_COVERS)
+        new_unseen_song_ids = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_songs)
+        if not new_unseen_song_ids:
+            logger.warning("No new unseen songs found")
+            sys.exit(0)
+        if not SONGLIST_TITLE:
+            date = str(datetime.datetime.now())[:10]  # YYYY-MM-DD
+            songlist_title = f"Songs to check {date}"
+        _ = input("Press enter to create the songlist(s)...")
+        create_songlists(session, songlist_title, new_unseen_song_ids)
+        save_file(SEEN_SONG_IDS_FILE, new_unseen_song_ids, append=True)

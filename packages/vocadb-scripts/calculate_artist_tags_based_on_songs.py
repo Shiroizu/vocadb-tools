@@ -4,6 +4,7 @@ from tabulate import tabulate
 
 from api.artists import get_artist
 from api.songs import get_songs_by_artist
+from utils.logger import get_logger
 
 """ Example output:
 
@@ -46,39 +47,34 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--only_with_pvs",
-        type=bool,
-        help="Only include entries with PVs?",
-        default=False,
+        help="Only include entries with PVs.",
+        action="store_true",
     )
     parser.add_argument(
-        "--participation_status",
-        type=str,
-        choices=["all", "only_main", "only_collabs"],
-        default="only_main",
+        "--include_collabs",
+        help="Include entries where the artist is only participating.",
+        action="store_true",
     )
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
+    logger = get_logger("calculate_artist_tags_based_on_songs")
     args = parse_args()
-    only_with_pvs = args.only_with_pvs
-    param_mapping = {
-        "all": "Everything",
-        "only_main": "OnlyMainAlbums",
-        "only_collabs": "OnlyCollaborations",
-    }
-
-    participation_status = param_mapping[args.participation_status]
 
     params = {
         "fields": "Tags",
-        "onlyWithPvs": only_with_pvs,
-        "artistParticipationStatus": participation_status,
+        "onlyWithPvs": args.only_with_pvs,
+        "artistParticipationStatus": "OnlyMainAlbums",
     }
+
+    if args.include_collabs:
+        params["artistParticipationStatus"] = "Everything"
 
     artist_id = args.artist_id
     songs_by_artist = get_songs_by_artist(artist_id, params)
+    logger.info(f"\nFound {len(songs_by_artist)} songs")
     tag_counts = {}
     for song in songs_by_artist:
         """ count	1
@@ -117,5 +113,8 @@ if __name__ == "__main__":
         else:
             tag["tag_added"] = False
 
-    print(f"\nArtist '{artist_entry['name']}' (Ar/{artist_id}) - Most common tags:")
-    print(tabulate(sorted_by_entry_count, headers="keys", tablefmt="github"))
+    participation = "main songs" if not args.include_collabs else "including collabs"
+    logger.info(
+        f"\nArtist '{artist_entry['name']}' (Ar/{artist_id}) - Most common tags ({participation}):"
+    )
+    logger.info(tabulate(sorted_by_entry_count, headers="keys", tablefmt="github"))

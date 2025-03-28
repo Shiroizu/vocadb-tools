@@ -1,7 +1,15 @@
 import time
 
+from utils.logger import get_logger
+
+logger = get_logger()
+
 
 def create_songlists(session, title, song_ids: list[str], max_length=200):
+    """Create songlists on VocaDB with the given title and song IDs.
+
+    Splits the list into sublists if over the max_length.
+    """
     counter = 1
 
     for i in range(1 + len(song_ids) // max_length):
@@ -11,10 +19,10 @@ def create_songlists(session, title, song_ids: list[str], max_length=200):
 
         if len(song_ids) > max_length:
             title += f" ({counter})"
-            print(f"Posting sublist {counter}")
+            logger.info(f"Posting sublist {counter}")
 
         else:
-            print("Posting songlist")
+            logger.info("Posting songlist")
 
         songlist = {"songLinks": [], "author": {"id": 329}, "name": title}
 

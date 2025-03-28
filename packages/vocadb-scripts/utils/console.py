@@ -1,35 +1,37 @@
-def get_parameter(
-    prompt_message: str,
-    script_params: list[str] | None = None,
-    integer=False,
-    default="",
-) -> str:
-    """Return parameter given from the command line or through prompting."""
-    arg = ""
-    if script_params and len(script_params) > 1:
-        arg = script_params[1]
+from getpass import getpass
 
-    if not prompt_message.endswith(": "):
-        prompt_message += ": "
+from utils.logger import get_logger
 
-    if default:
-        prompt_message = prompt_message.replace(": ", f" (default={default}): ")
+logger = get_logger()
 
-    if integer:
-        while not arg.isnumeric():
-            arg = input(prompt_message)
-            if not arg.isnumeric() and default:
-                print(f"Selecting '{default}'")
-                return default
-        return arg
+def get_credentials_from_console() -> tuple[str, str]:
+    """Prompt the user for credentials."""
+    logger.info("Please enter your credentials:")
+    account_name = input("Account name: ").strip()
+    password = getpass("Password: ").strip()
 
-    while not arg:
-        arg = input(prompt_message)
-        if not arg.strip() and default:
-            print(f"Selecting '{default}'")
-            return default
+    if not account_name or not password:
+        logger.warning("Credentials cannot be empty.")
+        return get_credentials_from_console()
 
-    return arg
+    return account_name, password
+
+def prompt_choice(choices: list[str]) -> str:
+    while True:
+        logger.info("\nAvailable choices:")
+        for i, choice in enumerate(choices, 1):
+            logger.info(f"{i}. {choice}")
+
+        try:
+            choice = int(input("\nSelect a number: "))
+            if choice < 1 or choice > len(choices):
+                logger.warning("Invalid selection.")
+                continue
+            return choices[choice - 1]
+
+        except ValueError:
+            logger.warning("Invalid input. Please enter a number.")
+            continue
 
 
 def get_boolean(prompt: str) -> bool:
@@ -41,4 +43,4 @@ def get_boolean(prompt: str) -> bool:
         if user_input in ["false", "0", "f", "n", "no"]:
             return False
 
-        print("Invalid input. Please enter a valid boolean value (True/False).")
+        logger.info("Invalid input. Please enter a valid boolean value (True/False).")
