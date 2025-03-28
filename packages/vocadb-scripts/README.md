@@ -8,6 +8,6 @@ Collection of [VocaDB](https://vocadb.net/) related scripts: Edit tools, scripts
 
 `pip install -r requirements.txt`
 
-3) Run any of the scripts:
+3) Run any of the scripts from the command line:
 
 `find-favourite-vocalists.py`
