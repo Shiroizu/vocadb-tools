@@ -1,6 +1,4 @@
-"""Print user's favourite (base) vocalists based on rated songs.
-
-find-favourite-vocalists.py 329
+"""Find favourite albums for user based on rated songs. Example output below.
 
   Favs    Likes  Vocalist    Entry
 ------  -------  ----------  ----------------------------
@@ -23,7 +21,7 @@ import argparse
 from tabulate import tabulate
 
 from api.artists import get_base_voicebank
-from api.users import get_rated_songs
+from api.users import get_rated_songs, get_username_by_id
 from utils.files import save_file
 from utils.logger import get_logger
 
@@ -57,6 +55,9 @@ if __name__ == "__main__":
     user_id = args.user_id
     max_results = args.max_results
     group_by_base_vb = not args.do_not_group_by_base_vb
+
+    username = get_username_by_id(user_id)
+    logger.info(f"Searching favourite vocalists for user '{username}' ({user_id})")
 
     OUTPUT_FILE = f"output/favourite-vocalists-{user_id}.txt"
 
@@ -128,7 +129,11 @@ if __name__ == "__main__":
         line_to_print = (favs, likes, name, f"https://vocadb.net/Ar/{ar_id}")
         table_to_print.append(line_to_print)
 
-    table = tabulate(table_to_print, headers=["Favs", "Likes", "Vocalist", "Entry"])
+    table = tabulate(
+        table_to_print,
+        headers=["Favs", "Likes", "Vocalist", "Entry"],
+        tablefmt="github",
+    )
     logger.info(f"\n{table}")
 
     save_file(OUTPUT_FILE, table)

@@ -1,6 +1,4 @@
-"""Print user's favourite producers based on rated songs.
-
-find-favourite-producers.py 329
+"""Find favourite albums for user based on rated songs. Example output below.
 
   Favs    Likes  Artist            Entry
 ------  -------  ----------------  -------------------------------------------
@@ -32,7 +30,7 @@ import argparse
 
 from tabulate import tabulate
 
-from api.users import get_followed_artists, get_rated_songs
+from api.users import get_followed_artists, get_rated_songs, get_username_by_id
 from utils.files import save_file
 from utils.logger import get_logger
 
@@ -60,6 +58,9 @@ if __name__ == "__main__":
     args = parse_args()
     user_id = args.user_id
     max_results = args.max_results
+
+    username = get_username_by_id(user_id)
+    logger.info(f"Searching favourite producers for user '{username}' ({user_id})")
 
     OUTPUT_FILE = f"output/favourite-producers-{user_id}.csv"
 
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         )
         table_to_print.append(line_to_print)
 
-    table = tabulate(table_to_print, headers=["Favs", "Likes", "Artist", "Entry"])
+    table = tabulate(table_to_print, headers=["Favs", "Likes", "Artist", "Entry"], tablefmt="github")
     logger.info(f"\n{table}")
 
     save_file(OUTPUT_FILE, table)

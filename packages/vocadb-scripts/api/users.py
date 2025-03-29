@@ -22,8 +22,16 @@ def get_rated_songs(user_id: int, extra_params=None):
     logger.info(f"Fetching rated songs for user id {user_id}")
     api_url = f"https://vocadb.net/api/users/{user_id}/ratedSongs"
     rated_songs = fetch_json_items(api_url, extra_params)
-    logger.info(f"Found total of {len(rated_songs)} rated songs")
+    logger.info(f"Found total of {len(rated_songs)} rated songs.")
     return rated_songs
+
+@cache_with_expiration(days=7)
+def get_albums_by_user(user_id: int, extra_params=None):
+    logger.info(f"Fetching albums for user id {user_id}")
+    api_url = f"https://vocadb.net/api/users/{user_id}/albums"
+    albums = fetch_json_items(api_url, extra_params)
+    logger.info(f"Found total of {len(albums)} albums.")
+    return albums
 
 
 @cache_with_expiration(days=7)
