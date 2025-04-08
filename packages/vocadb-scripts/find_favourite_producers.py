@@ -26,10 +26,13 @@
 Table saved to 'output/favourite-producers-329.txt'
 """
 
+# TODO add --exclude_new_songs
+
 import argparse
 
 from tabulate import tabulate
 
+from api.artists import get_song_count
 from api.users import get_followed_artists, get_rated_songs, get_username_by_id
 from utils.files import save_file
 from utils.logger import get_logger
@@ -116,17 +119,21 @@ if __name__ == "__main__":
     for ar in unique_artists_with_score[:max_results]:
         follow_msg = "(not following)"
         name, favs, likes, score, ar_id = ar
+        songcount_by_artist = get_song_count(int(ar_id), only_main_songs=True)
+        rated_songs_percentage = int((favs + likes) / songcount_by_artist * 100)
         if int(ar_id) in followed_artists_ids:
             follow_msg = ""
+        headers = ["Favs", "Likes", "Rated %", "Artist", "Entry"]
         line_to_print = (
             favs,
             likes,
+            rated_songs_percentage,
             name,
             f"https://vocadb.net/Ar/{ar_id} {follow_msg}",
         )
         table_to_print.append(line_to_print)
 
-    table = tabulate(table_to_print, headers=["Favs", "Likes", "Artist", "Entry"], tablefmt="github")
+    table = tabulate(table_to_print, headers=headers, tablefmt="github")
     logger.info(f"\n{table}")
 
     save_file(OUTPUT_FILE, table)
