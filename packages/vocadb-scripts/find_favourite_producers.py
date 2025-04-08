@@ -123,8 +123,9 @@ if __name__ == "__main__":
         rated_songs_percentage = int((favs + likes) / songcount_by_artist * 100)
         if int(ar_id) in followed_artists_ids:
             follow_msg = ""
-        headers = ["Favs", "Likes", "Rated %", "Artist", "Entry"]
+        headers = ["Score", "Favs", "Likes", "Rated %", "Artist", "Entry"]
         line_to_print = (
+            score,
             favs,
             likes,
             rated_songs_percentage,
