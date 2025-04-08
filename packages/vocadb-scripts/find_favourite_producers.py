@@ -128,7 +128,7 @@ if __name__ == "__main__":
             score,
             favs,
             likes,
-            round(favs/likes, 1),
+            round(favs/likes, 1) if likes else "",
             rated_songs_percentage,
             name,
             f"https://vocadb.net/Ar/{ar_id} {follow_msg}",
