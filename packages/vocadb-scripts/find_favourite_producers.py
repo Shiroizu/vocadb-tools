@@ -120,21 +120,22 @@ if __name__ == "__main__":
         follow_msg = "(not following)"
         name, favs, likes, score, ar_id = ar
         songcount_by_artist = get_song_count(int(ar_id), only_main_songs=True)
-        rated_songs_percentage = int((favs + likes) / songcount_by_artist * 100)
+        rated_songs_percentage = round(((favs + likes) / songcount_by_artist * 100), 1)
         if int(ar_id) in followed_artists_ids:
             follow_msg = ""
-        headers = ["Score", "Favs", "Likes", "Rated %", "Artist", "Entry"]
+        headers = ["Score", "Favs", "Likes", "Favs/Likes", "Rated %", "Artist", "Entry"]
         line_to_print = (
             score,
             favs,
             likes,
+            round(favs/likes, 1),
             rated_songs_percentage,
             name,
             f"https://vocadb.net/Ar/{ar_id} {follow_msg}",
         )
         table_to_print.append(line_to_print)
 
-    table = tabulate(table_to_print, headers=headers, tablefmt="github")
+    table = tabulate(table_to_print, headers=headers, tablefmt="github", numalign="right")
     logger.info(f"\n{table}")
 
     save_file(OUTPUT_FILE, table)
