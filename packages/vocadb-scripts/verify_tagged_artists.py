@@ -7,7 +7,7 @@ from api.tags import get_tag
 from utils.logger import get_logger
 
 """ Example output:
-Tag 'new wave' (Genres) (T/3251) - Most relevant artists:
+Tagged artists for 'new wave' (Genres) (T/3251)
 | artist           |     id |   tagged |   total | percentage   |
 |------------------|--------|----------|---------|--------------|
 | 園山モル          |    542 |       15 |      37 | 40 %         |
