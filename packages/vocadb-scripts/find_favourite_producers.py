@@ -1,27 +1,27 @@
 """Find favourite albums for user based on rated songs. Example output below.
 
-  Favs    Likes  Artist            Entry
-------  -------  ----------------  -------------------------------------------
-    59       43  Kuroneko Lounge   https://vocadb.net/Ar/1063
-    73        6  Clean Tears       https://vocadb.net/Ar/20
-    58       17  TKN               https://vocadb.net/Ar/19059
-    44       25  オカメP           https://vocadb.net/Ar/87
-    50        2  鼻そうめんP       https://vocadb.net/Ar/175
-    28       23  Osanzi            https://vocadb.net/Ar/18777
-    26       23  LIQ               https://vocadb.net/Ar/88
-    29        8  Alpaca            https://vocadb.net/Ar/44866
-    22       16  鬱P               https://vocadb.net/Ar/90 (not following)
-    22       16  Twinfield         https://vocadb.net/Ar/4828
-    27        6  ddh               https://vocadb.net/Ar/4724
-    20       16  八王子P           https://vocadb.net/Ar/38
-    14       25  雄之助            https://vocadb.net/Ar/23981
-    16       21  PLAMA             https://vocadb.net/Ar/46360
-    19       12  Transient Energy  https://vocadb.net/Ar/16023
-    12       21  攻                https://vocadb.net/Ar/13271 (not following)
-    16       13  AVTechNO!         https://vocadb.net/Ar/40
-    19        7  Spacelectro       https://vocadb.net/Ar/11722
-    17       10  Mwk               https://vocadb.net/Ar/16866
-    14       14  Giga              https://vocadb.net/Ar/772
+|   Score |   Favs |   Likes |   Favs/Likes |   Rated % | Artist           | Entry                                       |
+|---------|--------|---------|--------------|-----------|------------------|---------------------------------------------|
+|     263 |     59 |      43 |          1.4 |      32.5 | Kuroneko Lounge  | https://vocadb.net/Ar/1063                  |
+|     231 |     73 |       6 |         12.2 |      23.7 | Clean Tears      | https://vocadb.net/Ar/20                    |
+|     208 |     58 |      17 |          3.4 |      44.4 | TKN              | https://vocadb.net/Ar/19059                 |
+|     182 |     44 |      25 |          1.8 |        23 | オカメP          | https://vocadb.net/Ar/87                    |
+|     154 |     50 |       2 |           25 |      73.2 | 鼻そうめんP      | https://vocadb.net/Ar/175                   |
+|     130 |     28 |      23 |          1.2 |      36.7 | Osanzi           | https://vocadb.net/Ar/18777                 |
+|     124 |     26 |      23 |          1.1 |      40.5 | LIQ              | https://vocadb.net/Ar/88                    |
+|     103 |     29 |       8 |          3.6 |      38.5 | Alpaca           | https://vocadb.net/Ar/44866                 |
+|     100 |     22 |      17 |          1.3 |      13.7 | 鬱P              | https://vocadb.net/Ar/90 (not following)    |
+|      98 |     22 |      16 |          1.4 |      30.2 | Twinfield        | https://vocadb.net/Ar/4828                  |
+|      93 |     27 |       6 |          4.5 |      56.9 | ddh              | https://vocadb.net/Ar/4724                  |
+|      92 |     20 |      16 |          1.2 |      16.4 | 八王子P          | https://vocadb.net/Ar/38                    |
+|      92 |     14 |      25 |          0.6 |      24.1 | 雄之助           | https://vocadb.net/Ar/23981                 |
+|      90 |     16 |      21 |          0.8 |      28.2 | PLAMA            | https://vocadb.net/Ar/46360                 |
+|      81 |     19 |      12 |          1.6 |         9 | Transient Energy | https://vocadb.net/Ar/16023                 |
+|      78 |     12 |      21 |          0.6 |      42.3 | 攻               | https://vocadb.net/Ar/13271 (not following) |
+|      74 |     16 |      13 |          1.2 |       8.3 | AVTechNO!        | https://vocadb.net/Ar/40                    |
+|      71 |     19 |       7 |          2.7 |      14.6 | Spacelectro      | https://vocadb.net/Ar/11722                 |
+|      71 |     17 |      10 |          1.7 |      20.8 | Mwk              | https://vocadb.net/Ar/16866                 |
+|      70 |     14 |      14 |            1 |        23 | Giga             | https://vocadb.net/Ar/772                   |
 
 Table saved to 'output/favourite-producers-329.txt'
 """
