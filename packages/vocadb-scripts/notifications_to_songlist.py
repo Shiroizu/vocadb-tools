@@ -13,6 +13,16 @@ from utils.network import fetch_json
 
 logger = get_logger("notifications_to_songlist")
 
+# TODO FIX
+
+"""
+New album tagged with trance https://vocadb.net/Al/46204
+New song (cover) by DECO*27 https://vocadb.net/S/772936
+A new artist, '[tulip](https://vocadb.net/Ar/149324)', tagged with drum and bass was just added.
+"""
+
+# TODO counter
+
 
 def is_cover_with_original_as_entry(song_id: str) -> bool:
     url = f"https://vocadb.net/api/songs/{song_id}"

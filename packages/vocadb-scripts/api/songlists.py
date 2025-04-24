@@ -18,13 +18,17 @@ def create_songlists(session, title, song_ids: list[str], max_length=200):
             break
 
         if len(song_ids) > max_length:
-            title += f" ({counter})"
             logger.info(f"Posting sublist {counter}")
 
         else:
             logger.info("Posting songlist")
 
-        songlist = {"songLinks": [], "author": {"id": 329}, "name": title}
+        songlist = {
+            "songLinks": [],
+            "author": {"id": 329},
+            "name": f"{title} ({counter})",
+        }
+        counter += 1
 
         order = 1
         for song_id in sublist:
@@ -37,7 +41,8 @@ def create_songlists(session, title, song_ids: list[str], max_length=200):
         )
         songlist_request.raise_for_status()
         songlist_id = songlist_request.json()
-        logger.info(f"Created songlist at https://vocadb.net/SongList/Details/{songlist_id}")
+        logger.info(
+            f"Created songlist at https://vocadb.net/SongList/Details/{songlist_id}"
+        )
 
-        counter += 1
         time.sleep(3)
