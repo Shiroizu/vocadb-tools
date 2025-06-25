@@ -7,6 +7,7 @@ import requests
 from vdbpy.api.notifications import fetch_notifications, get_notification_body
 from vdbpy.api.songlists import create_songlists
 from vdbpy.api.users import delete_notifications
+from vdbpy.config import WEBSITE
 from vdbpy.utils.files import get_credentials, get_lines, save_file
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json
@@ -25,7 +26,7 @@ A new artist, '[tulip](https://vocadb.net/Ar/149324)', tagged with drum and bass
 
 
 def is_cover_with_original_as_entry(song_id: str) -> bool:
-    url = f"https://vocadb.net/api/songs/{song_id}"
+    url = f"{WEBSITE}/api/songs/{song_id}"
     entry = fetch_json(url)
     result = (entry["songType"] == "Cover") and ("originalVersionId" in entry)
     logger.debug(f"Song {song_id} is a cover with original as entry: {result}")
@@ -47,7 +48,7 @@ def filter_notifications(
 
         if "song" in item["subject"]:
             song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
-            logger.info(f"\t{item['subject']} https://vocadb.net/S/{song_id}")
+            logger.info(f"\t{item['subject']} {WEBSITE}/S/{song_id}")
 
             # Skip duplicate notifs
             if song_id in new_song_ids:
@@ -62,7 +63,7 @@ def filter_notifications(
 
         elif "album" in item["subject"]:
             album_id = notif_body.split("/Al/")[-1].split(")',")[0]
-            logger.info(f"\t{item['subject']} https://vocadb.net/Al/{album_id}")
+            logger.info(f"\t{item['subject']} {WEBSITE}/Al/{album_id}")
 
         elif "A new artist" in item["subject"]:
             # A new artist, '[sakkyoku645](https://vocadb.net/Ar/48199)', tagged with funk was just added.
@@ -165,7 +166,7 @@ if __name__ == "__main__":
 
     with requests.Session() as session:
         logger.info("Logging in...")
-        login_attempt = session.post("https://vocadb.net/api/users/login", json=login)
+        login_attempt = session.post(f"{WEBSITE}/api/users/login", json=login)
         if login_attempt.status_code == 400:  # noqa: PLR2004
             logger.error("Login failed! Check your credentials.")
             sys.exit(1)

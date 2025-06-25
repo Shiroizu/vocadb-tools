@@ -1,9 +1,10 @@
+from vdbpy.config import WEBSITE
 from vdbpy.utils.network import fetch_json
 
 
 def get_tag(tag_id, fields=""):
     params = {"fields": fields} if fields else {}
-    url = f"https://vocadb.net/api/tags/{tag_id}"
+    url = f"{WEBSITE}/api/tags/{tag_id}"
     """
     categoryName	"Themes"
     createDate	"2019-11-30T03:14:48.553"

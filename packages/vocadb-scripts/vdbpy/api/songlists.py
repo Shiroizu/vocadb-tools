@@ -1,5 +1,6 @@
 import time
 
+from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
@@ -36,13 +37,9 @@ def create_songlists(session, title, song_ids: list[str], max_length=200):
             songlist["songLinks"].append(sonlist_item)
             order += 1
 
-        songlist_request = session.post(
-            "https://vocadb.net/api/songLists", json=songlist
-        )
+        songlist_request = session.post(f"{WEBSITE}/api/songLists", json=songlist)
         songlist_request.raise_for_status()
         songlist_id = songlist_request.json()
-        logger.info(
-            f"Created songlist at https://vocadb.net/SongList/Details/{songlist_id}"
-        )
+        logger.info(f"Created songlist at {WEBSITE}/SongList/Details/{songlist_id}")
 
         time.sleep(3)

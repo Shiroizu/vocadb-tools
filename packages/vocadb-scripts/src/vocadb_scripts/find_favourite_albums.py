@@ -36,6 +36,7 @@ import argparse
 from tabulate import tabulate
 
 from vdbpy.api.users import get_albums_by_user, get_rated_songs, get_username_by_id
+from vdbpy.config import WEBSITE
 from vdbpy.utils.data import truncate_string_with_ellipsis
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
@@ -89,7 +90,7 @@ if __name__ == "__main__":
                     if album_type == "Album":
                         album_type = "Original"
                     album_data = {
-                        "album_url": f"https://vocadb.net/Al/{album_id}",
+                        "album_url": f"{WEBSITE}/Al/{album_id}",
                         "album_name": truncate_string_with_ellipsis(album["name"], 39),
                         "album_type": album_type,
                         "score": score,

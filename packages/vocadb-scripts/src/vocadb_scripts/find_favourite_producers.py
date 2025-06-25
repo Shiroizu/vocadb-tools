@@ -34,6 +34,7 @@ from tabulate import tabulate
 
 from vdbpy.api.artists import get_song_count
 from vdbpy.api.users import get_followed_artists, get_rated_songs, get_username_by_id
+from vdbpy.config import WEBSITE
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
@@ -128,14 +129,16 @@ if __name__ == "__main__":
             score,
             favs,
             likes,
-            round(favs/likes, 1) if likes else "",
+            round(favs / likes, 1) if likes else "",
             rated_songs_percentage,
             name,
-            f"https://vocadb.net/Ar/{ar_id} {follow_msg}",
+            f"{WEBSITE}//Ar/{ar_id} {follow_msg}",
         )
         table_to_print.append(line_to_print)
 
-    table = tabulate(table_to_print, headers=headers, tablefmt="github", numalign="right")
+    table = tabulate(
+        table_to_print, headers=headers, tablefmt="github", numalign="right"
+    )
     logger.info(f"\n{table}")
 
     save_file(OUTPUT_FILE, table)

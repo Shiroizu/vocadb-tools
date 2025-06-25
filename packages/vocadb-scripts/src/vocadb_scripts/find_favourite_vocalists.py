@@ -22,6 +22,7 @@ from tabulate import tabulate
 
 from vdbpy.api.artists import get_base_voicebank
 from vdbpy.api.users import get_rated_songs, get_username_by_id
+from vdbpy.config import WEBSITE
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
@@ -126,7 +127,7 @@ if __name__ == "__main__":
         name, favs, likes, score, ar_id = ar
         if name.lower().endswith(" (unknown)"):
             name = name[:-10]
-        line_to_print = (favs, likes, name, f"https://vocadb.net/Ar/{ar_id}")
+        line_to_print = (favs, likes, name, f"{WEBSITE}/Ar/{ar_id}")
         table_to_print.append(line_to_print)
 
     table = tabulate(

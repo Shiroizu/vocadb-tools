@@ -1,8 +1,9 @@
+from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.network import fetch_json, fetch_json_items, fetch_totalcount
 
-ARTIST_API_URL = "https://vocadb.net/api/artists"
-SONG_API_URL = "https://vocadb.net/api/songs"
+ARTIST_API_URL = f"{WEBSITE}/api/artists"
+SONG_API_URL = f"{WEBSITE}/api/songs"
 
 
 @cache_with_expiration(days=1000)
@@ -38,7 +39,7 @@ def get_artist(artist_id, fields=""):
 
 
 @cache_with_expiration(days=7)
-def get_song_count(artist_id: int, only_main_songs=False, extra_params = None):
+def get_song_count(artist_id: int, only_main_songs=False, extra_params=None):
     params = extra_params if extra_params else {}
     params["artistId[]"] = artist_id
     if only_main_songs:
