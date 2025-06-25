@@ -14,4 +14,6 @@ Ideas, Pull Requests, etc. are welcome.
 
 4) `pip install -r requirements.txt`
 
-5) Run any of the scripts `python find-favourite-vocalists.py`
+5) `cd scripts`
+
+6) Run scripts with `python find-favourite-vocalists.py`
