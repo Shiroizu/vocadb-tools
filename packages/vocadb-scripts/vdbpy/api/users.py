@@ -1,9 +1,9 @@
 import requests
 
-from utils.cache import cache_with_expiration
-from utils.data import split_list
-from utils.logger import get_logger
-from utils.network import fetch_json, fetch_json_items, fetch_totalcount
+from vdbpy.utils.cache import cache_with_expiration
+from vdbpy.utils.data import split_list
+from vdbpy.utils.logger import get_logger
+from vdbpy.utils.network import fetch_json, fetch_json_items, fetch_totalcount
 
 logger = get_logger()
 

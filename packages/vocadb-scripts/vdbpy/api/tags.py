@@ -1,4 +1,4 @@
-from utils.network import fetch_json
+from vdbpy.utils.network import fetch_json
 
 
 def get_tag(tag_id, fields=""):

@@ -2,9 +2,9 @@ import argparse
 
 from tabulate import tabulate
 
-from api.artists import get_artist
-from api.songs import get_songs_by_artist
-from utils.logger import get_logger
+from vdbpy.api.artists import get_artist
+from vdbpy.api.songs import get_songs_by_artist
+from vdbpy.utils.logger import get_logger
 
 """ Example output:
 

@@ -3,9 +3,9 @@
 import argparse
 import datetime
 
-from api.users import get_rated_songs, get_username_by_id
-from utils.graph import generate_date_graph
-from utils.logger import get_logger
+from vdbpy.api.users import get_rated_songs, get_username_by_id
+from vdbpy.utils.graph import generate_date_graph
+from vdbpy.utils.logger import get_logger
 
 logger = get_logger("monthly_rated_songs_by_user")
 

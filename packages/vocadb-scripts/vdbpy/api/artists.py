@@ -1,5 +1,5 @@
-from utils.cache import cache_with_expiration
-from utils.network import fetch_json, fetch_json_items, fetch_totalcount
+from vdbpy.utils.cache import cache_with_expiration
+from vdbpy.utils.network import fetch_json, fetch_json_items, fetch_totalcount
 
 ARTIST_API_URL = "https://vocadb.net/api/artists"
 SONG_API_URL = "https://vocadb.net/api/songs"

@@ -3,7 +3,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 from dateutil.relativedelta import relativedelta
 
-from utils.logger import get_logger
+from vdbpy.utils.logger import get_logger
 
 logger = get_logger("monthly_graph")
 

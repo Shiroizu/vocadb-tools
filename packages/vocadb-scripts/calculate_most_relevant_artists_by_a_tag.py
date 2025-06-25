@@ -2,10 +2,10 @@ import argparse
 
 from tabulate import tabulate
 
-from api.artists import get_artist, get_song_count
-from api.songs import get_songs_by_tag
-from api.tags import get_tag
-from utils.logger import get_logger
+from vdbpy.api.artists import get_artist, get_song_count
+from vdbpy.api.songs import get_songs_by_tag
+from vdbpy.api.tags import get_tag
+from vdbpy.utils.logger import get_logger
 
 """ Example output:
  Tag 'dark wave' (Genres) (T/3383) - Most relevant artists:

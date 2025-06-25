@@ -2,8 +2,8 @@ import os
 import sys
 from pathlib import Path
 
-from utils.console import get_credentials_from_console, prompt_choice
-from utils.logger import get_logger
+from vdbpy.utils.console import get_credentials_from_console, prompt_choice
+from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 

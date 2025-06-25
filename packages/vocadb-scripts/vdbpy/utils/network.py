@@ -2,7 +2,7 @@ import time
 
 import requests
 
-from utils.logger import get_logger
+from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -17,7 +17,9 @@ def fetch_json(url: str, session=requests, params=None):
     return r.json()
 
 
-def fetch_json_items(url, params: dict | None = None, session=requests, max_results=10**9):
+def fetch_json_items(
+    url, params: dict | None = None, session=requests, max_results=10**9
+):
     logger.debug(f"Fetching all JSON items for url '{url}'")
     logger.debug(f"Params: {params}")
     all_items = []

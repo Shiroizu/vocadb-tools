@@ -4,12 +4,12 @@ import sys
 
 import requests
 
-from api.notifications import fetch_notifications, get_notification_body
-from api.songlists import create_songlists
-from api.users import delete_notifications
-from utils.files import get_credentials, get_lines, save_file
-from utils.logger import get_logger
-from utils.network import fetch_json
+from vdbpy.api.notifications import fetch_notifications, get_notification_body
+from vdbpy.api.songlists import create_songlists
+from vdbpy.api.users import delete_notifications
+from vdbpy.utils.files import get_credentials, get_lines, save_file
+from vdbpy.utils.logger import get_logger
+from vdbpy.utils.network import fetch_json
 
 logger = get_logger("notifications_to_songlist")
 
@@ -127,6 +127,10 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip covers that have original version as entry",
     )
+    # TODO --skip_music_pvs
+    # TODO --skip_out_of_scope songs
+    # TODO --skip_instrumentals
+    # TODO --skip_already_rated
     parser.add_argument(
         "--include_seen_songs",
         action="store_true",

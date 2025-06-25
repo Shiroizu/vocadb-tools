@@ -20,10 +20,10 @@ import argparse
 
 from tabulate import tabulate
 
-from api.artists import get_base_voicebank
-from api.users import get_rated_songs, get_username_by_id
-from utils.files import save_file
-from utils.logger import get_logger
+from vdbpy.api.artists import get_base_voicebank
+from vdbpy.api.users import get_rated_songs, get_username_by_id
+from vdbpy.utils.files import save_file
+from vdbpy.utils.logger import get_logger
 
 logger = get_logger("find-favourite-vocalists")
 

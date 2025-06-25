@@ -1,4 +1,4 @@
-from utils.network import fetch_json, fetch_json_items
+from vdbpy.utils.network import fetch_json, fetch_json_items
 
 
 def fetch_notifications(

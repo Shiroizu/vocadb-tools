@@ -1,4 +1,4 @@
-from utils.network import fetch_json_items
+from vdbpy.utils.network import fetch_json_items
 
 SONG_API_URL = "https://vocadb.net/api/songs"
 

@@ -1,8 +1,8 @@
 import argparse
 
-from api.users import get_rated_songs
-from utils.files import save_file
-from utils.logger import get_logger
+from vdbpy.api.users import get_rated_songs
+from vdbpy.utils.files import save_file
+from vdbpy.utils.logger import get_logger
 
 logger = get_logger("export_rated_song_entries_as_csv")
 

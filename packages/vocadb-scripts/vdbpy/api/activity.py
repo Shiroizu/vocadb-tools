@@ -1,5 +1,5 @@
-from utils.cache import cache_with_expiration
-from utils.network import fetch_totalcount
+from vdbpy.utils.cache import cache_with_expiration
+from vdbpy.utils.network import fetch_totalcount
 
 
 @cache_with_expiration(days=1000)
