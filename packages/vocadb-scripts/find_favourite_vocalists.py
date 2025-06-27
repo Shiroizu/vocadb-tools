@@ -19,7 +19,6 @@ Table saved to 'output/favourite-vocalists-329.txt'
 import argparse
 
 from tabulate import tabulate
-
 from vdbpy.api.artists import get_base_voicebank
 from vdbpy.api.users import get_rated_songs, get_username_by_id
 from vdbpy.config import WEBSITE

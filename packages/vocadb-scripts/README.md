@@ -1,19 +1,15 @@
-Collection of [VocaDB](https://vocadb.net/) related scripts: Edit tools, scripts for statistics, etc.
+Collection of [VocaDB](https://vocadb.net/) related scripts.
 
-Common utils and api modules are packaged as `vdbpy`.
+Uses [VDBpy](https://github.com/Shiroizu/VDBpy/) under the hood.
 
 Ideas, Pull Requests, etc. are welcome.
 
 ## Usage
 
-1) Install [Python](https://www.python.org/) (3.12+) and [Git](https://git-scm.com/downloads).
+1) Install [Git](https://git-scm.com/downloads) --> `git clone https://github.com/Shiroizu/VocaDB-scripts`
 
-2) `git clone https://github.com/Shiroizu/VocaDB-scripts`
+2) `cd VocaDB-scripts`
 
-3) `cd VocaDB-scripts`
+3) Install [uv](https://docs.astral.sh/uv/) --> `uv pip install .`
 
-4) `pip install -r requirements.txt`
-
-5) `cd scripts`
-
-6) Run scripts with `python find-favourite-vocalists.py`
+4) `uv run calculate_artist_tags_based_on_songs.py 2595`

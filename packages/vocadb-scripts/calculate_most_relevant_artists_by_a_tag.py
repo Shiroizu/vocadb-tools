@@ -1,7 +1,6 @@
 import argparse
 
 from tabulate import tabulate
-
 from vdbpy.api.artists import get_artist, get_song_count
 from vdbpy.api.songs import get_songs_by_tag
 from vdbpy.api.tags import get_tag

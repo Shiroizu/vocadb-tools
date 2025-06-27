@@ -3,7 +3,6 @@ import datetime
 import sys
 
 import requests
-
 from vdbpy.api.notifications import fetch_notifications, get_notification_body
 from vdbpy.api.songlists import create_songlists
 from vdbpy.api.users import delete_notifications

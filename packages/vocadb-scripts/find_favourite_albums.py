@@ -34,7 +34,6 @@ Table saved to 'output/favourite-albums-329.txt'
 import argparse
 
 from tabulate import tabulate
-
 from vdbpy.api.users import get_albums_by_user, get_rated_songs, get_username_by_id
 from vdbpy.config import WEBSITE
 from vdbpy.utils.data import truncate_string_with_ellipsis

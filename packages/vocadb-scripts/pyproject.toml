@@ -1,3 +1,7 @@
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+[project]
+name = "vdbscripts"
+version = "0.1.0"
+description = "Collection of VocaDB related scripts"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
