@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import diskcache as dc
+from requests.sessions import Session
 
 from vdbpy.utils.logger import get_logger
 
@@ -13,10 +14,11 @@ def cache_with_expiration(days=1):
     def decorator(func):
         def wrapper(*args, **kwargs):
             # Ignore session parameter:
-            args = [arg for arg in args if arg != "session"]
-            kwargs = {key: value for key, value in kwargs.items() if key != "session"}
+            args = [a for a in args if not isinstance(a, Session)]
+            kwargs = {k: v for k, v in kwargs.items() if not isinstance(v, Session)}
             key = f"{func.__name__}_{args}_{kwargs}"
             logger.debug(f"Cache key: {key}")
+
             if key in cache:
                 logger.debug(f"Cache hit for '{key}'")
                 return cache[key]
@@ -32,11 +34,10 @@ def cache_with_expiration(days=1):
 def cache_without_expiration():
     def decorator(func):
         def wrapper(*args, **kwargs):
-            # Module + Function name for uniqueness
             # Ignore session parameter:
-            args = [arg for arg in args if arg != "session"]
-            kwargs = {key: value for key, value in kwargs.items() if key != "session"}
-            key = f"{func.__module__}.{func.__name__}_{args}_{kwargs}"
+            args = [a for a in args if not isinstance(a, Session)]
+            kwargs = {k: v for k, v in kwargs.items() if not isinstance(v, Session)}
+            key = f"{func.__name__}_{args}_{kwargs}"
             logger.debug(f"Cache key: {key}")
             if key in cache:
                 logger.debug(f"Persistent cache hit with '{key}'")
@@ -54,9 +55,9 @@ def cache_conditionally(days=1):
     def decorator(func):
         def wrapper(*args, **kwargs):
             # Ignore session parameter:
-            args = [arg for arg in args if arg != "session"]
-            kwargs = {key: value for key, value in kwargs.items() if key != "session"}
-            key = f"{func.__module__}.{func.__name__}_{args}_{kwargs}"
+            args = [a for a in args if not isinstance(a, Session)]
+            kwargs = {k: v for k, v in kwargs.items() if not isinstance(v, Session)}
+            key = f"{func.__name__}_{args}_{kwargs}"
             logger.debug(f"Cache key: {key}")
             if key in cache:
                 logger.debug(f"Cache hit with '{key}'")
