@@ -14,6 +14,7 @@ def cache_with_expiration(days=1):
         def wrapper(*args, **kwargs):
             key = f"{func.__name__}_{args}_{kwargs}"
             if key in cache:
+                logger.debug(f"Cache hit for '{key}'")
                 return cache[key]
             result = func(*args, **kwargs)
             cache.set(key, result, expire=timedelta(days=days).total_seconds())

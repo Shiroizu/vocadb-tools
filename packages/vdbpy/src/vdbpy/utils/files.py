@@ -22,6 +22,7 @@ def get_lines(filename: str) -> list[str]:
     """Safely read lines from a file. Create file and return an empty list if necessary."""
     verify_file(filename)
 
+    logger.debug(f"Fetching lines from file '{filename}'")
     with open(filename, encoding="utf8") as f:
         return f.read().splitlines()
 
@@ -97,6 +98,7 @@ def save_file(filepath: str, content: str | list, append=False) -> None:
         if append:
             f.write("\n")
 
+    logger.info(f"File saved: '{filepath}'")
 
 def clear_file(filepath: str):
     """Clear file if it exists."""
