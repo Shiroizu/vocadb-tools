@@ -1,1 +1,1 @@
-WEBSITE = "https://vocadb.net/"
+WEBSITE = "https://vocadb.net"
