@@ -13,7 +13,7 @@ logger = get_logger()
 
 
 @cache_with_expiration(days=1)
-def get_cached_entry_count(entry_type: str):
+def get_cached_entry_count_by_entry_type(entry_type: str):
     url = f"{WEBSITE}/api/{add_s(entry_type)}?getTotalCount=True&maxResults=1"
     return fetch_cached_totalcount(url)
 
@@ -22,7 +22,7 @@ def get_random_entry():
     entry_type = random.choice(get_args(Entry_type))
     logger.info(f"Chose entry type '{entry_type}'")
     entry_type = add_s(entry_type)
-    total = get_cached_entry_count(entry_type)
+    total = get_cached_entry_count_by_entry_type(entry_type)
     random_index = random.randint(1, total)
     url = f"{WEBSITE}/api/{entry_type}"
     params = {"getTotalCount": True, "maxResults": 1, "start": random_index}
@@ -44,3 +44,5 @@ def delete_entry(session, selected_entry_type: Entry_type, entry_id: int, force=
     # url += f"?notes={deletion_message}"
     deletion_attempt = session.delete(url)
     deletion_attempt.raise_for_status()
+
+

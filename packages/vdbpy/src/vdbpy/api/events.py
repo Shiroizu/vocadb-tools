@@ -3,7 +3,7 @@ from vdbpy.utils.network import fetch_json
 
 
 @cache_with_expiration(days=1)
-def get_event_details(event_id: int, params=None):
+def get_event_details_by_event_id(event_id: int, params=None):
     params = {} if params is None else params
     api_url = f"https://vocadb.net/api/releaseEvents/{event_id}"
     """ Example https://vocadb.net/api/releaseEvents/3000

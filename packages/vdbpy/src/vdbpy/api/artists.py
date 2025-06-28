@@ -17,13 +17,13 @@ def get_artist_by_id(artist_id, fields=""):
     return fetch_json(url, params=params)
 
 
-def get_artists_by_tag(tag_id: int):
+def get_artists_by_tag_id(tag_id: int):
     params = {"tagId[]": tag_id}
     return get_artists(params=params)
 
 
 @cache_with_expiration(days=7)
-def get_song_count(artist_id: int, only_main_songs=False, extra_params=None):
+def get_song_count_by_artist_id(artist_id: int, only_main_songs=False, extra_params=None):
     params = extra_params if extra_params else {}
     params["artistId[]"] = artist_id
     if only_main_songs:
@@ -32,7 +32,7 @@ def get_song_count(artist_id: int, only_main_songs=False, extra_params=None):
 
 
 @cache_with_expiration(days=1000)
-def get_base_voicebank(artist_id: int, recursive=True) -> int:
+def get_base_voicebank_by_artist_id(artist_id: int, recursive=True) -> int:
     """Get base voicebank id if it exists. Return current id otherwise."""
     params = {"fields": "baseVoiceBank"}
     next_base_vb_id = artist_id

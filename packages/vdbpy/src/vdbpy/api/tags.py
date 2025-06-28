@@ -2,7 +2,7 @@ from vdbpy.config import WEBSITE
 from vdbpy.utils.network import fetch_json
 
 
-def get_tag(tag_id, fields=""):
+def get_tag_by_id(tag_id, fields=""):
     params = {"fields": fields} if fields else {}
     url = f"{WEBSITE}/api/tags/{tag_id}"
     """

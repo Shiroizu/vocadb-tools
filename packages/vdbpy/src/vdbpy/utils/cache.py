@@ -8,9 +8,6 @@ cache = dc.Cache("cache")
 
 logger = get_logger()
 
-# Usage:
-# @cache_with_expiration(days=7)
-
 
 def cache_with_expiration(days=1):
     def decorator(func):
@@ -42,6 +39,7 @@ def cache_without_expiration():
         return wrapper
 
     return decorator
+
 
 def cache_conditionally(days=1):
     def decorator(func):

@@ -16,17 +16,17 @@ def get_songs(params):
     return fetch_json_items(SONG_API_URL, params=params)
 
 
-def get_songs_by_artist(artist_id: int, params: dict):
+def get_songs_by_artist_id(artist_id: int, params: dict):
     params["artistId[]"] = artist_id
     return fetch_json_items(SONG_API_URL, params)
 
 
-def get_songs_by_tag(tag_id: int, params: dict):
+def get_songs_by_tag_id(tag_id: int, params: dict):
     params["tagId[]"] = tag_id
     return fetch_json_items(SONG_API_URL, params)
 
 
-def add_event(session, song_id: int, event_id: int, update_note) -> bool:
+def add_event_to_song(session, song_id: int, event_id: int, update_note) -> bool:
     logger.debug(f"Adding event {event_id} to song {song_id} ({update_note}).")
     entry_data = session.get(f"{WEBSITE}/api/songs/{song_id}/for-edit").json()
     entry_event_ids = [event["id"] for event in entry_data["releaseEvents"]]
@@ -46,7 +46,7 @@ def add_event(session, song_id: int, event_id: int, update_note) -> bool:
     return True
 
 
-def get_by_pv(pv_service: str, pv_id: str):
+def get_song_entry_by_pv(pv_service: str, pv_id: str):
     url = f"{WEBSITE}/api/songs/byPv"
     return fetch_json(
         url,
@@ -58,7 +58,7 @@ def get_by_pv(pv_service: str, pv_id: str):
     )
 
 
-def mark_pvs_unavailable(session, song_id: int, service=""):
+def mark_pvs_unavailable_by_song_id(session, song_id: int, service=""):
     """Mark all original PVs as unavailable in a song entry.
 
     Does not do an extra check if the PV is unavailable or not!
@@ -115,7 +115,7 @@ def mark_pvs_unavailable(session, song_id: int, service=""):
         logger.info(f"No PV links to update for song {song_id}")
 
 
-def get_random_rated_song(user: tuple[str, int]) -> int:
+def get_random_rated_song_by_user(user: tuple[str, int]) -> int:
     url = f"{WEBSITE}/api/songs"
     username, user_id = user
     params = {
@@ -134,14 +134,14 @@ def get_random_rated_song(user: tuple[str, int]) -> int:
     return fetch_json(url, params=params)["items"][0]["id"]
 
 
-def get_related_songs(song_id: int):
+def get_related_songs_by_song_id(song_id: int):
     url = f"{WEBSITE}/api/songs/{song_id}/related"
     return fetch_json(url)
 
 
-def get_random_related_song(song_id: int) -> int:
+def get_random_related_song_by_song_id(song_id: int) -> int:
     logger.debug(f"Fetching related songs for S/{song_id}")
-    related_songs = get_related_songs(song_id)
+    related_songs = get_related_songs_by_song_id(song_id)
     columns = ["artistMatches", "likeMatches", "tagMatches"]
     selected_column = random.choice(columns)
     logger.debug(f"Selecting random related song from {selected_column}")
@@ -167,7 +167,7 @@ def get_random_song_id() -> int:
     return fetch_json(url, params=params)["items"][0]["id"]
 
 
-def get_song_rater_ids(song_id: int) -> list[int]:
+def get_song_rater_ids_by_song_id(song_id: int) -> list[int]:
     """Fetch the IDs of users who rated a song."""
     url = f"{WEBSITE}/api/songs/{song_id}/ratings"
     """

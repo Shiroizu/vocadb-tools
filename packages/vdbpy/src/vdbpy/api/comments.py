@@ -1,19 +1,19 @@
 from vdbpy.config import WEBSITE
 from vdbpy.types import Entry_type
-from vdbpy.utils.cache import cache_with_expiration
-from vdbpy.utils.data import add_s
+from vdbpy.utils.cache import cache_without_expiration
+from vdbpy.utils.data import add_s, get_monthly_count
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_all_items_between_dates,
+    fetch_cached_totalcount,
     fetch_json,
-    fetch_totalcount,
 )
 
 logger = get_logger()
 
 
-def get_the_most_recent_comment(user_id=0):
+def get_the_most_recent_comment_by_user_id(user_id=0):
     url = f"{WEBSITE}/api/comments"
     params = {
         "userId": user_id,
@@ -24,7 +24,7 @@ def get_the_most_recent_comment(user_id=0):
     return fetch_json(url, params=params)["items"][0]
 
 
-def get_the_oldest_comment(user_id=0):
+def get_the_oldest_comment_by_user_id(user_id=0):
     url = f"{WEBSITE}/api/comments"
     params = {
         "userId": user_id,
@@ -37,8 +37,12 @@ def get_the_oldest_comment(user_id=0):
 
 def get_comments_by_user_id(user_id) -> list:
     logger.debug(f"Fetching all comments for user id {user_id}")
-    a = str(parse_date(get_the_oldest_comment(user_id)["created"])).split()[0]
-    b = str(parse_date(get_the_most_recent_comment(user_id)["created"])).split()[0]
+    a = str(parse_date(get_the_oldest_comment_by_user_id(user_id)["created"])).split()[
+        0
+    ]
+    b = str(
+        parse_date(get_the_most_recent_comment_by_user_id(user_id)["created"])
+    ).split()[0]
     logger.info(f"\nOldest comment date is {a}")
     logger.info(f"Most recent comment date is {b}\n")
     url = f"{WEBSITE}/api/comments"
@@ -48,13 +52,6 @@ def get_comments_by_user_id(user_id) -> list:
     )
     logger.info(f"Found {len(all_comments)} comments by {user_id}")
     return all_comments
-
-
-@cache_with_expiration(days=1000)
-def get_comment_count(before_date: str) -> int:
-    api_url = f"{WEBSITE}/api/comments"
-    params = {"before": before_date}
-    return fetch_totalcount(api_url, params=params)
 
 
 def remove_comment_by_id(session, entry_type: Entry_type, comment_id: int):
@@ -85,3 +82,14 @@ def remove_all_comments_by_user_id(session, user_id: int, prompt_interval=1):
         remove_comment_by_id(session, entry_type, comment_id)
 
     logger.info(f"Deleted {len(all_comments)} comments by {user_id}")
+
+
+@cache_without_expiration()
+def get_comment_count_before(before_date: str) -> int:
+    api_url = f"{WEBSITE}/api/comments"
+    params = {"before": before_date}
+    return fetch_cached_totalcount(api_url, params=params)
+
+
+def get_monthly_comment_count(year: int, month: int) -> int:
+    return get_monthly_count(year, month, get_comment_count_before)
