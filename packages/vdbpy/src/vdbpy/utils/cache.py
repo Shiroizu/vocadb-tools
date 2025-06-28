@@ -42,3 +42,26 @@ def cache_without_expiration():
         return wrapper
 
     return decorator
+
+def cache_conditionally(days=1):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            key = f"{func.__module__}.{func.__name__}_{args}_{kwargs}"
+            if key in cache:
+                logger.debug(f"Cache hit with '{key}'")
+                return cache[key]
+
+            result = func(*args, **kwargs)
+
+            if not result:
+                expire_time = timedelta(days=days).total_seconds()
+                cache.set(key, result, expire=expire_time)
+            else:
+                # No expiration if result found
+                cache.set(key, result, expire=None)
+
+            return result
+
+        return wrapper
+
+    return decorator

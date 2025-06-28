@@ -104,3 +104,40 @@ def clear_file(filepath: str):
 
     with path.open("w", encoding="utf-8") as f:
         f.write("")
+
+
+def write_lines(filename: str, lines: list[str], remove_duplicates=False):
+    """Safely write lines to a file. Create file if necessary."""
+    _ = get_lines(filename)
+
+    if remove_duplicates:
+        lines = list(set(lines))
+
+    with open(filename, "w", encoding="utf8") as f:
+        f.write("\n".join(lines))
+
+
+def write_dict(filename: str, data: dict, separator=":"):
+    """Write dict keys and values to a file."""
+    lines = [f"{key}{separator}{value}" for key, value in data.items()]
+    write_lines(filename, lines)
+
+
+def replace_line_in_file(
+    filename: str, old_line: str, new_line: str, count=1, startswith=False
+):
+    logger.debug(f"Replacing line on file '{filename}'")
+    logger.debug(f"Old line: {old_line}")
+    logger.debug(f"New line: {new_line}")
+    lines = get_lines(filename)
+    counter = count
+    new_lines = []
+    for line in lines:
+        condition = line.startswith(old_line) if startswith else (line == old_line)
+        if condition and counter > 0:
+            new_lines.append(new_line)
+            counter -= 1
+        else:
+            new_lines.append(line)
+
+    write_lines(filename, new_lines)
