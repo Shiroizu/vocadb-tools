@@ -6,8 +6,15 @@ from vdbpy.config import WEBSITE
 from vdbpy.types import Edit_type, Entry_type
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.data import split_list
+from vdbpy.utils.date import get_month_strings, month_is_over
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_json, fetch_json_items, fetch_totalcount
+from vdbpy.utils.network import (
+    cache_without_expiration,
+    fetch_cached_totalcount,
+    fetch_json,
+    fetch_json_items,
+    fetch_totalcount,
+)
 
 logger = get_logger()
 
@@ -205,6 +212,7 @@ def get_entry_matrix(user_id: int, since="", before=""):
         print(f"Count mismatch {total_count}, possible new activity after")
     return entry_matrix
 
+
 @cache_with_expiration(days=1)
 def get_user_profile(username: str) -> dict:
     """Get user profile data.
@@ -258,3 +266,24 @@ def get_user_profile(username: str) -> dict:
     """
     api_url = f"{WEBSITE}/api/profiles/{username}"
     return fetch_json(api_url)
+
+
+def get_monthly_count(year: int, month: int, count_func) -> int:
+    logger.debug(f"Calculating monthly count for: {year}-{month}")
+
+    a, b = get_month_strings(year, month)
+    logger.debug(f"Corresponding date strings: {a} - {b}")
+
+    month_is_over(year, month)
+    return count_func(b) - count_func(a)
+
+
+@cache_without_expiration()
+def get_comment_count_before(before_date: str) -> int:
+    api_url = f"{WEBSITE}/api/comments"
+    params = {"before": before_date}
+    return fetch_cached_totalcount(api_url, params=params)
+
+
+def get_monthly_comment_count(year: int, month: int) -> int:
+    return get_monthly_count(year, month, get_comment_count_before)

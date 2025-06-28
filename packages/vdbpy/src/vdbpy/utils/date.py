@@ -1,5 +1,9 @@
 from datetime import datetime, timedelta
 
+from vdbpy.utils.logger import get_logger
+
+logger = get_logger()
+
 
 def parse_date(utc_date_str: str, local_date_str: str = "") -> datetime:
     """Convert and parse local date string to utc based on the difference.
@@ -40,3 +44,23 @@ def parse_date(utc_date_str: str, local_date_str: str = "") -> datetime:
     hour_diff = round((utc_date - local_date).total_seconds() / 3600)
 
     return local_date + timedelta(hours=hour_diff)
+
+
+def month_is_over(year: int, month: int) -> bool:
+    """Verify that the given month is not ongoing or in the future."""
+    logger.debug(f"Verifying date {year}-{month}")
+    now = datetime.now()
+    if year >= now.year and month > now.month:
+        logger.warning(f"Current date: {now.month}.{now.year}")
+        logger.warning("Selected month is still ongoing or in the future.")
+        return False
+    return True
+
+
+def get_month_strings(year: int, month: int) -> tuple[str, str]:
+    last_month_string = f"{year}-{month}-1"
+    if month == 1:
+        month_before_last_month_string = f"{year-1}-12-1"
+    else:
+        month_before_last_month_string = f"{year}-{month-1}-1"
+    return month_before_last_month_string, last_month_string
