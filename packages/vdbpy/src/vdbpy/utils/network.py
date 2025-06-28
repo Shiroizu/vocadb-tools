@@ -54,6 +54,13 @@ def fetch_totalcount(api_url, params: dict | None = None) -> int:
     totalcount = fetch_json(api_url, params=params)["totalCount"]
     return int(totalcount)
 
+def fetch_cached_totalcount(api_url, params: dict | None = None) -> int:
+    params = params if params is not None else {}
+    params["maxResults"] = 1
+    params["getTotalCount"] = True
+    totalcount = fetch_cached_json(api_url, params=params)["totalCount"]
+    return int(totalcount)
+
 
 @cache_without_expiration()
 def fetch_all_items_between_dates(
