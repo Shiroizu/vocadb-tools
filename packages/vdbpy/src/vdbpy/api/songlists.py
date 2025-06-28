@@ -2,6 +2,7 @@ import time
 
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.network import fetch_text
 
 logger = get_logger()
 
@@ -43,3 +44,29 @@ def create_songlists(session, title, song_ids: list[str], max_length=200):
         logger.info(f"Created songlist at {WEBSITE}/SongList/Details/{songlist_id}")
 
         time.sleep(3)
+
+
+def export_songlist(songlist_id: int) -> str:
+    text = fetch_text(f"{WEBSITE}/SongList/Export/{songlist_id}")
+    _, _, table = text.partition("\n")  # remove header
+    # notes;publishdate;title;url;pv.original.niconicodouga;pv.original.!niconicodouga;pv.reprint
+    new_header = "songlist_notes;published;title;url;nico_pv;original_pv;reprint_pv"
+    return new_header + "\n" + table
+
+
+def parse_csv_songlist(csv: str, delimiter=";") -> list[list[str]]:
+    return [line.split(delimiter) for line in csv.splitlines()]
+
+
+def filter_songlist_ids_and_notes(songlist: list[list[str]]) -> dict[int, str]:
+    notes_by_song_id = {}
+    for songlist_entry in songlist[1:]:
+        notes, _, _, url, _, _, _ = songlist_entry
+        song_id = int(url.split("/S/")[-1])
+        if song_id in notes_by_song_id:
+            logger.warning(
+                f"Song ID {song_id} already has a note: {notes_by_song_id[song_id]}"
+            )
+        notes_by_song_id[song_id] = notes
+
+    return notes_by_song_id

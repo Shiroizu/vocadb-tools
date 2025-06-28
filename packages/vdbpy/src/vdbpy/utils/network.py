@@ -8,6 +8,19 @@ from vdbpy.utils.logger import get_logger
 logger = get_logger()
 
 
+def fetch_text(url: str, session=requests, params=None):
+    logger.debug(f"Params: {params}")
+    r = session.get(url, params=params)
+    # Step 1: Decode bytes as ISO-8859-1
+    logger.debug(f"Parsed URL: '{r.url}'")
+    r.raise_for_status()
+    time.sleep(0.5)
+    if r.encoding == "ISO-8859-1":
+        logger.info("Converting from ISO-8859-1 to UTF-8")
+        return r.text.encode("ISO-8859-1").decode("utf-8")
+    return r.text
+
+
 def fetch_json(url: str, session=requests, params=None):
     logger.debug(f"Fetching JSON from url '{url}'")
     logger.debug(f"Params: {params}")
@@ -17,10 +30,12 @@ def fetch_json(url: str, session=requests, params=None):
     time.sleep(0.5)
     return r.json()
 
+
 @cache_without_expiration()
 def fetch_cached_json(url: str, session=requests, params=None):
     """Helper URL fetch function."""
     return fetch_json(url, session=session, params=params)
+
 
 def fetch_json_items(
     url, params: dict | None = None, session=requests, max_results=10**9
@@ -53,6 +68,7 @@ def fetch_totalcount(api_url, params: dict | None = None) -> int:
     params["getTotalCount"] = True
     totalcount = fetch_json(api_url, params=params)["totalCount"]
     return int(totalcount)
+
 
 def fetch_cached_totalcount(api_url, params: dict | None = None) -> int:
     params = params if params is not None else {}
