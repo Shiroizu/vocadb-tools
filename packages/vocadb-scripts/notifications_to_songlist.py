@@ -5,7 +5,7 @@ import sys
 import requests
 from vdbpy.api.notifications import (
     delete_notifications,
-    get_notification_body,
+    get_notification_by_id,
     get_notifications_by_user_id,
 )
 from vdbpy.api.songlists import create_songlists
@@ -45,7 +45,7 @@ def filter_notifications(
     notification_messages = []
 
     for item in all_notifications:
-        notif_body = get_notification_body(session, item["id"])
+        notif_body = get_notification_by_id(session, item["id"])["body"]
         notification_messages.append(notif_body)
 
         if "song" in item["subject"]:
