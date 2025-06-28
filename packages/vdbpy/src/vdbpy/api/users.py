@@ -1,6 +1,9 @@
+from typing import get_args
+
 import requests
 
 from vdbpy.config import WEBSITE
+from vdbpy.types import Edit_type, Entry_type
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.data import split_list
 from vdbpy.utils.logger import get_logger
@@ -131,3 +134,73 @@ def get_created_entries(username: str) -> list:
         logger.warning(f"User has more than {max_results} entries! Update the script!")
         _ = input("Press enter to continue...")
     return result["items"]
+
+
+@cache_with_expiration(days=1)
+def get_entry_matrix(user_id: int, since="", before=""):
+    # 1) Check the total counts of the most common entryType/editEvent combinations:
+    # 2) Stop when total count reached to reduce the number of API calls
+    #
+    # Other entry types that are not listed here return 0
+    # Related github issue: https://github.com/VocaDB/vocadb/issues/1766
+    #
+    # The API docs include three additional entryTypes: PV, DiscussionTopic, User
+    # but these do not return anything
+
+    entry_matrix = {
+        entry_type: {edit_type: 0 for edit_type in get_args(Edit_type)}
+        for entry_type in get_args(Entry_type)
+    }
+    # {'Song': {'Created': 0, 'Updated': 0, 'Deleted': 0}, ... 'ReleaseEventSeries': {'Created': 0, 'Updated': 0, 'Deleted': 0}}
+
+    api_url = f"{WEBSITE}/api/activityEntries"
+    params = {"maxResults": 1, "getTotalCount": True, "userId": user_id}
+
+    if since:
+        params["since"] = since
+
+    if before:
+        params["before"] = before
+
+    total_count = fetch_json(api_url, params=params)["totalCount"]
+    print(f"Total edits: {total_count}")
+
+    combinations = [  # Sorted by how common they are
+        ("Updated", "Song"),
+        ("Created", "Song"),
+        ("Updated", "Artist"),
+        ("Created", "Artist"),
+        ("Updated", "Album"),
+        ("Created", "Album"),
+        ("Updated", "Tag"),
+        ("Updated", "ReleaseEvent"),
+        ("Created", "ReleaseEvent"),
+        ("Created", "Tag"),
+        ("Updated", "SongList"),
+        ("Deleted", "Song"),
+        ("Deleted", "Artist"),
+        ("Created", "SongList"),
+        ("Created", "Venue"),
+        ("Updated", "Venue"),
+    ]
+
+    count = 0
+    for edit_type, entry_type in combinations:
+        if not total_count:
+            break
+        params["entryType"] = entry_type
+        params["editEvent"] = edit_type
+        count = 0
+        count = fetch_json(api_url, params=params)["totalCount"]
+        if count > 0:
+            entry_matrix[entry_type][edit_type] = count
+            print(
+                f"{entry_type}, {edit_type}: Total count is now {total_count} - {count} = {total_count - count}"
+            )
+            total_count -= count
+        print((edit_type, entry_type, count))
+
+    print(entry_matrix)
+    if total_count != 0:
+        print(f"Count mismatch {total_count}, possible new activity after")
+    return entry_matrix
