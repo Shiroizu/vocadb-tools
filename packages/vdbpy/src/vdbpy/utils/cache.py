@@ -12,6 +12,9 @@ logger = get_logger()
 def cache_with_expiration(days=1):
     def decorator(func):
         def wrapper(*args, **kwargs):
+            # Ignore session parameter:
+            args = [arg for arg in args if arg != "session"]
+            kwargs = {key: value for key, value in kwargs.items() if key != "session"}
             key = f"{func.__name__}_{args}_{kwargs}"
             if key in cache:
                 logger.debug(f"Cache hit for '{key}'")
@@ -29,6 +32,10 @@ def cache_without_expiration():
     def decorator(func):
         def wrapper(*args, **kwargs):
             # Module + Function name for uniqueness
+            # Ignore session parameter:
+            args = [arg for arg in args if arg != "session"]
+            kwargs = {key: value for key, value in kwargs.items() if key != "session"}
+
             key = f"{func.__module__}.{func.__name__}_{args}_{kwargs}"
             if key in cache:
                 logger.debug(f"Persistent cache hit with '{key}'")
@@ -46,6 +53,9 @@ def cache_conditionally(days=1):
     def decorator(func):
         def wrapper(*args, **kwargs):
             key = f"{func.__module__}.{func.__name__}_{args}_{kwargs}"
+            # Ignore session parameter:
+            args = [arg for arg in args if arg != "session"]
+            kwargs = {key: value for key, value in kwargs.items() if key != "session"}
             if key in cache:
                 logger.debug(f"Cache hit with '{key}'")
                 return cache[key]
