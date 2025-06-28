@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from vdbpy.utils.logger import get_logger
 
@@ -64,3 +64,14 @@ def get_month_strings(year: int, month: int) -> tuple[str, str]:
     else:
         month_before_last_month_string = f"{year}-{month-1}-1"
     return month_before_last_month_string, last_month_string
+
+
+def read_timestamp_file(filename: str) -> datetime | None:
+    """Read a timestamp from a file, or None if not found."""
+    try:
+        with open(filename, encoding="utf-8") as file:
+            return datetime.fromisoformat(file.read().strip())
+    except FileNotFoundError:
+        with open(filename, "w", encoding="utf-8") as file:
+            file.write(str(datetime.now(UTC)))
+        return None
