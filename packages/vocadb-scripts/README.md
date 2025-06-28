@@ -10,6 +10,4 @@ Ideas, Pull Requests, etc. are welcome.
 
 2) `cd VocaDB-scripts`
 
-3) Install [uv](https://docs.astral.sh/uv/) --> `uv pip install .`
-
-4) `uv run calculate_artist_tags_based_on_songs.py 2595`
+3) `uv run calculate_artist_tags_based_on_songs.py 2595`
