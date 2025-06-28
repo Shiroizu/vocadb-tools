@@ -4,4 +4,9 @@ version = "0.1.0"
 description = "Collection of VocaDB related scripts"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "vdbpy",
+]
+
+[tool.uv.sources]
+vdbpy = { git = "https://github.com/Shiroizu/VDBpy.git", rev = "master" }
