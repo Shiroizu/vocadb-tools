@@ -54,3 +54,59 @@ def get_by_pv(pv_service: str, pv_id: str):
             "pvId": pv_id,
         },
     )
+
+def mark_pvs_unavailable(session, song_id: int, service=""):
+    """Mark all original PVs as unavailable in a song entry.
+
+    Does not do an extra check if the PV is unavailable or not!
+    """
+    logger.info(f"Marking all original PVs unavailable for song {song_id}.")
+    if service:
+        logger.info(f"Restricting to PV service {service}")
+    entry_data = session.get(f"{WEBSITE}/api/songs/{song_id}/for-edit").json()
+    # 'pvs': [{
+    #   'author': '染井 吉野',
+    #   'disabled': False,
+    #   'id': 1137552,
+    #   'length': 118,
+    #   'name': 'LastDay light 花隈千冬 小春六花',
+    #   'publishDate': '2025-02-22T00:00:00',
+    #   'pvId': 'Xe0f8K-i6HE',
+    #   'service': 'Youtube',
+    #   'pvType': 'Original',
+    #   'thumbUrl': 'https://i.ytimg.com/vi/Xe0f8K-i6HE/default.jpg',
+    #   'url': 'https://youtu.be/Xe0f8K-i6HE'
+    # }]
+    updated_pv_urls = []
+    for pv in entry_data["pvs"]:
+        logger.debug(f"{pv['pvId']} {pv['service']} ({pv['pvType']})")
+        if pv["pvType"] != "Original":
+            logger.debug("Not original, skipping.")
+            continue
+
+        if pv["disabled"]:
+            logger.debug("PV is already disabled.")
+            continue
+
+        if service and service != pv["service"]:
+            logger.debug("Skipping service.")
+            continue
+
+        updated_pv_urls.append(pv["url"])
+        pv["disabled"] = True
+
+    if updated_pv_urls:
+        update_note = "Marked PVs as unavailable: "
+        update_note += ", ".join(updated_pv_urls)
+        logger.info(update_note)
+        entry_data["updateNotes"] = update_note
+
+        request_save = session.post(
+            f"{WEBSITE}/api/songs/{song_id}",
+            {"contract": json.dumps(entry_data)},
+        )
+        request_save.raise_for_status()
+        time.sleep(2)
+
+    else:
+        logger.info(f"No PV links to update for song {song_id}")
