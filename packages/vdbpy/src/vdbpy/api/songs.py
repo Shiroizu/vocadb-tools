@@ -4,6 +4,10 @@ from vdbpy.utils.network import fetch_json_items
 SONG_API_URL = f"{WEBSITE}/api/songs"
 
 
+def get_songs(params):
+    return fetch_json_items(SONG_API_URL, params=params)
+
+
 def get_songs_by_artist(artist_id: int, params: dict):
     params["artistId[]"] = artist_id
     return fetch_json_items(SONG_API_URL, params)
