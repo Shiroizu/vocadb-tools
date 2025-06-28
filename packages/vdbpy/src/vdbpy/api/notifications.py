@@ -8,23 +8,31 @@ from vdbpy.utils.network import fetch_json, fetch_json_items
 logger = get_logger()
 
 
+def get_messages_by_user_id(user_id: int, session) -> list[dict]:
+    notif_url = f"{WEBSITE}/api/users/{user_id}/messages"
+    params = {
+        "inbox": "Received",
+        "unread": False,
+    }
+    return fetch_json_items(notif_url, session=session, params=params)
+
+
 def get_notifications_by_user_id(
     user_id: int, session, include_read=False, max_notifs=400
 ) -> list[dict]:
+    notif_url = f"{WEBSITE}/api/users/{user_id}/messages"
     params = {
         "inbox": "Notifications",
         "unread": not include_read,
     }
-
-    notif_url = f"{WEBSITE}/api/users/{user_id}/messages"
     return fetch_json_items(
         notif_url, session=session, params=params, max_results=max_notifs
     )
 
 
-def get_notification_body(session, notification_id: int) -> str:
+def get_notification_by_id(session, notification_id: int) -> dict:
     notif_url = f"{WEBSITE}/api/users/messages/{notification_id}"
-    return fetch_json(notif_url, session=session)["body"]
+    return fetch_json(notif_url, session=session)
 
 
 def delete_notifications(
