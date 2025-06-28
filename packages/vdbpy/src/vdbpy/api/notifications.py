@@ -1,6 +1,7 @@
 import requests
 
 from vdbpy.config import WEBSITE
+from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import split_list
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json, fetch_json_items
@@ -8,6 +9,7 @@ from vdbpy.utils.network import fetch_json, fetch_json_items
 logger = get_logger()
 
 
+@cache_with_expiration(days=1)
 def get_messages_by_user_id(user_id: int, session) -> list[dict]:
     notif_url = f"{WEBSITE}/api/users/{user_id}/messages"
     params = {
@@ -17,6 +19,7 @@ def get_messages_by_user_id(user_id: int, session) -> list[dict]:
     return fetch_json_items(notif_url, session=session, params=params)
 
 
+@cache_with_expiration(days=1)
 def get_notifications_by_user_id(
     user_id: int, session, include_read=False, max_notifs=400
 ) -> list[dict]:
@@ -29,7 +32,7 @@ def get_notifications_by_user_id(
         notif_url, session=session, params=params, max_results=max_notifs
     )
 
-
+@cache_without_expiration()
 def get_notification_by_id(session, notification_id: int) -> dict:
     notif_url = f"{WEBSITE}/api/users/messages/{notification_id}"
     return fetch_json(notif_url, session=session)
