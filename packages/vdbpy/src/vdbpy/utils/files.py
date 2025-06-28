@@ -8,8 +8,7 @@ from vdbpy.utils.logger import get_logger
 logger = get_logger()
 
 
-def get_lines(filename: str) -> list[str]:
-    """Safely read lines from a file. Create file and return an empty list if necessary."""
+def verify_file(filename: str) -> None:
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -17,6 +16,11 @@ def get_lines(filename: str) -> list[str]:
         logger.debug(f"File '{filename}' not found. Creating an empty file.")
         with open(filename, "w") as f:
             f.write("")
+
+
+def get_lines(filename: str) -> list[str]:
+    """Safely read lines from a file. Create file and return an empty list if necessary."""
+    verify_file(filename)
 
     with open(filename, encoding="utf8") as f:
         return f.read().splitlines()
@@ -97,30 +101,14 @@ def save_file(filepath: str, content: str | list, append=False) -> None:
 
 def clear_file(filepath: str):
     """Clear file if it exists."""
-    path = Path(filepath)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.is_file():
-        _ = input(f"Clearing file '{filepath}'. Press enter to continue.'")
+    save_file(filepath, "", append=False)
 
-    with path.open("w", encoding="utf-8") as f:
-        f.write("")
-
-
-def write_lines(filename: str, lines: list[str], remove_duplicates=False):
-    """Safely write lines to a file. Create file if necessary."""
-    _ = get_lines(filename)
-
-    if remove_duplicates:
-        lines = list(set(lines))
-
-    with open(filename, "w", encoding="utf8") as f:
-        f.write("\n".join(lines))
 
 
 def write_dict(filename: str, data: dict, separator=":"):
     """Write dict keys and values to a file."""
     lines = [f"{key}{separator}{value}" for key, value in data.items()]
-    write_lines(filename, lines)
+    save_file(filename, lines)
 
 
 def replace_line_in_file(
@@ -140,4 +128,4 @@ def replace_line_in_file(
         else:
             new_lines.append(line)
 
-    write_lines(filename, new_lines)
+    save_file(filename, new_lines)
