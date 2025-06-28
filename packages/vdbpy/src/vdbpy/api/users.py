@@ -204,3 +204,57 @@ def get_entry_matrix(user_id: int, since="", before=""):
     if total_count != 0:
         print(f"Count mismatch {total_count}, possible new activity after")
     return entry_matrix
+
+@cache_with_expiration(days=1)
+def get_user_profile(username: str) -> dict:
+    """Get user profile data.
+
+    # -- Mod cred data --
+    "additionalPermissions": [],
+    "effectivePermissions": [,
+    "email": "",
+    "lastLogin": "2025-01-21T02:08:00.363",
+    "lastLoginAddress": "",
+    "oldUsernames": [],
+
+    # -- Rest of the data --
+    "aboutMe": "",
+    "active": true,
+    "albumCollectionCount": 0,
+    "anonymousActivity": false,
+    "artistCount": 0,
+    "commentCount": 0,
+    "createDate": "2012-10-30T09:33:28",
+    "customTitle": "",
+    "designatedStaff": true,
+    "editCount": 0,
+    "emailVerified": true,
+    "favoriteAlbums": [],
+    "favoriteSongCount": 0,
+    "favoriteTags": [],
+    "followedArtists": [],
+    "groupId": "Admin",
+    "id": 0,
+    "isVeteran": true,
+    "knownLanguages": [],
+    "latestComments": [],
+    "latestRatedSongs": [],
+    "level": 0,
+    "location": "",
+    "mainPicture": {},
+    "name": "Name",
+    "ownedArtistEntries": [],
+    "possibleProducerAccount": false,
+    "power": 0,
+    "publicAlbumCollection": false,
+    "standalone": false,
+    "submitCount": 0,
+    "supporter": false,
+    "tagVotes": 0,
+    "twitterName": "",
+    "verifiedArtist": false,
+    "webLinks": []
+    }
+    """
+    api_url = f"{WEBSITE}/api/profiles/{username}"
+    return fetch_json(api_url)
