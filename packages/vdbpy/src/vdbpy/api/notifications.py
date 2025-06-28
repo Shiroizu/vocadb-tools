@@ -8,15 +8,14 @@ from vdbpy.utils.network import fetch_json, fetch_json_items
 
 logger = get_logger()
 
-
 @cache_with_expiration(days=1)
 def get_messages_by_user_id(user_id: int, session) -> list[dict]:
     notif_url = f"{WEBSITE}/api/users/{user_id}/messages"
-    params = {
-        "inbox": "Received",
-        "unread": False,
-    }
-    return fetch_json_items(notif_url, session=session, params=params)
+
+    received = fetch_json_items(notif_url, session=session, params={"inbox": "Received"})
+    sent = fetch_json_items(notif_url, session=session, params={"inbox": "Sent"})
+
+    return received + sent
 
 
 @cache_with_expiration(days=1)
