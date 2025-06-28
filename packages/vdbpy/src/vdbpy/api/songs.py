@@ -1,9 +1,10 @@
 import json
+import random
 import time
 
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_json, fetch_json_items
+from vdbpy.utils.network import fetch_cached_totalcount, fetch_json, fetch_json_items
 
 logger = get_logger()
 
@@ -44,6 +45,7 @@ def add_event(session, song_id: int, event_id: int, update_note) -> bool:
     time.sleep(1)
     return True
 
+
 def get_by_pv(pv_service: str, pv_id: str):
     url = f"{WEBSITE}/api/songs/byPv"
     return fetch_json(
@@ -54,6 +56,7 @@ def get_by_pv(pv_service: str, pv_id: str):
             "pvId": pv_id,
         },
     )
+
 
 def mark_pvs_unavailable(session, song_id: int, service=""):
     """Mark all original PVs as unavailable in a song entry.
@@ -110,3 +113,79 @@ def mark_pvs_unavailable(session, song_id: int, service=""):
 
     else:
         logger.info(f"No PV links to update for song {song_id}")
+
+
+def get_random_rated_song(user: tuple[str, int]) -> int:
+    url = f"{WEBSITE}/api/songs"
+    username, user_id = user
+    params = {
+        "userCollectionId": user_id,
+        "onlyWithPVs": True,
+        "maxResults": 1,
+    }
+    total = fetch_cached_totalcount(url, params=params)
+    if not total:
+        logger.warning(f"No rated songs with PVs found for user {username} ({user_id})")
+        return 0
+
+    random_start = random.randint(0, total - 1)
+    logger.debug(f"Selecting random_start {random_start}")
+    params["start"] = random_start
+    return fetch_json(url, params=params)["items"][0]["id"]
+
+
+def get_related_songs(song_id: int):
+    url = f"{WEBSITE}/api/songs/{song_id}/related"
+    return fetch_json(url)
+
+
+def get_random_related_song(song_id: int) -> int:
+    logger.debug(f"Fetching related songs for S/{song_id}")
+    related_songs = get_related_songs(song_id)
+    columns = ["artistMatches", "likeMatches", "tagMatches"]
+    selected_column = random.choice(columns)
+    logger.debug(f"Selecting random related song from {selected_column}")
+    if selected_column not in related_songs or not related_songs[selected_column]:  # type: ignore
+        logger.warning(f"No related songs found in {selected_column} for S/{song_id}.")
+        return 0
+    selected_entry = random.choice(related_songs[selected_column])  # type: ignore
+    return selected_entry["id"]
+
+
+def get_random_song_id() -> int:
+    url = f"{WEBSITE}/api/songs"
+    params = {
+        "getTotalCount": True,
+        "onlyWithPVs": True,
+        "maxResults": 1,
+    }
+    total = fetch_cached_totalcount(url, params=params)
+
+    random_start = random.randint(0, total - 1)
+    logger.debug(f"Selecting random_start {random_start}")
+    params["start"] = random_start
+    return fetch_json(url, params=params)["items"][0]["id"]
+
+
+def get_song_rater_ids(song_id: int) -> list[int]:
+    """Fetch the IDs of users who rated a song."""
+    url = f"{WEBSITE}/api/songs/{song_id}/ratings"
+    """
+    [
+    {
+        "date": "2015-07-09T14:07:23.91",
+        "user": {
+            "active": true,
+            "groupId": "Regular",
+            "memberSince": "2011-10-31T23:55:36",
+            "verifiedArtist": false,
+            "id": 45,
+            "name": "gaminat"
+        },
+        "rating": "Favorite"
+    }, ...
+    """
+    raters = fetch_json(url)
+    rater_ids = [rater["user"]["id"] for rater in raters if "user" in rater]
+    logger.debug(f"Found {len(rater_ids)} rater IDs for song {song_id}: {rater_ids}")
+    return rater_ids
