@@ -3,9 +3,12 @@ import datetime
 import sys
 
 import requests
-from vdbpy.api.notifications import fetch_notifications, get_notification_body
+from vdbpy.api.notifications import (
+    delete_notifications,
+    get_notification_body,
+    get_notifications_by_user_id,
+)
 from vdbpy.api.songlists import create_songlists
-from vdbpy.api.users import delete_notifications
 from vdbpy.config import WEBSITE
 from vdbpy.utils.files import get_credentials, get_lines, save_file
 from vdbpy.utils.logger import get_logger
@@ -166,13 +169,13 @@ if __name__ == "__main__":
     with requests.Session() as session:
         logger.info("Logging in...")
         login_attempt = session.post(f"{WEBSITE}/api/users/login", json=login)
-        if login_attempt.status_code == 400:  # noqa: PLR2004
+        if login_attempt.status_code == 400:
             logger.error("Login failed! Check your credentials.")
             sys.exit(1)
         else:
             logger.debug("Login successful!")
 
-        all_notifications = fetch_notifications(
+        all_notifications = get_notifications_by_user_id(
             USER_ID,
             session,
             include_read=INCLUDE_READ_NOTIFICATIONS,

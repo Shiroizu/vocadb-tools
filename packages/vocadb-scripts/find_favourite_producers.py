@@ -31,8 +31,12 @@ Table saved to 'output/favourite-producers-329.txt'
 import argparse
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_song_count
-from vdbpy.api.users import get_followed_artists, get_rated_songs, get_username_by_id
+from vdbpy.api.artists import get_song_count_by_artist_id
+from vdbpy.api.users import (
+    get_followed_artists_by_user_id,
+    get_rated_songs_by_user_id,
+    get_username_by_id,
+)
 from vdbpy.config import WEBSITE
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
@@ -69,7 +73,7 @@ if __name__ == "__main__":
 
     unique_artists = {}
     extra_params = {"fields": "Artists"}
-    rated_songs = get_rated_songs(int(user_id), extra_params)
+    rated_songs = get_rated_songs_by_user_id(int(user_id), extra_params)
 
     for song in rated_songs:
         placeholder = ""
@@ -109,7 +113,7 @@ if __name__ == "__main__":
     followed_artists = []
     page = 1
 
-    followed_artists = get_followed_artists(user_id)
+    followed_artists = get_followed_artists_by_user_id(user_id)
     followed_artists_ids = [int(artist["id"]) for artist in followed_artists]
 
     if not max_results:
@@ -119,7 +123,9 @@ if __name__ == "__main__":
     for ar in unique_artists_with_score[:max_results]:
         follow_msg = "(not following)"
         name, favs, likes, score, ar_id = ar
-        songcount_by_artist = get_song_count(int(ar_id), only_main_songs=True)
+        songcount_by_artist = get_song_count_by_artist_id(
+            int(ar_id), only_main_songs=True
+        )
         rated_songs_percentage = round(((favs + likes) / songcount_by_artist * 100), 1)
         if int(ar_id) in followed_artists_ids:
             follow_msg = ""

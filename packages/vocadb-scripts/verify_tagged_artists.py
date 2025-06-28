@@ -1,10 +1,9 @@
 import argparse
 
 from tabulate import tabulate
-
-from api.artists import get_artists_by_tag, get_song_count
-from api.tags import get_tag
-from utils.logger import get_logger
+from vdbpy.api.artists import get_artists_by_tag_id, get_song_count_by_artist_id
+from vdbpy.api.tags import get_tag_by_id
+from vdbpy.utils.logger import get_logger
 
 """ Example output:
 Tagged artists for 'new wave' (Genres) (T/3251)
@@ -58,9 +57,9 @@ if __name__ == "__main__":
     args = parse_args()
 
     tag_id = args.tag_id
-    tag_entry = get_tag(tag_id)
+    tag_entry = get_tag_by_id(tag_id)
 
-    artists_by_tag = get_artists_by_tag(tag_id)
+    artists_by_tag = get_artists_by_tag_id(tag_id)
     logger.info(
         f"\nFound {len(artists_by_tag)} artists tagged with '{tag_entry['name']}' (T/{tag_id})"
     )
@@ -72,10 +71,10 @@ if __name__ == "__main__":
         logger.info(f"Artist {counter}/{len(artists_by_tag)}")
         counter += 1
         params = {"tagId[]": tag_id}
-        tagged_song_count = get_song_count(
+        tagged_song_count = get_song_count_by_artist_id(
             artist["id"], only_main_songs=True, extra_params=params
         )
-        songs_total = get_song_count(artist["id"], only_main_songs=True)
+        songs_total = get_song_count_by_artist_id(artist["id"], only_main_songs=True)
         line = {
             "artist": artist["name"],
             "id": artist["id"],
@@ -90,7 +89,11 @@ if __name__ == "__main__":
         artists_to_print, key=lambda x: x["tagged"], reverse=True
     )
     for artist in sorted_by_entry_count:
-        percentage = str(100 * artist["tagged"] // artist["total"]) + " %" if artist["total"] else "∞"
+        percentage = (
+            str(100 * artist["tagged"] // artist["total"]) + " %"
+            if artist["total"]
+            else "∞"
+        )
         artist["percentage"] = percentage
 
     logger.info(

@@ -1,8 +1,8 @@
 import argparse
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_artist
-from vdbpy.api.songs import get_songs_by_artist
+from vdbpy.api.artists import get_artist_by_id
+from vdbpy.api.songs import get_songs_by_artist_id
 from vdbpy.utils.logger import get_logger
 
 """ Example output:
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         params["artistParticipationStatus"] = "Everything"
 
     artist_id = args.artist_id
-    songs_by_artist = get_songs_by_artist(artist_id, params)
+    songs_by_artist = get_songs_by_artist_id(artist_id, params)
     logger.info(f"\nFound {len(songs_by_artist)} songs")
     tag_counts = {}
     for song in songs_by_artist:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
                 tag_counts[tag_id]["entry_count"] += 1
                 tag_counts[tag_id]["votes"] += tag_votes
 
-    artist_entry = get_artist(artist_id, fields="Tags")
+    artist_entry = get_artist_by_id(artist_id, fields="Tags")
     artist_entry_tag_ids = [tag["tag"]["id"] for tag in artist_entry["tags"]]
     tags_to_print = tag_counts.values()
     sorted_by_entry_count = sorted(

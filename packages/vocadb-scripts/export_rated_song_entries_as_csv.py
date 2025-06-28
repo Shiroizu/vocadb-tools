@@ -1,6 +1,6 @@
 import argparse
 
-from vdbpy.api.users import get_rated_songs
+from vdbpy.api.users import get_rated_songs_by_user_id
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     ]
 
     params = {"fields": ", ".join(fields)}
-    rated_songs = get_rated_songs(user_id, params)
+    rated_songs = get_rated_songs_by_user_id(user_id, params)
 
     simple_columns = {
         "Song id": "id",

@@ -19,8 +19,8 @@ Table saved to 'output/favourite-vocalists-329.txt'
 import argparse
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_base_voicebank
-from vdbpy.api.users import get_rated_songs, get_username_by_id
+from vdbpy.api.artists import get_artist_by_id, get_base_voicebank_by_artist_id
+from vdbpy.api.users import get_rated_songs_by_user_id, get_username_by_id
 from vdbpy.config import WEBSITE
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     unique_vocalists = {}
     extra_params = {"fields": "Artists"}
-    rated_songs = get_rated_songs(int(user_id), extra_params)
+    rated_songs = get_rated_songs_by_user_id(int(user_id), extra_params)
 
     for song in rated_songs:
         placeholder = ""
@@ -102,7 +102,8 @@ if __name__ == "__main__":
         # name: [favs, likes, score, id]
         for counter, vb in enumerate(unique_vocalists_with_score):
             vb_name, favs, likes, score, vb_id = vb
-            base_vb = get_base_voicebank(vb_id)
+            base_vb_id = get_base_voicebank_by_artist_id(vb_id)
+            base_vb = get_artist_by_id(base_vb_id)
             base_name = base_vb["name"]
             if vb_name != base_name:
                 logger.info(

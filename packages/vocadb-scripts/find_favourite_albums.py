@@ -34,7 +34,11 @@ Table saved to 'output/favourite-albums-329.txt'
 import argparse
 
 from tabulate import tabulate
-from vdbpy.api.users import get_albums_by_user, get_rated_songs, get_username_by_id
+from vdbpy.api.users import (
+    get_albums_by_user_id,
+    get_rated_songs_by_user_id,
+    get_username_by_id,
+)
 from vdbpy.config import WEBSITE
 from vdbpy.utils.data import truncate_string_with_ellipsis
 from vdbpy.utils.files import save_file
@@ -71,8 +75,8 @@ if __name__ == "__main__":
     OUTPUT_FILE = f"output/favourite-albums-{user_id}.csv"
 
     extra_params = {"fields": "Albums"}
-    rated_songs = get_rated_songs(int(user_id), extra_params)
-    rated_albums = get_albums_by_user(int(user_id))
+    rated_songs = get_rated_songs_by_user_id(int(user_id), extra_params)
+    rated_albums = get_albums_by_user_id(int(user_id))
 
     owned_album_ids = set()
     for album in rated_albums:

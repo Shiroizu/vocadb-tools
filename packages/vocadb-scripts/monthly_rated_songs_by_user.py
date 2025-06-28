@@ -3,7 +3,7 @@
 import argparse
 import datetime
 
-from vdbpy.api.users import get_rated_songs, get_username_by_id
+from vdbpy.api.users import get_rated_songs_by_user_id, get_username_by_id
 from vdbpy.utils.graph import generate_date_graph
 from vdbpy.utils.logger import get_logger
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     song_ids_by_published_month = {}
     song_ids_by_rated_month = {}
 
-    rated_songs = get_rated_songs(user_id)
+    rated_songs = get_rated_songs_by_user_id(user_id)
 
     for song in rated_songs:
         song_id = song["song"]["id"]

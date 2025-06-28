@@ -1,9 +1,9 @@
 import argparse
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_artist, get_song_count
-from vdbpy.api.songs import get_songs_by_tag
-from vdbpy.api.tags import get_tag
+from vdbpy.api.artists import get_artist_by_id, get_song_count_by_artist_id
+from vdbpy.api.songs import get_songs_by_tag_id
+from vdbpy.api.tags import get_tag_by_id
 from vdbpy.utils.logger import get_logger
 
 """ Example output:
@@ -54,10 +54,10 @@ if __name__ == "__main__":
     skip_supporting_artists = not args.include_supporting_artists
 
     tag_id = args.tag_id
-    tag_entry = get_tag(tag_id)
+    tag_entry = get_tag_by_id(tag_id)
 
     params = {"fields": "artists"}
-    songs_by_tag = get_songs_by_tag(tag_id, params)
+    songs_by_tag = get_songs_by_tag_id(tag_id, params)
     logger.info(f"\nFound {len(songs_by_tag)} songs")
     song_counts = {}
 
@@ -92,15 +92,15 @@ if __name__ == "__main__":
 
             if artist_id not in song_counts:
                 if skip_supporting_artists:
-                    songcount_by_artist = get_song_count(
+                    songcount_by_artist = get_song_count_by_artist_id(
                         artist_id, only_main_songs=True
                     )
                 else:
-                    songcount_by_artist = get_song_count(
+                    songcount_by_artist = get_song_count_by_artist_id(
                         artist_id, only_main_songs=False
                     )
 
-                artist_entry = get_artist(artist_id, fields="Tags")
+                artist_entry = get_artist_by_id(artist_id, fields="Tags")
                 artist_entry_tag_ids = [
                     tag["tag"]["id"] for tag in artist_entry["tags"]
                 ]
