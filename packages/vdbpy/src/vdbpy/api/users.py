@@ -17,6 +17,7 @@ def get_username_by_id(user_id: int, include_usergroup=False) -> str:
         return f"{data['name']} ({data['groupId']})"
     return data["name"]
 
+
 @cache_with_expiration(days=7)
 def find_user_by_username_and_mode(username: str, mode: str) -> tuple[str, int]:
     # Available values : Auto, Partial, StartsWith, Exact, Words
@@ -44,6 +45,7 @@ def find_user_by_username_and_mode(username: str, mode: str) -> tuple[str, int]:
 
     print(f"User id not found with username '{username}' and mode '{mode}'")
     return ("", 0)
+
 
 @cache_with_expiration(days=7)
 def find_user_by_username(username: str) -> tuple[str, int]:
@@ -104,3 +106,28 @@ def delete_notifications(
         _ = input(f"Press enter to delete {len(sublist)} notifications")
         deletion_request = session.delete(deletion_url)
         deletion_request.raise_for_status()
+
+
+def get_created_entries(username: str) -> list:
+    # Also includes deleted entries
+    username, user_id = find_user_by_username(username)
+    max_results = 500  # TODO verify
+    params = {
+        "userId": user_id,
+        "fields": "Entry",
+        "getTotalCount": True,
+        "maxResults": max_results,
+        "editEvent": "Created",
+    }
+
+    logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
+    url = f"{WEBSITE}/api/activityEntries"
+    result = fetch_json(url, params=params)
+    if not result["items"]:
+        logger.warning("No entries found!")
+        return []
+    if result["totalCount"] > max_results:
+        # TODO implement using before param
+        logger.warning(f"User has more than {max_results} entries! Update the script!")
+        _ = input("Press enter to continue...")
+    return result["items"]
