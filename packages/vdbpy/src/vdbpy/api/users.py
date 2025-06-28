@@ -414,3 +414,20 @@ def get_user_account_age(user_id: int) -> int:
     creation_date = parse_date(get_user_profile(username)["createDate"])
     today = datetime.now()
     return (today - creation_date).days
+
+
+def send_message(
+    session, receiver_username: str, subject: str, message: str, sender_id: int
+):
+    url = f"{WEBSITE}/api/users/{sender_id}/messages"
+
+    data = {
+        "body": message,
+        "highPriority": False,
+        "receiver": {"name": receiver_username},
+        "sender": {"id": sender_id},
+        "subject": subject,
+    }
+
+    message_request = session.post(url, json=data)
+    message_request.raise_for_status()
