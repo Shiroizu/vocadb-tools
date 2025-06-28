@@ -5,6 +5,8 @@ from vdbpy.utils.network import fetch_totalcount
 
 @cache_with_expiration(days=1000)
 def get_edit_count(before_date: str) -> int:
+    # TODO smarter caching
     api_url = f"{WEBSITE}/api/activityEntries"
     params = {"before": before_date}
     return fetch_totalcount(api_url, params=params)
+

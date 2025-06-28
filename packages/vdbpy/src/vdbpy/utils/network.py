@@ -2,6 +2,7 @@ import time
 
 import requests
 
+from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
@@ -16,6 +17,10 @@ def fetch_json(url: str, session=requests, params=None):
     time.sleep(0.5)
     return r.json()
 
+@cache_without_expiration()
+def fetch_cached_json(url: str, session=requests, params=None):
+    """Helper URL fetch function."""
+    return fetch_json(url, session=session, params=params)
 
 def fetch_json_items(
     url, params: dict | None = None, session=requests, max_results=10**9
@@ -48,3 +53,31 @@ def fetch_totalcount(api_url, params: dict | None = None) -> int:
     params["getTotalCount"] = True
     totalcount = fetch_json(api_url, params=params)["totalCount"]
     return int(totalcount)
+
+
+@cache_without_expiration()
+def fetch_all_items_between_dates(
+    api_url, a: str, b: str, date_indicator="createDate", params: dict | None = None
+) -> list:
+    """Get all items between date strings by decreasing before parameter incrementally."""
+    params = params if params is not None else {}
+    params["before"] = b
+    params["since"] = a
+
+    all_items = []
+
+    while True:
+        items = fetch_cached_json(api_url, params=params)["items"]
+        logger.info(
+            f"Fetching items from '{params['since']}' to '{params['before']}'..."
+        )
+
+        if not items:
+            logger.info("No items found, stopping.")
+            break
+
+        all_items.extend(items)
+        logger.debug(f"Found {len(items)} items.")
+        params["before"] = items[-1][date_indicator]
+
+    return all_items

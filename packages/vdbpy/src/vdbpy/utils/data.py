@@ -7,3 +7,6 @@ def truncate_string_with_ellipsis(s, max_length, ending="..."):
         return s[:max_length] + ending
 
     return s
+
+def add_s(word):
+    return word if word.lower().endswith("s") else word + "s"

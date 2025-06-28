@@ -17,6 +17,44 @@ def get_username_by_id(user_id: int, include_usergroup=False) -> str:
         return f"{data['name']} ({data['groupId']})"
     return data["name"]
 
+@cache_with_expiration(days=7)
+def find_user_by_username_and_mode(username: str, mode: str) -> tuple[str, int]:
+    # Available values : Auto, Partial, StartsWith, Exact, Words
+
+    valid_search_modes = ["auto", "partial", "startswith", "exact", "words"]
+    if mode.lower() not in valid_search_modes:
+        logger.warning(f"Invalid search mode '{mode.lower()}'.")
+        logger.warning(
+            f"Search mode must be within valid search modes: {valid_search_modes}."
+        )
+        return ("", 0)
+
+    user_api_url = f"{WEBSITE}/api/users/"
+    params = {
+        "query": username,
+        "maxResults": 1,
+        "nameMatchMode": mode,
+        "includeDisabled": True,
+    }
+    data = fetch_json(user_api_url, params=params)
+    if data and data["items"]:
+        username = data["items"][0]["name"]
+        user_id = data["items"][0]["id"]
+        return (username, user_id)
+
+    print(f"User id not found with username '{username}' and mode '{mode}'")
+    return ("", 0)
+
+@cache_with_expiration(days=7)
+def find_user_by_username(username: str) -> tuple[str, int]:
+    # Available values : Auto, Partial, StartsWith, Exact, Words
+
+    exact_match = find_user_by_username_and_mode(username, "Exact")
+    if exact_match[1]:
+        return exact_match
+
+    return find_user_by_username_and_mode(username, "Partial")
+
 
 @cache_with_expiration(days=7)
 def get_rated_songs(user_id: int, extra_params=None):
