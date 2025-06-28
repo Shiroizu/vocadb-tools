@@ -85,16 +85,15 @@ def save_file(filepath: str, content: str | list, append=False) -> None:
     """Safely writes content to a file, creating necessary directories."""
     path = Path(filepath)
     path.parent.mkdir(parents=True, exist_ok=True)
-    mode = "w"
-    if append:
-        mode = "a"
+    mode = "a" if append else "w"
+
+    if isinstance(content, list):
+        content_to_write = "\n".join(list(map(str, content)))
+    else:
+        content_to_write = str(content)
 
     with path.open(mode, encoding="utf-8") as f:
-        if isinstance(content, list):
-            content = list(map(str, content))
-            f.write("\n".join(content))
-        else:
-            f.write(str(content))
+        f.write(content_to_write)
         if append:
             f.write("\n")
 
