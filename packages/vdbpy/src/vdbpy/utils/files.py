@@ -82,6 +82,17 @@ def get_credentials(credentials_path: str, account_name: str = "") -> tuple[str,
     return (selected_account, credentials[selected_account])
 
 
+def sanitize_filename(filename: str) -> str:
+    chars_to_replace = '\\/:*?<>|"'
+    translation_table = str.maketrans({ch: "_" for ch in chars_to_replace})
+    sanitized = filename.translate(translation_table)
+    if filename != sanitized:
+        logger.info("Sanitized filename:")
+        logger.info(f"Before: '{filename}'")
+        logger.info(f"After: '{sanitized}'")
+    return sanitized
+
+
 def save_file(filepath: str, content: str | list, append=False) -> None:
     """Safely writes content to a file, creating necessary directories."""
     path = Path(filepath)
@@ -100,10 +111,10 @@ def save_file(filepath: str, content: str | list, append=False) -> None:
 
     logger.info(f"File saved: '{filepath}'")
 
+
 def clear_file(filepath: str):
     """Clear file if it exists."""
     save_file(filepath, "", append=False)
-
 
 
 def write_dict(filename: str, data: dict, separator=":"):
