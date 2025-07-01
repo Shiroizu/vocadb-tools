@@ -1,3 +1,7 @@
+from typing import Literal
+
+import requests
+
 from vdbpy.config import WEBSITE
 from vdbpy.types import Entry_type
 from vdbpy.utils.cache import cache_without_expiration
@@ -54,11 +58,22 @@ def get_comments_by_user_id(user_id) -> list:
     return all_comments
 
 
-def remove_comment_by_id(session, entry_type: Entry_type, comment_id: int):
+def remove_comment_by_id(
+    session, entry_type: Entry_type | Literal["User"], comment_id: int
+):
     url = f"{WEBSITE}/api/{add_s(entry_type)}/comments/{comment_id}"
+    if entry_type == "User":
+        url = f"{WEBSITE}/api/users/profileComments/{comment_id}"
+
     logger.info(f"DELETION URL {url}")
-    deletion_attempt = session.delete(url)
-    deletion_attempt.raise_for_status()
+    try:
+        deletion_attempt = session.delete(url)
+        deletion_attempt.raise_for_status()
+    except requests.exceptions.HTTPError:
+        logger.warning(f"Comment {comment_id} could not be deleted.")
+        logger.warning(f"{deletion_attempt.status_code}: {deletion_attempt.text}")
+        return
+
     logger.info("Comment deleted.")
 
 
