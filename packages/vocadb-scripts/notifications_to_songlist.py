@@ -9,6 +9,7 @@ from vdbpy.api.notifications import (
     get_notifications_by_user_id,
 )
 from vdbpy.api.songlists import create_songlists
+from vdbpy.api.users import find_user_by_username
 from vdbpy.config import WEBSITE
 from vdbpy.utils.files import get_credentials, get_lines, save_file
 from vdbpy.utils.logger import get_logger
@@ -48,13 +49,15 @@ def filter_notifications(
 
         counter += 1
         logger.info(f"{counter}/{len(all_notifications)}")
+        logger.debug(item)
+        logger.debug(notif_body)
         if "song" in item["subject"]:
             song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
             logger.info(f"\t{item['subject']} {WEBSITE}/S/{song_id}")
 
             # Skip duplicate notifs
             if song_id in new_song_ids:
-                logger.debug("Duplicate notification detected!")
+                logger.debug("Skipping dupe notification")
                 continue
 
             if skip_covers and is_cover_with_original_as_entry(song_id):
@@ -107,7 +110,6 @@ def filter_out_seen_song_ids(seen_file: str, new_song_ids: list[str]) -> list[st
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("user_id", type=int, help="VocaDB user id")
     parser.add_argument(
         "--include_read_notifications",
         action="store_true",
@@ -151,7 +153,6 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
 
-    USER_ID = args.user_id
     INCLUDE_READ_NOTIFICATIONS = args.include_read_notifications
     MAX_SONGLIST_LENGTH = args.max_songlist_length
     MAX_NOTIFS = args.max_notifs
@@ -165,6 +166,8 @@ if __name__ == "__main__":
 
     un, pw = get_credentials(CREDENTIALS_FILE)
     login = {"userName": un, "password": pw}
+
+    _, USER_ID = find_user_by_username(un)
 
     with requests.Session() as session:
         logger.info("Logging in...")
