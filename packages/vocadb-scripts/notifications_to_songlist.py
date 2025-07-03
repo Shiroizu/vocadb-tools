@@ -24,9 +24,6 @@ New song (cover) by DECO*27 https://vocadb.net/S/772936
 A new artist, '[tulip](https://vocadb.net/Ar/149324)', tagged with drum and bass was just added.
 """
 
-# TODO counter
-
-
 def is_cover_with_original_as_entry(song_id: str) -> bool:
     url = f"{WEBSITE}/api/songs/{song_id}"
     entry = fetch_json(url)
@@ -43,11 +40,14 @@ def filter_notifications(
     notification_messages: list[str] = []
     new_song_ids: list[str] = []
     notification_messages = []
+    counter = 0
 
     for item in all_notifications:
         notif_body = get_notification_by_id(session, item["id"])["body"]
         notification_messages.append(notif_body)
 
+        counter += 1
+        logger.info(f"{counter}/{len(all_notifications)}")
         if "song" in item["subject"]:
             song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
             logger.info(f"\t{item['subject']} {WEBSITE}/S/{song_id}")
