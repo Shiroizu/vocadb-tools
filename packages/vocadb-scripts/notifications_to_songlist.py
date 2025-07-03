@@ -17,14 +17,6 @@ from vdbpy.utils.network import fetch_json
 
 logger = get_logger("notifications_to_songlist")
 
-# TODO FIX
-
-"""
-New album tagged with trance https://vocadb.net/Al/46204
-New song (cover) by DECO*27 https://vocadb.net/S/772936
-A new artist, '[tulip](https://vocadb.net/Ar/149324)', tagged with drum and bass was just added.
-"""
-
 def is_cover_with_original_as_entry(song_id: str) -> bool:
     url = f"{WEBSITE}/api/songs/{song_id}"
     entry = fetch_json(url)
@@ -34,7 +26,7 @@ def is_cover_with_original_as_entry(song_id: str) -> bool:
 
 
 def filter_notifications(
-    all_notifications, session: requests.Session, skip_covers=False
+    all_notifications, session: requests.Session, skip_covers=False, skip_music_pvs=False
 ) -> list[str]:
     """Returns a list of new song IDs from notifications."""
     notification_ids: list[str] = []
@@ -44,45 +36,43 @@ def filter_notifications(
     counter = 0
 
     for item in all_notifications:
-        notif_body = get_notification_by_id(session, item["id"])["body"]
+        notif_body: str = get_notification_by_id(session, item["id"])["body"]
         notification_messages.append(notif_body)
 
         counter += 1
-        logger.info(f"{counter}/{len(all_notifications)}")
         logger.debug(item)
-        logger.debug(notif_body)
-        if "song" in item["subject"]:
-            song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
-            logger.info(f"\t{item['subject']} {WEBSITE}/S/{song_id}")
+        notif_body = notif_body.split("You're receiving this notification")[0]
+        logger.info(f"{counter}/{len(all_notifications)} {notif_body}")
 
-            # Skip duplicate notifs
-            if song_id in new_song_ids:
-                logger.debug("Skipping dupe notification")
-                continue
+        # A new song tagged with electro drug https://vocadb.net/S/807206
+        # A new song (original song) by AVTechNO! https://vocadb.net/S/807679
+        # A new song (music pv) by MikitoP https://vocadb.net/S/807223
+        # A new song (cover) by Reml https://vocadb.net/S/807220
+        # A new song (original song) by Avaraya https://vocadb.net/S/807206
+        # ...
 
-            if skip_covers and is_cover_with_original_as_entry(song_id):
-                logger.info("\tSkipping cover song")
-                continue
+        if not notif_body.startswith("New song "):
+            logger.debug("Skipping non-song notification")
+            continue
 
-            new_song_ids.append(song_id)
+        song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
+        logger.info(f"\t{item['subject']} {WEBSITE}/S/{song_id}")
 
-        elif "album" in item["subject"]:
-            album_id = notif_body.split("/Al/")[-1].split(")',")[0]
-            logger.info(f"\t{item['subject']} {WEBSITE}/Al/{album_id}")
+        # Skip duplicate notifs
+        if song_id in new_song_ids:
+            logger.debug("Skipping dupe notification")
+            continue
 
-        elif "A new artist" in item["subject"]:
-            # A new artist, '[sakkyoku645](https://vocadb.net/Ar/48199)', tagged with funk was just added.
-            start, end = item["subject"].split("', tagged with ")
-            artist_name, artist_url = start.split("](")
-            artist_name = artist_name.split("[")[1]
-            artist_url = artist_url.split(")")[0]
-            tag_name = end.split(" was just")[0]
-            logger.info(
-                f"\tArtist tagged with '{tag_name}': {artist_name} {artist_url}"
-            )
+        if skip_covers and is_cover_with_original_as_entry(song_id):
+            logger.info("\tSkipping cover song")
+            continue
 
-        else:
-            logger.info(f"\t{notif_body}")
+        if skip_music_pvs and notif_body.startswith("New song (music pv)"):
+            logger.info("\tSkipping music PV")
+            continue
+
+        new_song_ids.append(song_id)
+        continue
 
     if notification_ids:
         delete_notifications(session, USER_ID, notification_ids)
@@ -132,7 +122,6 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip covers that have original version as entry",
     )
-    # TODO --skip_music_pvs
     # TODO --skip_out_of_scope songs
     # TODO --skip_instrumentals
     # TODO --skip_already_rated
@@ -142,11 +131,17 @@ def parse_args() -> argparse.Namespace:
         help="Include already seen songs in the songlist",
     )
     parser.add_argument(
+        "--skip_music_pvs",
+        action="store_true",
+        help="Skip music pvs",
+    )
+    parser.add_argument(
         "--songlist_title",
         default="",
         type=str,
         help="Title of the songlist to create. Default is 'Songs to check (date)'",
     )
+
     return parser.parse_args()
 
 
@@ -157,6 +152,7 @@ if __name__ == "__main__":
     MAX_SONGLIST_LENGTH = args.max_songlist_length
     MAX_NOTIFS = args.max_notifs
     SKIP_COVERS = args.skip_covers
+    SKIP_MUSIC_PVS = args.skip_music_pvs
     INCLUDE_SEEN = args.include_seen_songs
     SONGLIST_TITLE = args.songlist_title
 
@@ -168,6 +164,19 @@ if __name__ == "__main__":
     login = {"userName": un, "password": pw}
 
     _, USER_ID = find_user_by_username(un)
+
+    logger.info(f"Fetching notifications for user {un} ({USER_ID}) with settings:\n")
+    logger.info(
+        f"\t{INCLUDE_READ_NOTIFICATIONS=} (change with --include_read_notifications)"
+    )
+    logger.info(f"\t{MAX_SONGLIST_LENGTH=} (change with --max_songlist_length N)")
+    logger.info(f"\t{MAX_NOTIFS=} (change with --max_notifs N)")
+    logger.info(f"\t{SKIP_COVERS=} (change with --skip_covers)")
+    logger.info(f"\t{SKIP_MUSIC_PVS=} (change with --skip_music_pvs)")
+    logger.info(f"\t{INCLUDE_SEEN=} (change with --include_seen_songs)")
+    logger.info(f"\t{SONGLIST_TITLE=} (change with --songlist_title S)")
+
+    _ = input("\nPress enter to continue...")
 
     with requests.Session() as session:
         logger.info("Logging in...")
@@ -185,7 +194,7 @@ if __name__ == "__main__":
             max_notifs=MAX_NOTIFS,
         )
 
-        new_songs = filter_notifications(all_notifications, session, SKIP_COVERS)
+        new_songs = filter_notifications(all_notifications, session, SKIP_COVERS, SKIP_MUSIC_PVS)
         if not INCLUDE_SEEN:
             new_songs = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_songs)
         if not new_songs:
