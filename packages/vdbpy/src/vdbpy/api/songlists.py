@@ -46,27 +46,27 @@ def create_songlists(session, title, song_ids: list[str], max_length=200):
         time.sleep(3)
 
 
-def export_songlist(songlist_id: int) -> str:
-    text = fetch_text(f"{WEBSITE}/SongList/Export/{songlist_id}")
-    _, _, table = text.partition("\n")  # remove header
+def export_songlist(songlist_id: int) -> list[str]:
+    text = fetch_text(f"{WEBSITE}/SongList/Export/{songlist_id}").splitlines()
     # notes;publishdate;title;url;pv.original.niconicodouga;pv.original.!niconicodouga;pv.reprint
+    table_without_header = text[1:]
     new_header = "songlist_notes;published;title;url;nico_pv;original_pv;reprint_pv"
-    return new_header + "\n" + table
+    return [new_header, table_without_header]
 
 
-def parse_csv_songlist(csv: str, delimiter=";") -> list[list[str]]:
-    return [line.split(delimiter) for line in csv.splitlines()]
-
-
-def filter_songlist_ids_and_notes(songlist: list[list[str]]) -> dict[int, str]:
-    notes_by_song_id = {}
-    for songlist_entry in songlist[1:]:
-        notes, _, _, url, _, _, _ = songlist_entry
-        song_id = int(url.split("/S/")[-1])
-        if song_id in notes_by_song_id:
-            logger.warning(
-                f"Song ID {song_id} already has a note: {notes_by_song_id[song_id]}"
-            )
-        notes_by_song_id[song_id] = notes
-
-    return notes_by_song_id
+def parse_csv_songlist(csv: list[str], delimiter=";") -> list[list[str]]:
+    lines = [line.split(delimiter) for line in csv if line.strip()]
+    logger.debug(f"Parsing csv of length {len(csv)}. First lines: {csv[:2]}")
+    for line in lines[1:]:
+        extra_length = len(line) - 7
+        if extra_length:
+            # Title contains delimiter chars
+            # ['127 537 views', '1/26/2023', '"PLS (-__-', ')"', 'https://vocadb.net/S/471057', '', 'https://youtu.be/CMPfzVbEX4E', '']
+            logger.warning("Exported CSV contains title with delimiter chars:")
+            logger.warning(line)
+            # Merge items starting from index 2:
+            fixed_line = line[:2] + line[2 : 2 + extra_length] + line[-4:]
+            logger.info(f"Fixed line (len={len(fixed_line)}) is:")
+            assert len(fixed_line) == 7  # noqa: S101
+            lines[lines.index(line)] = fixed_line
+    return lines
