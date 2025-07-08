@@ -27,7 +27,7 @@ def get_lines(filename: str) -> list[str]:
         return f.read().splitlines()
 
 
-def get_credentials(credentials_path: str, account_name: str = "") -> tuple[str, str]:
+def get_credentials(credentials_path: str, account_name: str = "", get_all=False) -> dict | tuple[str, str]:
     """Load credentials from the credentials file.
 
     -------- file start
@@ -53,6 +53,9 @@ def get_credentials(credentials_path: str, account_name: str = "") -> tuple[str,
         account = lines[i]
         password = lines[i + 1]
         credentials[account] = password
+
+    if get_all:
+        return credentials
 
     if not credentials:
         logger.warning("Credentials not found")
