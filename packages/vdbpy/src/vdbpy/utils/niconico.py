@@ -44,7 +44,7 @@ def get_nico_videos_by_tag(tag: str, page=0, limit=0, min_views=0) -> list:
     return all_videos
 
 
-def get_viewcount(video_id: str) -> int:
+def get_viewcount(video_id: str, api_key="") -> int:
     nicourl = "http://ext.nicovideo.jp/api/getthumbinfo/" + video_id
     data = fetch_text(nicourl)
 

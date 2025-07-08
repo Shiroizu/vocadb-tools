@@ -201,7 +201,7 @@ def get_song_rater_ids_by_song_id(song_id: int) -> list[int]:
 
 
 def get_viewcounts_by_song_id_and_service(
-    song_id: int, service: Service
+    song_id: int, service: Service, api_keys: dict[Service, str]
 ) -> list[tuple[str, str, int]]:
     # Returns a tuple of (pv_url, pv_type, viewcount)
     pvs = get_song_by_id(song_id)["pvs"]
@@ -211,7 +211,11 @@ def get_viewcounts_by_song_id_and_service(
         "YouTube": youtube.get_viewcount,
     }
     return [
-        (pv["url"], pv["pvType"], viewcount_functions[pv](pv["pvId"], pv["service"]))
+        (
+            pv["url"],
+            pv["pvType"],
+            viewcount_functions[pv["service"]](pv["pvId"], api_keys.get(pv["service"])),
+        )
         for pv in pvs
         if pv["service"] == service and not pv["disabled"]
     ]
