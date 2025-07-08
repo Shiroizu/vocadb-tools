@@ -204,11 +204,11 @@ def get_viewcounts_by_song_id_and_service(
     song_id: int, service: Service, api_keys: dict[Service, str]
 ) -> list[tuple[str, str, int]]:
     # Returns a tuple of (pv_url, pv_type, viewcount)
-    pvs = get_song_by_id(song_id)["pvs"]
+    pvs = get_song_by_id(song_id, fields="pvs")["pvs"]
     # [{"author":"ミナツキトーカ","disabled":false,"id":197272,"length":274,"name":"- moonlight waltz -　月夜の舞踏譜 【波音リツ・重音テト オリジナル】","publishDate":"2016-10-12T00:00:00","pvId":"sm29822681","service":"NicoNicoDouga","pvType":"Original","thumbUrl":"https://nicovideo.cdn.nimg.jp/thumbnails/29822681/29822681","url":"http://www.nicovideo.jp/watch/sm29822681"}, ...]
     viewcount_functions: dict[Service, Callable[..., int]] = {
         "NicoNicoDouga": niconico.get_viewcount,
-        "YouTube": youtube.get_viewcount,
+        "Youtube": youtube.get_viewcount,
     }
     return [
         (
