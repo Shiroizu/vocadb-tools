@@ -51,7 +51,7 @@ def export_songlist(songlist_id: int) -> list[str]:
     # notes;publishdate;title;url;pv.original.niconicodouga;pv.original.!niconicodouga;pv.reprint
     table_without_header = text[1:]
     new_header = "songlist_notes;published;title;url;nico_pv;original_pv;reprint_pv"
-    return [new_header, table_without_header]
+    return [new_header, *table_without_header]
 
 
 def parse_csv_songlist(csv: list[str], delimiter=";") -> list[list[str]]:
