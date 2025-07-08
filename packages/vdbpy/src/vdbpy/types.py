@@ -28,3 +28,5 @@ class UserEdit:
 
 
 # TODO type in form of 2024-01-01
+
+Service = Literal["NicoNicoDouga", "YouTube", "SoundCloud", "BiliBili", "Piapro"]

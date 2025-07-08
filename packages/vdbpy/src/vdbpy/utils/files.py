@@ -109,7 +109,7 @@ def save_file(filepath: str, content: str | list, append=False) -> None:
         if append:
             f.write("\n")
 
-    logger.info(f"File saved: '{filepath}'")
+    logger.debug(f"File saved: '{filepath}'")
 
 
 def clear_file(filepath: str):

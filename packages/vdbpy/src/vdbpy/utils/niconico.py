@@ -1,6 +1,9 @@
 from urllib import parse
 
-from vdbpy.utils.network import fetch_json
+from vdbpy.utils.logger import get_logger
+from vdbpy.utils.network import fetch_json, fetch_text
+
+logger = get_logger()
 
 
 def get_nico_videos_by_tag(tag: str, page=0, limit=0, min_views=0) -> list:
@@ -39,3 +42,14 @@ def get_nico_videos_by_tag(tag: str, page=0, limit=0, min_views=0) -> list:
         page += 1
 
     return all_videos
+
+
+def get_viewcount(video_id: str) -> int:
+    nicourl = "http://ext.nicovideo.jp/api/getthumbinfo/" + video_id
+    data = fetch_text(nicourl)
+
+    try:
+        return int(data.split("<view_counter>")[1].split("</view_counter>")[0])
+    except (IndexError, ValueError):
+        logger.warning(f"Nico PV {video_id} deleted!")
+        return 0

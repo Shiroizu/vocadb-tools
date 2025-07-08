@@ -1,8 +1,11 @@
 import json
 import random
 import time
+from typing import Callable
 
 from vdbpy.config import WEBSITE
+from vdbpy.types import Service
+from vdbpy.utils import niconico, youtube
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount, fetch_json, fetch_json_items
 
@@ -14,6 +17,12 @@ SONG_API_URL = f"{WEBSITE}/api/songs"
 
 def get_songs(params):
     return fetch_json_items(SONG_API_URL, params=params)
+
+
+def get_song_by_id(song_id, fields=""):
+    params = {"fields": fields} if fields else {}
+    url = f"{SONG_API_URL}/{song_id}"
+    return fetch_json(url, params=params)
 
 
 def get_songs_by_artist_id(artist_id: int, params: dict):
@@ -189,3 +198,20 @@ def get_song_rater_ids_by_song_id(song_id: int) -> list[int]:
     rater_ids = [rater["user"]["id"] for rater in raters if "user" in rater]
     logger.debug(f"Found {len(rater_ids)} rater IDs for song {song_id}: {rater_ids}")
     return rater_ids
+
+
+def get_viewcounts_by_song_id_and_service(
+    song_id: int, service: Service
+) -> list[tuple[str, str, int]]:
+    # Returns a tuple of (pv_url, pv_type, viewcount)
+    pvs = get_song_by_id(song_id)["pvs"]
+    # [{"author":"ミナツキトーカ","disabled":false,"id":197272,"length":274,"name":"- moonlight waltz -　月夜の舞踏譜 【波音リツ・重音テト オリジナル】","publishDate":"2016-10-12T00:00:00","pvId":"sm29822681","service":"NicoNicoDouga","pvType":"Original","thumbUrl":"https://nicovideo.cdn.nimg.jp/thumbnails/29822681/29822681","url":"http://www.nicovideo.jp/watch/sm29822681"}, ...]
+    viewcount_functions: dict[Service, Callable[..., int]] = {
+        "NicoNicoDouga": niconico.get_viewcount,
+        "YouTube": youtube.get_viewcount,
+    }
+    return [
+        (pv["url"], pv["pvType"], viewcount_functions[pv](pv["pvId"], pv["service"]))
+        for pv in pvs
+        if pv["service"] == service and not pv["disabled"]
+    ]

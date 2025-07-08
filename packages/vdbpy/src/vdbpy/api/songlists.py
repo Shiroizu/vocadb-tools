@@ -62,11 +62,11 @@ def parse_csv_songlist(csv: list[str], delimiter=";") -> list[list[str]]:
         if extra_length:
             # Title contains delimiter chars
             # ['127 537 views', '1/26/2023', '"PLS (-__-', ')"', 'https://vocadb.net/S/471057', '', 'https://youtu.be/CMPfzVbEX4E', '']
-            logger.warning("Exported CSV contains title with delimiter chars:")
-            logger.warning(line)
+            logger.debug("Exported CSV contains title with delimiter chars:")
+            logger.debug(line)
             # Merge items starting from index 2:
             fixed_line = line[:2] + line[2 : 2 + extra_length] + line[-4:]
-            logger.info(f"Fixed line (len={len(fixed_line)}) is:")
+            logger.debug(f"Fixed line (len={len(fixed_line)}) is:")
             assert len(fixed_line) == 7  # noqa: S101
             lines[lines.index(line)] = fixed_line
     return lines
