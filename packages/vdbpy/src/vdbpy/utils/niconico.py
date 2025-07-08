@@ -1,5 +1,6 @@
 from urllib import parse
 
+from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json, fetch_text
 
@@ -44,6 +45,7 @@ def get_nico_videos_by_tag(tag: str, page=0, limit=0, min_views=0) -> list:
     return all_videos
 
 
+@cache_with_expiration(days=4)
 def get_viewcount(video_id: str, api_key="") -> int:
     nicourl = "http://ext.nicovideo.jp/api/getthumbinfo/" + video_id
     data = fetch_text(nicourl)
