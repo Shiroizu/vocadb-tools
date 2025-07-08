@@ -1,5 +1,8 @@
 from vdbpy.utils.cache import cache_with_expiration
+from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json
+
+logger = get_logger()
 
 
 @cache_with_expiration(days=4)
@@ -9,4 +12,8 @@ def get_viewcount(video_id: str, api_key: str) -> int:
     data = fetch_json(url)
     if not data["items"]:
         return 0
+    if "viewCount" not in data["items"][0]["statistics"]:
+        logger.warning(
+            f"Couldn't get viewcount for YT video '{video_id}'. Members-only?"
+        )
     return int(data["items"][0]["statistics"]["viewCount"])
