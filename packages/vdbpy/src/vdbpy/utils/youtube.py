@@ -16,4 +16,5 @@ def get_viewcount(video_id: str, api_key: str) -> int:
         logger.warning(
             f"Couldn't get viewcount for YT video '{video_id}'. Members-only?"
         )
+        return 0
     return int(data["items"][0]["statistics"]["viewCount"])
