@@ -6,6 +6,7 @@ from typing import Callable
 from vdbpy.config import WEBSITE
 from vdbpy.types import Service
 from vdbpy.utils import niconico, youtube
+from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount, fetch_json, fetch_json_items
 
@@ -220,3 +221,16 @@ def get_viewcounts_by_song_id_and_service(
         for pv in pvs
         if pv["service"] == service and not pv["disabled"]
     ]
+
+
+@cache_without_expiration()
+def get_entry_creator_id_by_song_id(song_id: int) -> int:
+    url = f"{WEBSITE}/api/songs/versions/{song_id}"
+    return fetch_json(url)["archivedVersions"][-1]["author"]["id"]
+
+
+def get_songlist_author_ids_by_song_id(song_id: int) -> list[int]:
+    # [{"author":{...},"canEdit":true,"deleted":false,"description":"...","status":"Finished","thumb":{"entryType":"SongList","id":186,"mime":"image/png","version":294},"version":294,"featuredCategory":"Pools","id":186,"name":"(NND) More than 100K views"}, ...]
+    url = f"{WEBSITE}/api/songs/{song_id}/songlists"
+    songlists = fetch_json(url)
+    return [songlist["author"]["id"] for songlist in songlists]
