@@ -28,18 +28,27 @@ def get_random_entry():
     return fetch_json(url, params=params)["items"][0]
 
 
-def delete_entry(session, selected_entry_type: Entry_type, entry_id: int, force=False):
+def delete_entry(
+    session,
+    selected_entry_type: Entry_type,
+    entry_id: int,
+    force=False,
+    deletion_msg="",
+):
     # DUPE deletions are currently possible (harmless)
     # https://beta.vocadb.net/Artist/Versions/151812
     # TODO fix ^
 
+    assert selected_entry_type in get_args(Entry_type), "Invalid entry type"  # noqa: S101
+    logger.warning(f"Deleting {selected_entry_type} entry {entry_id}...")
+
     if not force:
-        # comply with content removal guidelines
+        # TODO comply with content removal guidelines
         logger.warning("Careful entry deletion has not been implemented.")
         return
-    logger.info(f"Deleting {selected_entry_type} entry {entry_id}")
     url = f"{WEBSITE}/api/{add_s(selected_entry_type)}/{entry_id}"
-    logger.debug(url)
-    # url += f"?notes={deletion_message}"
+    if deletion_msg:
+        url += f"?notes={deletion_msg}"
+
     deletion_attempt = session.delete(url)
     deletion_attempt.raise_for_status()
