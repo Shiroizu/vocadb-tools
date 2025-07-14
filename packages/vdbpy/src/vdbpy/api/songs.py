@@ -176,7 +176,7 @@ def get_random_song_id() -> int:
     return fetch_json(url, params=params)["items"][0]["id"]
 
 
-def get_song_rater_ids_by_song_id(song_id: int) -> list[int]:
+def get_song_rater_ids_by_song_id(song_id: int, session=None) -> list[int]:
     """Fetch the IDs of users who rated a song."""
     url = f"{WEBSITE}/api/songs/{song_id}/ratings"
     """
@@ -194,7 +194,8 @@ def get_song_rater_ids_by_song_id(song_id: int) -> list[int]:
         "rating": "Favorite"
     }, ...
     """
-    raters = fetch_json(url)
+
+    raters = fetch_json(url, session=session) if session else fetch_json(url)
     rater_ids = [rater["user"]["id"] for rater in raters if "user" in rater]
     logger.debug(f"Found {len(rater_ids)} rater IDs for song {song_id}: {rater_ids}")
     return rater_ids

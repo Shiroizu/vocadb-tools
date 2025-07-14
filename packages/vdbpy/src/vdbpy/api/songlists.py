@@ -26,7 +26,11 @@ def create_or_update_songlist(
     description="",
     category: Songlist_category = "Pools",
 ):
-    """Create or update a songlist."""
+    """Create or update a songlist.
+
+    Specfify songlist_id for updating a list.
+    Omit songlist_id to create a new list.
+    """
     data = {
         "songLinks": [],
         "author": {"id": author_id},
