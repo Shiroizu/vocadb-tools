@@ -225,7 +225,7 @@ def get_viewcounts_by_song_id_and_service(
 
 @cache_without_expiration()
 def get_entry_creator_id_by_song_id(song_id: int) -> int:
-    url = f"{WEBSITE}/api/songs/versions/{song_id}"
+    url = f"{WEBSITE}/api/songs/{song_id}/versions"
     return fetch_json(url)["archivedVersions"][-1]["author"]["id"]
 
 
