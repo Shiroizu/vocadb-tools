@@ -1,8 +1,7 @@
 import random
 from typing import get_args
 
-from config import WEBSITE
-
+from vdbpy.config import WEBSITE
 from vdbpy.types import Entry_type
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.data import add_s
@@ -44,5 +43,3 @@ def delete_entry(session, selected_entry_type: Entry_type, entry_id: int, force=
     # url += f"?notes={deletion_message}"
     deletion_attempt = session.delete(url)
     deletion_attempt.raise_for_status()
-
-
