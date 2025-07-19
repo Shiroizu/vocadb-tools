@@ -118,3 +118,12 @@ def parse_csv_songlist(csv: list[str], delimiter=";") -> list[list[str]]:
             assert len(fixed_line) == 7  # noqa: S101
             lines[lines.index(line)] = fixed_line
     return lines
+
+
+def get_song_entries_by_songlist_id(songlist_id: int, params=None):
+    params = {} if params is None else params
+    # artistParticipationStatus=Everything
+    # childVoicebanks=false
+    # fields=AdditionalNames,MainPicture
+    url = f"{SONGLIST_API_URL}/{songlist_id}/songs"
+    return fetch_json_items(url, params=params)
