@@ -8,11 +8,22 @@ from vdbpy.utils.network import fetch_json, fetch_json_items
 
 logger = get_logger()
 
+USERS_API_URL = f"{WEBSITE}/api/users"
+
+
+@cache_without_expiration()
+def get_notification_by_id(session, notification_id: int) -> dict:
+    notif_url = f"{USERS_API_URL}/messages/{notification_id}"
+    return fetch_json(notif_url, session=session)
+
+
 @cache_with_expiration(days=1)
 def get_messages_by_user_id(user_id: int, session) -> list[dict]:
-    notif_url = f"{WEBSITE}/api/users/{user_id}/messages"
+    notif_url = f"{USERS_API_URL}/{user_id}/messages"
 
-    received = fetch_json_items(notif_url, session=session, params={"inbox": "Received"})
+    received = fetch_json_items(
+        notif_url, session=session, params={"inbox": "Received"}
+    )
     sent = fetch_json_items(notif_url, session=session, params={"inbox": "Sent"})
 
     return received + sent
@@ -22,7 +33,7 @@ def get_messages_by_user_id(user_id: int, session) -> list[dict]:
 def get_notifications_by_user_id(
     user_id: int, session, include_read=False, max_notifs=400
 ) -> list[dict]:
-    notif_url = f"{WEBSITE}/api/users/{user_id}/messages"
+    notif_url = f"{USERS_API_URL}/{user_id}/messages"
     params = {
         "inbox": "Notifications",
         "unread": not include_read,
@@ -31,11 +42,6 @@ def get_notifications_by_user_id(
         notif_url, session=session, params=params, max_results=max_notifs
     )
 
-@cache_without_expiration()
-def get_notification_by_id(session, notification_id: int) -> dict:
-    notif_url = f"{WEBSITE}/api/users/messages/{notification_id}"
-    return fetch_json(notif_url, session=session)
-
 
 def delete_notifications(
     session: requests.Session, user_id: int, notification_ids: list[str]
@@ -43,7 +49,7 @@ def delete_notifications(
     logger.info(f"Got total of {len(notification_ids)} notifications to delete.")
     for sublist in split_list(notification_ids):
         # https://vocadb.net/api/users/329/messages?messageId=1947289&messageId=1946744&messageId=
-        deletion_url = f"{WEBSITE}/api/users/{user_id}/messages?"
+        deletion_url = f"{USERS_API_URL}/{user_id}/messages?"
         query = [f"messageId={notif_id}" for notif_id in sublist]
         deletion_url += "&".join(query)
         _ = input(f"Press enter to delete {len(sublist)} notifications")

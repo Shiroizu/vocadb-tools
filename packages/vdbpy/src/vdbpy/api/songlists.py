@@ -3,9 +3,14 @@ from typing import Literal
 
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_text
+from vdbpy.utils.network import fetch_json_items, fetch_text
+
+# TODO: Type SonglistEntry
+
+SONGLIST_API_URL = f"{WEBSITE}/api/songLists"
 
 logger = get_logger()
+
 
 Songlist_category = Literal[
     "Nothing",
@@ -56,7 +61,7 @@ def create_or_update_songlist(
         data["songLinks"].append(songlist_line)
         order += 1
 
-    songlist_request = session.post(f"{WEBSITE}/api/songLists", json=data)
+    songlist_request = session.post(SONGLIST_API_URL, json=data)
     songlist_request.raise_for_status()
     if songlist_id:
         logger.info(f"Updated songlist at {WEBSITE}/SongList/Details/{songlist_id}")

@@ -5,6 +5,7 @@ from vdbpy.utils.network import fetch_json, fetch_json_items, fetch_totalcount
 ARTIST_API_URL = f"{WEBSITE}/api/artists"
 SONG_API_URL = f"{WEBSITE}/api/songs"
 
+# TODO: Type ArtistEntry
 
 def get_artists(params):
     return fetch_json_items(ARTIST_API_URL, params=params)

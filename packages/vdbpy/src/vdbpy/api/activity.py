@@ -1,6 +1,5 @@
 from vdbpy.config import WEBSITE
 from vdbpy.types import UserEdit
-from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import get_month_strings, parse_date
 from vdbpy.utils.logger import get_logger
@@ -8,34 +7,32 @@ from vdbpy.utils.network import fetch_all_items_between_dates, fetch_cached_tota
 
 logger = get_logger()
 
-
-@cache_without_expiration()
-def get_edit_count_before(before_date: str) -> int:
-    api_url = f"{WEBSITE}/api/activityEntries"
-    params = {"before": before_date}
-    return fetch_cached_totalcount(api_url, params=params)
-
-
-def get_monthly_edit_count(year: int, month: int) -> int:
-    return get_monthly_count(year, month, get_edit_count_before)
+ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
 def get_edits_by_month(year: int, month: int) -> list[UserEdit]:
     a, b = get_month_strings(year, month)
     logger.info(f"Fetching all edits from '{a}' to '{b}'...")
     params = {"fields": "Entry,ArchivedVersion"}
-
-    api_url = f"{WEBSITE}/api/activityEntries"
     # Example https://vocadb.net/api/activityEntries?userId=28373&fields=Entry,ArchivedVersion
 
-    all_new_edits = fetch_all_items_between_dates(api_url, a, b, params=params)
+    all_new_edits = fetch_all_items_between_dates(ACTIVITY_API_URL, a, b, params=params)
     parsed_edits: list[UserEdit] = parse_edits(all_new_edits)
 
     logger.debug(f"Found total of {len(all_new_edits)} edits.")
     return parsed_edits
 
 
+def get_monthly_edit_count(year: int, month: int) -> int:
+    def get_edit_count_before(before_date: str) -> int:
+        params = {"before": before_date}
+        return fetch_cached_totalcount(ACTIVITY_API_URL, params=params)
+
+    return get_monthly_count(year, month, get_edit_count_before)
+
+
 def get_monthly_top_editors(year: int, month: int, top_n=200) -> list[tuple[int, int]]:
+    """Return a sorted list of the top monthly editors: [(user_id, edit_count),..]."""
     edits: list[UserEdit] = get_edits_by_month(year=year, month=month)
 
     edit_counts_by_editor_id: dict[int, int] = {}
@@ -54,6 +51,7 @@ def get_monthly_top_editors(year: int, month: int, top_n=200) -> list[tuple[int,
 def get_top_editors_by_field(
     field: str, year: int, month: int, top_n=200
 ) -> list[tuple[int, int]]:
+    """Return a sorted list of the top monthly editors based on an edit field: [(user_id, edit_count),..]."""
     edits: list[UserEdit] = get_edits_by_month(year=year, month=month)
 
     edit_counts_by_editor_id: dict[int, int] = {}
@@ -68,6 +66,9 @@ def get_top_editors_by_field(
     return sorted(edit_counts_by_editor_id.items(), key=lambda x: x[1], reverse=True)[
         :top_n
     ]
+
+
+# --------------------------------------- #
 
 
 def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:

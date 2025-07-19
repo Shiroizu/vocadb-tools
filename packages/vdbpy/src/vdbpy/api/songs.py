@@ -3,6 +3,8 @@ import random
 import time
 from typing import Callable
 
+import requests
+
 from vdbpy.config import WEBSITE
 from vdbpy.types import Service
 from vdbpy.utils import niconico, youtube
@@ -15,9 +17,7 @@ logger = get_logger()
 
 SONG_API_URL = f"{WEBSITE}/api/songs"
 
-
-def get_songs(params):
-    return fetch_json_items(SONG_API_URL, params=params)
+# TODO Type: SongEntry
 
 
 def get_song_by_id(song_id, fields=""):
@@ -26,40 +26,25 @@ def get_song_by_id(song_id, fields=""):
     return fetch_json(url, params=params)
 
 
-def get_songs_by_artist_id(artist_id: int, params: dict):
+def get_songs(params):
+    return fetch_json_items(SONG_API_URL, params=params)
+
+
+def get_songs_by_artist_id(artist_id: int, params=None):
+    params = {} if params is None else params
     params["artistId[]"] = artist_id
-    return fetch_json_items(SONG_API_URL, params)
+    return get_songs(params)
 
 
-def get_songs_by_tag_id(tag_id: int, params: dict):
+def get_songs_by_tag_id(tag_id: int, params=None):
+    params = {} if params is None else params
     params["tagId[]"] = tag_id
-    return fetch_json_items(SONG_API_URL, params)
-
-
-def add_event_to_song(session, song_id: int, event_id: int, update_note) -> bool:
-    logger.debug(f"Adding event {event_id} to song {song_id} ({update_note}).")
-    entry_data = session.get(f"{WEBSITE}/api/songs/{song_id}/for-edit").json()
-    entry_event_ids = [event["id"] for event in entry_data["releaseEvents"]]
-    if event_id in entry_event_ids:
-        logger.warning("Event already added to the entry.")
-        return False
-
-    entry_data["releaseEvents"].append({"id": event_id})
-    entry_data["updateNotes"] = update_note
-
-    request_save = session.post(
-        f"{WEBSITE}/api/songs/{song_id}", {"contract": json.dumps(entry_data)}
-    )
-
-    request_save.raise_for_status()
-    time.sleep(1)
-    return True
+    return get_songs(params)
 
 
 def get_song_entry_by_pv(pv_service: str, pv_id: str):
-    url = f"{WEBSITE}/api/songs/byPv"
     return fetch_json(
-        url,
+        f"{SONG_API_URL}/byPv",
         params={
             "pvService": pv_service,
             "fields": "ReleaseEvent",
@@ -68,72 +53,42 @@ def get_song_entry_by_pv(pv_service: str, pv_id: str):
     )
 
 
-def mark_pvs_unavailable_by_song_id(session, song_id: int, service=""):
-    """Mark all original PVs as unavailable in a song entry.
-
-    Does not do an extra check if the PV is unavailable or not!
-    """
-    logger.info(f"Marking all original PVs unavailable for song {song_id}.")
-    if service:
-        logger.info(f"Restricting to PV service {service}")
-    entry_data = session.get(f"{WEBSITE}/api/songs/{song_id}/for-edit").json()
-    # 'pvs': [{
-    #   'author': '染井 吉野',
-    #   'disabled': False,
-    #   'id': 1137552,
-    #   'length': 118,
-    #   'name': 'LastDay light 花隈千冬 小春六花',
-    #   'publishDate': '2025-02-22T00:00:00',
-    #   'pvId': 'Xe0f8K-i6HE',
-    #   'service': 'Youtube',
-    #   'pvType': 'Original',
-    #   'thumbUrl': 'https://i.ytimg.com/vi/Xe0f8K-i6HE/default.jpg',
-    #   'url': 'https://youtu.be/Xe0f8K-i6HE'
-    # }]
-    updated_pv_urls = []
-    for pv in entry_data["pvs"]:
-        logger.debug(f"{pv['pvId']} {pv['service']} ({pv['pvType']})")
-        if pv["pvType"] != "Original":
-            logger.debug("Not original, skipping.")
-            continue
-
-        if pv["disabled"]:
-            logger.debug("PV is already disabled.")
-            continue
-
-        if service and service != pv["service"]:
-            logger.debug("Skipping service.")
-            continue
-
-        updated_pv_urls.append(pv["url"])
-        pv["disabled"] = True
-
-    if updated_pv_urls:
-        update_note = "Marked PVs as unavailable: "
-        update_note += ", ".join(updated_pv_urls)
-        logger.info(update_note)
-        entry_data["updateNotes"] = update_note
-
-        request_save = session.post(
-            f"{WEBSITE}/api/songs/{song_id}",
-            {"contract": json.dumps(entry_data)},
-        )
-        request_save.raise_for_status()
-        time.sleep(2)
-
-    else:
-        logger.info(f"No PV links to update for song {song_id}")
+def get_tag_voters_by_song_id_and_tag_ids(
+    song_id: int, tag_ids: list[int], session=None
+) -> dict[int, list]:
+    if not session:
+        logger.warning("No session provided, can't read all tag voters.")
+        session = requests
+    url = f"{SONG_API_URL}/{song_id}/tagUsages"
+    tag_votes: dict[int, list] = {}
+    taggings = fetch_json(url, session=session)
+    if "tagUsages" not in taggings:
+        logger.info(f"Tags not found for S/{song_id}")
+        return tag_votes
+    for tagging in taggings["tagUsages"]:
+        tag_id = tagging["tag"]["id"]
+        if tag_id in tag_ids:
+            tag_votes[tag_id] = tagging["votes"]
+        """{
+          "active": true,
+          "groupId": "Moderator",
+          "mainPicture": {...},
+          "memberSince": "2020-05-27T03:33:24.233",
+          "verifiedArtist": true,
+          "id": 14763,
+          "name": "Catgirl_Frostmoon"
+        }"""
+    return tag_votes
 
 
 def get_random_rated_song_by_user(user: tuple[str, int]) -> int:
-    url = f"{WEBSITE}/api/songs"
     username, user_id = user
     params = {
         "userCollectionId": user_id,
         "onlyWithPVs": True,
         "maxResults": 1,
     }
-    total = fetch_cached_totalcount(url, params=params)
+    total = fetch_cached_totalcount(SONG_API_URL, params=params)
     if not total:
         logger.warning(f"No rated songs with PVs found for user {username} ({user_id})")
         return 0
@@ -141,11 +96,11 @@ def get_random_rated_song_by_user(user: tuple[str, int]) -> int:
     random_start = random.randint(0, total - 1)
     logger.debug(f"Selecting random_start {random_start}")
     params["start"] = random_start
-    return fetch_json(url, params=params)["items"][0]["id"]
+    return fetch_json(SONG_API_URL, params=params)["items"][0]["id"]
 
 
 def get_related_songs_by_song_id(song_id: int):
-    url = f"{WEBSITE}/api/songs/{song_id}/related"
+    url = f"{SONG_API_URL}/{song_id}/related"
     return fetch_json(url)
 
 
@@ -163,23 +118,22 @@ def get_random_related_song_by_song_id(song_id: int) -> int:
 
 
 def get_random_song_id() -> int:
-    url = f"{WEBSITE}/api/songs"
     params = {
         "getTotalCount": True,
         "onlyWithPVs": True,
         "maxResults": 1,
     }
-    total = fetch_cached_totalcount(url, params=params)
+    total = fetch_cached_totalcount(SONG_API_URL, params=params)
 
     random_start = random.randint(0, total - 1)
     logger.debug(f"Selecting random_start {random_start}")
     params["start"] = random_start
-    return fetch_json(url, params=params)["items"][0]["id"]
+    return get_songs(params)[0]["id"]
 
 
 def get_song_rater_ids_by_song_id(song_id: int, session=None) -> list[int]:
     """Fetch the IDs of users who rated a song."""
-    url = f"{WEBSITE}/api/songs/{song_id}/ratings"
+    url = f"{SONG_API_URL}/{song_id}/ratings"
     """
     [
     {
@@ -225,12 +179,92 @@ def get_viewcounts_by_song_id_and_service(
 
 @cache_without_expiration()
 def get_entry_creator_id_by_song_id(song_id: int) -> int:
-    url = f"{WEBSITE}/api/songs/{song_id}/versions"
+    url = f"{SONG_API_URL}/{song_id}/versions"
     return fetch_json(url)["archivedVersions"][-1]["author"]["id"]
 
 
 def get_songlist_author_ids_by_song_id(song_id: int) -> list[int]:
     # [{"author":{...},"canEdit":true,"deleted":false,"description":"...","status":"Finished","thumb":{"entryType":"SongList","id":186,"mime":"image/png","version":294},"version":294,"featuredCategory":"Pools","id":186,"name":"(NND) More than 100K views"}, ...]
-    url = f"{WEBSITE}/api/songs/{song_id}/songlists"
+    url = f"{SONG_API_URL}/{song_id}/songlists"
     songlists = fetch_json(url)
     return [songlist["author"]["id"] for songlist in songlists]
+
+
+# ---------------------------------------------- #
+
+
+def add_event_to_song(session, song_id: int, event_id: int, update_note) -> bool:
+    logger.debug(f"Adding event {event_id} to song {song_id} ({update_note}).")
+    entry_data = session.get(f"{SONG_API_URL}/{song_id}/for-edit").json()
+    entry_event_ids = [event["id"] for event in entry_data["releaseEvents"]]
+    if event_id in entry_event_ids:
+        logger.warning("Event already added to the entry.")
+        return False
+
+    entry_data["releaseEvents"].append({"id": event_id})
+    entry_data["updateNotes"] = update_note
+
+    request_save = session.post(
+        f"{SONG_API_URL}/{song_id}", {"contract": json.dumps(entry_data)}
+    )
+
+    request_save.raise_for_status()
+    time.sleep(1)
+    return True
+
+
+def mark_pvs_unavailable_by_song_id(session, song_id: int, service=""):
+    """Mark all original PVs as unavailable in a song entry.
+
+    Does not do an extra check if the PV is unavailable or not!
+    """
+    logger.info(f"Marking all original PVs unavailable for song {song_id}.")
+    if service:
+        logger.info(f"Restricting to PV service {service}")
+    entry_data = session.get(f"{SONG_API_URL}/{song_id}/for-edit").json()
+    # 'pvs': [{
+    #   'author': '染井 吉野',
+    #   'disabled': False,
+    #   'id': 1137552,
+    #   'length': 118,
+    #   'name': 'LastDay light 花隈千冬 小春六花',
+    #   'publishDate': '2025-02-22T00:00:00',
+    #   'pvId': 'Xe0f8K-i6HE',
+    #   'service': 'Youtube',
+    #   'pvType': 'Original',
+    #   'thumbUrl': 'https://i.ytimg.com/vi/Xe0f8K-i6HE/default.jpg',
+    #   'url': 'https://youtu.be/Xe0f8K-i6HE'
+    # }]
+    updated_pv_urls = []
+    for pv in entry_data["pvs"]:
+        logger.debug(f"{pv['pvId']} {pv['service']} ({pv['pvType']})")
+        if pv["pvType"] != "Original":
+            logger.debug("Not original, skipping.")
+            continue
+
+        if pv["disabled"]:
+            logger.debug("PV is already disabled.")
+            continue
+
+        if service and service != pv["service"]:
+            logger.debug("Skipping service.")
+            continue
+
+        updated_pv_urls.append(pv["url"])
+        pv["disabled"] = True
+
+    if updated_pv_urls:
+        update_note = "Marked PVs as unavailable: "
+        update_note += ", ".join(updated_pv_urls)
+        logger.info(update_note)
+        entry_data["updateNotes"] = update_note
+
+        request_save = session.post(
+            f"{SONG_API_URL}/{song_id}",
+            {"contract": json.dumps(entry_data)},
+        )
+        request_save.raise_for_status()
+        time.sleep(2)
+
+    else:
+        logger.info(f"No PV links to update for song {song_id}")

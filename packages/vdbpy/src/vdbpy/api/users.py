@@ -2,13 +2,12 @@ from datetime import datetime
 from typing import get_args
 
 from vdbpy.config import WEBSITE
-from vdbpy.types import Edit_type, Entry_type
+from vdbpy.types import Edit_type, Entry_type, UserGroup
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
-    cache_without_expiration,
     fetch_cached_totalcount,
     fetch_json,
     fetch_json_items,
@@ -16,14 +15,78 @@ from vdbpy.utils.network import (
 
 logger = get_logger()
 
+USER_API_URL = f"{WEBSITE}/api/users"
+
+# TOOD: Type UserEntry
+
 
 @cache_with_expiration(days=7)
 def get_username_by_id(user_id: int, include_usergroup=False) -> str:
-    user_api_url = f"{WEBSITE}/api/users/{user_id}"
+    user_api_url = f"USER_API_URL/{user_id}"
     data = fetch_json(user_api_url)
     if include_usergroup:
         return f"{data['name']} ({data['groupId']})"
     return data["name"]
+
+
+@cache_with_expiration(days=1)
+def get_user_profile_by_username(username: str) -> dict:
+    """Get user profile data.
+
+    # -- Mod cred data --
+    "additionalPermissions": [],
+    "effectivePermissions": [,
+    "email": "",
+    "lastLogin": "2025-01-21T02:08:00.363",
+    "lastLoginAddress": "",
+    "oldUsernames": [],
+
+    # -- Rest of the data --
+    "aboutMe": "",
+    "active": true,
+    "albumCollectionCount": 0,
+    "anonymousActivity": false,
+    "artistCount": 0,
+    "commentCount": 0,
+    "createDate": "2012-10-30T09:33:28",
+    "customTitle": "",
+    "designatedStaff": true,
+    "editCount": 0,
+    "emailVerified": true,
+    "favoriteAlbums": [],
+    "favoriteSongCount": 0,
+    "favoriteTags": [],
+    "followedArtists": [],
+    "groupId": "Admin",
+    "id": 0,
+    "isVeteran": true,
+    "knownLanguages": [],
+    "latestComments": [],
+    "latestRatedSongs": [],
+    "level": 0,
+    "location": "",
+    "mainPicture": {},
+    "name": "Name",
+    "ownedArtistEntries": [],
+    "possibleProducerAccount": false,
+    "power": 0,
+    "publicAlbumCollection": false,
+    "standalone": false,
+    "submitCount": 0,
+    "supporter": false,
+    "tagVotes": 0,
+    "twitterName": "",
+    "verifiedArtist": false,
+    "webLinks": []
+    }
+    """
+    api_url = f"{WEBSITE}/api/profiles/{username}"
+    return fetch_json(api_url)
+
+
+def get_user_profile_by_id(user_id: int) -> dict:
+    username = get_username_by_id(user_id)
+    return get_user_profile_by_username(username)
 
 
 @cache_with_expiration(days=7)
@@ -38,14 +101,13 @@ def find_user_by_username_and_mode(username: str, mode: str) -> tuple[str, int]:
         )
         return ("", 0)
 
-    user_api_url = f"{WEBSITE}/api/users/"
     params = {
         "query": username,
         "maxResults": 1,
         "nameMatchMode": mode,
         "includeDisabled": True,
     }
-    data = fetch_json(user_api_url, params=params)
+    data = fetch_json(USER_API_URL, params=params)
     if data and data["items"]:
         username = data["items"][0]["name"]
         user_id = data["items"][0]["id"]
@@ -66,10 +128,13 @@ def find_user_by_username(username: str) -> tuple[str, int]:
     return find_user_by_username_and_mode(username, "Partial")
 
 
+# ------------------------------------------- #
+
+
 @cache_with_expiration(days=7)
 def get_rated_songs_by_user_id(user_id: int, extra_params=None):
     logger.info(f"Fetching rated songs for user id {user_id}")
-    api_url = f"{WEBSITE}/api/users/{user_id}/ratedSongs"
+    api_url = f"{USER_API_URL}/{user_id}/ratedSongs"
     rated_songs = fetch_json_items(api_url, extra_params)
     logger.info(f"Found total of {len(rated_songs)} rated songs.")
     return rated_songs
@@ -78,7 +143,7 @@ def get_rated_songs_by_user_id(user_id: int, extra_params=None):
 @cache_with_expiration(days=7)
 def get_albums_by_user_id(user_id: int, extra_params=None):
     logger.info(f"Fetching albums for user id {user_id}")
-    api_url = f"{WEBSITE}/api/users/{user_id}/albums"
+    api_url = f"{USER_API_URL}/{user_id}/albums"
     albums = fetch_json_items(api_url, extra_params)
     logger.info(f"Found total of {len(albums)} albums.")
     return albums
@@ -87,7 +152,7 @@ def get_albums_by_user_id(user_id: int, extra_params=None):
 @cache_with_expiration(days=7)
 def get_followed_artists_by_user_id(user_id: int, extra_params=None):
     logger.info(f"Fetching followed artists for user id {user_id}")
-    api_url = f"{WEBSITE}/api/users/{user_id}/followedArtists"
+    api_url = f"{USER_API_URL}/{user_id}/followedArtists"
     followed_artists = fetch_json_items(api_url, extra_params)
     if followed_artists:
         followed_artists = [ar["artist"] for ar in followed_artists]
@@ -190,69 +255,11 @@ def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
     return entry_matrix
 
 
-@cache_with_expiration(days=1)
-def get_user_profile_by_username(username: str) -> dict:
-    """Get user profile data.
-
-    # -- Mod cred data --
-    "additionalPermissions": [],
-    "effectivePermissions": [,
-    "email": "",
-    "lastLogin": "2025-01-21T02:08:00.363",
-    "lastLoginAddress": "",
-    "oldUsernames": [],
-
-    # -- Rest of the data --
-    "aboutMe": "",
-    "active": true,
-    "albumCollectionCount": 0,
-    "anonymousActivity": false,
-    "artistCount": 0,
-    "commentCount": 0,
-    "createDate": "2012-10-30T09:33:28",
-    "customTitle": "",
-    "designatedStaff": true,
-    "editCount": 0,
-    "emailVerified": true,
-    "favoriteAlbums": [],
-    "favoriteSongCount": 0,
-    "favoriteTags": [],
-    "followedArtists": [],
-    "groupId": "Admin",
-    "id": 0,
-    "isVeteran": true,
-    "knownLanguages": [],
-    "latestComments": [],
-    "latestRatedSongs": [],
-    "level": 0,
-    "location": "",
-    "mainPicture": {},
-    "name": "Name",
-    "ownedArtistEntries": [],
-    "possibleProducerAccount": false,
-    "power": 0,
-    "publicAlbumCollection": false,
-    "standalone": false,
-    "submitCount": 0,
-    "supporter": false,
-    "tagVotes": 0,
-    "twitterName": "",
-    "verifiedArtist": false,
-    "webLinks": []
-    }
-    """
-    api_url = f"{WEBSITE}/api/profiles/{username}"
-    return fetch_json(api_url)
-
-
-@cache_without_expiration()
-def get_user_count_before(before_date: str) -> int:
-    api_url = f"{WEBSITE}/api/users"
-    params = {"joinDateBefore": before_date}
-    return fetch_cached_totalcount(api_url, params=params)
-
-
 def get_monthly_user_count(year: int, month: int) -> int:
+    def get_user_count_before(before_date: str) -> int:
+        params = {"joinDateBefore": before_date}
+        return fetch_cached_totalcount(USER_API_URL, params=params)
+
     return get_monthly_count(year, month, get_user_count_before)
 
 
@@ -264,10 +271,17 @@ def get_user_account_age_by_user_id(user_id: int) -> int:
     return (today - creation_date).days
 
 
+def get_user_group_by_user_id(user_id: int) -> UserGroup:
+    return fetch_json(f"{USER_API_URL}/{user_id}")["groupId"]
+
+
+# -------------------------------------- #
+
+
 def send_message(
     session, receiver_username: str, subject: str, message: str, sender_id: int
 ):
-    url = f"{WEBSITE}/api/users/{sender_id}/messages"
+    url = f"{USER_API_URL}/{sender_id}/messages"
 
     data = {
         "body": message,

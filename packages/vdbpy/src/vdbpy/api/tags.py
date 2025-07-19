@@ -1,10 +1,13 @@
 from vdbpy.config import WEBSITE
 from vdbpy.utils.network import fetch_json
 
+TAG_API_URL = f"{WEBSITE}/api/tags"
+
+# TODO: Type TagEntry
 
 def get_tag_by_id(tag_id, fields=""):
     params = {"fields": fields} if fields else {}
-    url = f"{WEBSITE}/api/tags/{tag_id}"
+    url = f"{TAG_API_URL}/{tag_id}"
     """
     categoryName	"Themes"
     createDate	"2019-11-30T03:14:48.553"
