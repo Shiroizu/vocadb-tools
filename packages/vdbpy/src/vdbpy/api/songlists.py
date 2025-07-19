@@ -1,7 +1,7 @@
 import time
-from typing import Literal
 
 from vdbpy.config import WEBSITE
+from vdbpy.types import Songlist_category
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json_items, fetch_text
 
@@ -12,15 +12,6 @@ SONGLIST_API_URL = f"{WEBSITE}/api/songLists"
 logger = get_logger()
 
 
-Songlist_category = Literal[
-    "Nothing",
-    "Concerts",
-    "VocaloidRanking",
-    "Pools",
-    "Other",
-]
-
-
 def create_or_update_songlist(
     session,
     song_ids: list[int],
@@ -29,7 +20,7 @@ def create_or_update_songlist(
     songlist_id=0,
     title="",
     description="",
-    category: Songlist_category = "Pools",
+    category: Songlist_category = "Nothing",
 ):
     """Create or update a songlist.
 

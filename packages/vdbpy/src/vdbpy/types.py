@@ -21,6 +21,14 @@ UserGroup = Literal["Admin","Moderator", "Trusted", "Regular", "Limited", "Nothi
 TRUSTED_PLUS: list[UserGroup] = ["Admin", "Moderator", "Trusted"]
 MOD_PLUS: list[UserGroup] = ["Admin", "Moderator"]
 
+Songlist_category = Literal[
+    "Nothing",
+    "Concerts",
+    "VocaloidRanking",
+    "Pools",
+    "Other",
+]
+
 @dataclass
 class UserEdit:
     user_id: int
@@ -31,8 +39,6 @@ class UserEdit:
     edit_event: Edit_type
     changed_fields: list[str]
 
-
-# TODO type in form of 2024-01-01
 
 Service = Literal[
     "NicoNicoDouga",
