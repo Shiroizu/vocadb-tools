@@ -1,5 +1,6 @@
 from vdbpy.utils.date import get_month_strings, month_is_over
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.network import fetch_cached_totalcount
 
 logger = get_logger()
 
@@ -19,11 +20,17 @@ def add_s(word):
     return word if word.lower().endswith("s") else word + "s"
 
 
-def get_monthly_count(year: int, month: int, count_func) -> int:
+def get_monthly_count(year: int, month: int, api_url: str, param_name="before") -> int:
+    def get_edit_count_before(before_date: str) -> int:
+        params = {param_name: before_date}
+        return fetch_cached_totalcount(api_url, params=params)
+
     logger.debug(f"Calculating monthly count for: {year}-{month}")
 
     a, b = get_month_strings(year, month)
     logger.debug(f"Corresponding date strings: {a} - {b}")
 
-    month_is_over(year, month)
-    return count_func(b) - count_func(a)
+    if not month_is_over(year, month):
+        raise ValueError(f"Month {month}.{year} is ongoing or in the future!")
+
+    return get_edit_count_before(b) - get_edit_count_before(a)

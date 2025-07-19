@@ -9,7 +9,6 @@ from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_all_items_between_dates,
-    fetch_cached_totalcount,
     fetch_json,
 )
 
@@ -38,11 +37,7 @@ def get_comments_by_user_id(user_id) -> list:
 
 
 def get_monthly_comment_count(year: int, month: int) -> int:
-    def get_comment_count_before(before_date: str) -> int:
-        params = {"before": before_date}
-        return fetch_cached_totalcount(COMMENT_API_URL, params=params)
-
-    return get_monthly_count(year, month, get_comment_count_before)
+    return get_monthly_count(year, month, COMMENT_API_URL)
 
 
 def get_the_most_recent_comment_by_user_id(user_id=0):

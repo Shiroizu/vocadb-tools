@@ -8,7 +8,6 @@ from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
-    fetch_cached_totalcount,
     fetch_json,
     fetch_json_items,
 )
@@ -256,11 +255,7 @@ def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
 
 
 def get_monthly_user_count(year: int, month: int) -> int:
-    def get_user_count_before(before_date: str) -> int:
-        params = {"joinDateBefore": before_date}
-        return fetch_cached_totalcount(USER_API_URL, params=params)
-
-    return get_monthly_count(year, month, get_user_count_before)
+    return get_monthly_count(year, month, USER_API_URL, param_name="joinDateBefore")
 
 
 def get_user_account_age_by_user_id(user_id: int) -> int:

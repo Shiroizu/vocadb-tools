@@ -3,7 +3,7 @@ from vdbpy.types import UserEdit
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import get_month_strings, parse_date
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_all_items_between_dates, fetch_cached_totalcount
+from vdbpy.utils.network import fetch_all_items_between_dates
 
 logger = get_logger()
 
@@ -24,11 +24,7 @@ def get_edits_by_month(year: int, month: int) -> list[UserEdit]:
 
 
 def get_monthly_edit_count(year: int, month: int) -> int:
-    def get_edit_count_before(before_date: str) -> int:
-        params = {"before": before_date}
-        return fetch_cached_totalcount(ACTIVITY_API_URL, params=params)
-
-    return get_monthly_count(year, month, get_edit_count_before)
+    return get_monthly_count(year, month, ACTIVITY_API_URL)
 
 
 def get_monthly_top_editors(year: int, month: int, top_n=200) -> list[tuple[int, int]]:
