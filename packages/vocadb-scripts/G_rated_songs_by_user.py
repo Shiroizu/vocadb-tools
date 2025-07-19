@@ -66,5 +66,5 @@ if __name__ == "__main__":
     generate_date_graph(sp, title=title, date_format="%Y-%m")
 
     sr = [(str(month), len(ids)) for month, ids in song_ids_by_rated_month.items()]
-    title = f"{username}'s ({user_id}) rated songs by publish date"
+    title = f"{username}'s ({user_id}) rated songs by rating date"
     generate_date_graph(sr, title=title, date_format="%Y-%m")
