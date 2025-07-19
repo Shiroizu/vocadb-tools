@@ -44,7 +44,7 @@ def get_notifications_by_user_id(
 
 
 def delete_notifications(
-    session: requests.Session, user_id: int, notification_ids: list[str]
+    session: requests.Session, user_id: int, notification_ids: list[int]
 ):
     logger.info(f"Got total of {len(notification_ids)} notifications to delete.")
     for sublist in split_list(notification_ids):

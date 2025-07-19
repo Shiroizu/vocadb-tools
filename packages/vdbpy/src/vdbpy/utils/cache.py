@@ -16,7 +16,9 @@ def cache_with_expiration(days=1):
             # Ignore session parameter:
 
             cache_args = [a for a in args if not isinstance(a, Session)]
-            cache_kwargs = {k: v for k, v in kwargs.items() if not isinstance(v, Session)}
+            cache_kwargs = {
+                k: v for k, v in kwargs.items() if not isinstance(v, Session)
+            }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
             logger.debug(f"Cache key: {key}")
 
@@ -40,7 +42,9 @@ def cache_without_expiration():
             # Ignore session parameter:
 
             cache_args = [a for a in args if not isinstance(a, Session)]
-            cache_kwargs = {k: v for k, v in kwargs.items() if not isinstance(v, Session)}
+            cache_kwargs = {
+                k: v for k, v in kwargs.items() if not isinstance(v, Session)
+            }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
             logger.debug(f"Cache key: {key}")
 
@@ -64,7 +68,9 @@ def cache_conditionally(days=1):
             # Ignore session parameter:
 
             cache_args = [a for a in args if not isinstance(a, Session)]
-            cache_kwargs = {k: v for k, v in kwargs.items() if not isinstance(v, Session)}
+            cache_kwargs = {
+                k: v for k, v in kwargs.items() if not isinstance(v, Session)
+            }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
             logger.debug(f"Cache key: {key}")
 
