@@ -20,11 +20,13 @@ Generate interactive graphs with [Plotly](https://plotly.com/python/) based on m
 - edits
 - users
 
-- rated_songs_by_user generates 2 graphs (monthly publish & rating date), cached for 7 days
-
-Generated graph is displayed in a browser window (localhost).
-
 Monthly counts are cached indefinitely, which enables quick regeneration.
+
+Generated graphs are displayed in a browser window (localhost).
+
+<img width="472" height="397" alt="Untitled" src="https://github.com/user-attachments/assets/d69a29f4-e889-4a6c-8b6d-b63d69c614c1" />
+
+- rated_songs_by_user generates 2 graphs (monthly publish & rating date), cached for 7 days
 
 ### (U) User tools
 
@@ -46,4 +48,4 @@ Monthly counts are cached indefinitely, which enables quick regeneration.
 
 3) Install [uv](https://docs.astral.sh/uv/)
 
-4) `uv run calculate_artist_tags_based_on_songs.py 2595`
+4) `uv run G_monthly_comments.py`
