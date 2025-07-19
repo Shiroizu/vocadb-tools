@@ -15,6 +15,11 @@ Entry_type = Literal[
 
 Edit_type = Literal["Created", "Updated", "Deleted"]
 
+UserGroup = Literal["Admin","Moderator", "Trusted", "Regular", "Limited", "Nothing"]
+# Disabled User: active = false
+
+TRUSTED_PLUS: list[UserGroup] = ["Admin", "Moderator", "Trusted"]
+MOD_PLUS: list[UserGroup] = ["Admin", "Moderator"]
 
 @dataclass
 class UserEdit:
