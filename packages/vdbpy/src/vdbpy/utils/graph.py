@@ -12,7 +12,7 @@ def generate_date_graph(
     title="Graph",
     x="Month",
     y="Count",
-    date_format="%Y-%m-%d",
+    date_format="%Y-%m",
 ):
     dates, values = zip(*data)
 
@@ -44,12 +44,12 @@ def get_monthly_graph(count_function, title="Graph"):
     current_month = current_date.month
 
     while True:
-        previous_month = current_month - 1 if current_month > 1 else 12
-        previous_month_year = current_year - 1 if current_month == 1 else current_year
-        monthly_count = count_function(previous_month_year, previous_month)
-        year_month_str = f"{previous_month_year}-{previous_month}"
+        current_month = current_month - 1 if current_month > 1 else 12
+        current_year = current_year - 1 if current_month == 1 else current_year
+        monthly_count = count_function(current_year, current_month)
+        year_month_str = f"{current_year}-{current_month}"
         if monthly_count:
-            logger.info(f"Count for {year_month_str}: {monthly_count}")
+            logger.info(f"{count_function.__name__}, {year_month_str}: {monthly_count}")
             counts_by_month.append((f"{year_month_str}", monthly_count))
             continue
         break
