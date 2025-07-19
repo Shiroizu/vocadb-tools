@@ -7,6 +7,7 @@ SONG_API_URL = f"{WEBSITE}/api/songs"
 
 # TODO: Type ArtistEntry
 
+
 def get_artists(params):
     return fetch_json_items(ARTIST_API_URL, params=params)
 
@@ -24,7 +25,9 @@ def get_artists_by_tag_id(tag_id: int):
 
 
 @cache_with_expiration(days=7)
-def get_song_count_by_artist_id(artist_id: int, only_main_songs=False, extra_params=None):
+def get_song_count_by_artist_id(
+    artist_id: int, only_main_songs=False, extra_params=None
+):
     params = extra_params if extra_params else {}
     params["artistId[]"] = artist_id
     if only_main_songs:
@@ -32,8 +35,8 @@ def get_song_count_by_artist_id(artist_id: int, only_main_songs=False, extra_par
     return fetch_totalcount(SONG_API_URL, params)
 
 
-@cache_with_expiration(days=1000)
-def get_base_voicebank_by_artist_id(artist_id: int, recursive=True) -> int:
+@cache_with_expiration(days=100)
+def get_base_voicebank_by_artist_id(artist_id: int, recursive=True):
     """Get base voicebank id if it exists. Return current id otherwise."""
     params = {"fields": "baseVoiceBank"}
     next_base_vb_id = artist_id
