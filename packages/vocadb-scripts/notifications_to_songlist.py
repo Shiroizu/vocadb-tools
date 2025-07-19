@@ -8,7 +8,7 @@ from vdbpy.api.notifications import (
     get_notification_by_id,
     get_notifications_by_user_id,
 )
-from vdbpy.api.songlists import create_songlists
+from vdbpy.api.songlists import create_or_update_songlist
 from vdbpy.api.users import find_user_by_username
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
@@ -19,8 +19,11 @@ from vdbpy.utils.network import fetch_json
 logger = get_logger("notifications_to_songlist")
 
 
+# TODO unplayable media (bandcamp)
+
+
 @cache_with_expiration(days=1)
-def is_cover_with_original_as_entry(song_id: str) -> bool:
+def is_cover_with_original_as_entry(song_id: int) -> bool:
     url = f"{WEBSITE}/api/songs/{song_id}"
     entry = fetch_json(url)
     result = (entry["songType"] == "Cover") and ("originalVersionId" in entry)
@@ -34,11 +37,11 @@ def filter_notifications(
     session: requests.Session,
     skip_covers=False,
     skip_music_pvs=False,
-) -> list[str]:
+) -> list[int]:
     """Returns a list of new song IDs from notifications."""
-    notification_ids: list[str] = []
+    notification_ids: list[int] = []
     notification_messages: list[str] = []
-    new_song_ids: list[str] = []
+    new_song_ids: list[int] = []
     notification_messages = []
     counter = 0
 
@@ -62,7 +65,7 @@ def filter_notifications(
             logger.debug("Skipping non-song notification")
             continue
 
-        song_id = notif_body.split("/S/")[-1].split(")',")[0].split("?")[0]
+        song_id = int(notif_body.split("/S/")[-1].split(")',")[0].split("?")[0])
         logger.info(
             f"\t{counter}/{len(all_notifications)} {item['subject']} {WEBSITE}/S/{song_id}"
         )
@@ -91,19 +94,16 @@ def filter_notifications(
     return new_song_ids
 
 
-def filter_out_seen_song_ids(seen_file: str, new_song_ids: list[str]) -> list[str]:
+def filter_out_seen_song_ids(seen_file: str, new_song_ids: list[int]) -> list[int]:
     """Filters seen song IDs out based on the seen song ids -file."""
-    seen_song_ids = get_lines(seen_file)
-    unseen_song_ids = []
-    removed = 0
+    seen_song_ids_set = set(map(int, get_lines(seen_file)))
+    new_song_ids_set = set(new_song_ids)
+    unseen_song_ids = list(new_song_ids_set - seen_song_ids_set)
+    number_of_removed_ids = len(new_song_ids_set) - len(unseen_song_ids)
 
-    for song_id in set(new_song_ids):
-        if song_id in seen_song_ids:
-            removed += 1
-        else:
-            unseen_song_ids.append(song_id)
-
-    logger.info(f"Filtered out {removed}/{len(new_song_ids)} already seen ids.")
+    logger.info(
+        f"Filtered out {number_of_removed_ids}/{len(new_song_ids_set)} already seen ids."
+    )
     return unseen_song_ids
 
 
@@ -207,14 +207,19 @@ if __name__ == "__main__":
             max_notifs=MAX_NOTIFS,
         )
 
-        new_songs = filter_notifications(
+        new_song_ids = filter_notifications(
             all_notifications, session, SKIP_COVERS, SKIP_MUSIC_PVS
         )
         if not INCLUDE_SEEN:
-            new_songs = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_songs)
-        if not new_songs:
+            new_song_ids = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_song_ids)
+        if not new_song_ids:
             logger.warning("No new songs found")
             sys.exit(0)
         _ = input("Press enter to create the songlist(s)...")
-        create_songlists(session, songlist_title, new_songs)
-        save_file(SEEN_SONG_IDS_FILE, new_songs, append=True)
+        create_or_update_songlist(
+            session=session,
+            song_ids=new_song_ids,
+            author_id=USER_ID,
+            title=songlist_title,
+        )
+        save_file(SEEN_SONG_IDS_FILE, new_song_ids, append=True)
