@@ -74,9 +74,19 @@ if __name__ == "__main__":
 
     OUTPUT_FILE = f"output/favourite-albums-{user_id}.csv"
 
-    extra_params = {"fields": "Albums"}
-    rated_songs = get_rated_songs_by_user_id(int(user_id), extra_params)
-    rated_albums = get_albums_by_user_id(int(user_id))
+    fields = [
+        "Albums",
+        "Artists",
+        "PVs",
+        "ReleaseEvent",
+        "Tags",
+        "WebLinks",
+        "CultureCodes",
+    ]
+
+    params = {"fields": ", ".join(fields)}
+    rated_songs = get_rated_songs_by_user_id(user_id, params)
+    rated_albums = get_albums_by_user_id(user_id)
 
     owned_album_ids = set()
     for album in rated_albums:

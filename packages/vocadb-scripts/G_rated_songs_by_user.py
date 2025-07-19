@@ -42,7 +42,18 @@ if __name__ == "__main__":
     song_ids_by_published_month = {}
     song_ids_by_rated_month = {}
 
-    rated_songs = get_rated_songs_by_user_id(user_id)
+    fields = [
+        "Albums",
+        "Artists",
+        "PVs",
+        "ReleaseEvent",
+        "Tags",
+        "WebLinks",
+        "CultureCodes",
+    ]
+
+    params = {"fields": ", ".join(fields)}
+    rated_songs = get_rated_songs_by_user_id(user_id, params)
 
     for song in rated_songs:
         song_id = song["song"]["id"]

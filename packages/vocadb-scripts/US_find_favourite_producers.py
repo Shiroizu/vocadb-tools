@@ -72,8 +72,19 @@ if __name__ == "__main__":
     OUTPUT_FILE = f"output/favourite-producers-{user_id}.csv"
 
     unique_artists = {}
-    extra_params = {"fields": "Artists"}
-    rated_songs = get_rated_songs_by_user_id(int(user_id), extra_params)
+
+    fields = [
+        "Albums",
+        "Artists",
+        "PVs",
+        "ReleaseEvent",
+        "Tags",
+        "WebLinks",
+        "CultureCodes",
+    ]
+
+    params = {"fields": ", ".join(fields)}
+    rated_songs = get_rated_songs_by_user_id(user_id, params)
 
     for song in rated_songs:
         placeholder = ""
