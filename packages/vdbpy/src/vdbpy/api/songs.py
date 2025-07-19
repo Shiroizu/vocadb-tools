@@ -3,8 +3,6 @@ import random
 import time
 from typing import Callable
 
-import requests
-
 from vdbpy.config import WEBSITE
 from vdbpy.types import Service
 from vdbpy.utils import niconico, youtube
@@ -54,11 +52,8 @@ def get_song_entry_by_pv(pv_service: str, pv_id: str):
 
 
 def get_tag_voters_by_song_id_and_tag_ids(
-    song_id: int, tag_ids: list[int], session=None
+    song_id: int, tag_ids: list[int], session
 ) -> dict[int, list]:
-    if not session:
-        logger.warning("No session provided, can't read all tag voters.")
-        session = requests
     url = f"{SONG_API_URL}/{song_id}/tagUsages"
     tag_votes: dict[int, list] = {}
     taggings = fetch_json(url, session=session)
