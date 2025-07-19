@@ -21,7 +21,7 @@ USER_API_URL = f"{WEBSITE}/api/users"
 
 @cache_with_expiration(days=7)
 def get_username_by_id(user_id: int, include_usergroup=False) -> str:
-    user_api_url = f"USER_API_URL/{user_id}"
+    user_api_url = f"{USER_API_URL}/{user_id}"
     data = fetch_json(user_api_url)
     if include_usergroup:
         return f"{data['name']} ({data['groupId']})"
