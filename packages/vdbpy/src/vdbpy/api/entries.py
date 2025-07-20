@@ -30,7 +30,7 @@ def get_random_entry():
 
 def delete_entry(
     session,
-    selected_entry_type: Entry_type,
+    entry_type: Entry_type,
     entry_id: int,
     force=False,
     deletion_msg="",
@@ -39,14 +39,14 @@ def delete_entry(
     # https://beta.vocadb.net/Artist/Versions/151812
     # TODO fix ^
 
-    assert selected_entry_type in get_args(Entry_type), "Invalid entry type"  # noqa: S101
-    logger.warning(f"Deleting {selected_entry_type} entry {entry_id}...")
+    assert entry_type in get_args(Entry_type), "Invalid entry type"  # noqa: S101
+    logger.warning(f"Deleting {entry_type} entry {entry_id}...")
 
     if not force:
         # TODO comply with content removal guidelines
         logger.warning("Careful entry deletion has not been implemented.")
         return
-    url = f"{WEBSITE}/api/{add_s(selected_entry_type)}/{entry_id}"
+    url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}"
     if deletion_msg:
         url += f"?notes={deletion_msg}"
 
