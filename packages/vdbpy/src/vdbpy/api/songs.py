@@ -24,7 +24,8 @@ def get_song_by_id(song_id, fields=""):
     return fetch_json(url, params=params)
 
 def get_song(params):
-    return fetch_json(SONG_API_URL, params=params)["items"][0]
+    result = fetch_json(SONG_API_URL, params=params)
+    return result["items"][0] if result["items"] else {}
 
 def get_songs(params):
     return fetch_json_items(SONG_API_URL, params=params)
