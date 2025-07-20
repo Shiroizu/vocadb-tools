@@ -58,12 +58,43 @@ def month_is_over(year: int, month: int) -> bool:
 
 
 def get_month_strings(year: int, month: int) -> tuple[str, str]:
-    last_month_string = f"{year}-{month}-1"
+    last_month_string = f"{year}-{str(month).zfill(2)}-01"
     if month == 1:
-        month_before_last_month_string = f"{year-1}-12-1"
+        month_before_last_month_string = f"{year-1}-12-01"
     else:
-        month_before_last_month_string = f"{year}-{month-1}-1"
+        month_before_last_month_string = f"{year}-{str(month-1).zfill(2)}-01"
     return month_before_last_month_string, last_month_string
+
+
+def get_all_month_strings_since(start_year: int) -> list[tuple[str, str]]:
+    """Get list of date string tuples since the start of the input year. Stops before the current month.
+
+    Output: ('2024-01-01', '2024-02-01'), ('2024-02-01', '2024-03-01'), ('2024-03-01', '2024-04-01'), ('2024-04-01', '2024-05-01'), ('2024-05-01', '2024-06-01'), ('2024-06-01', '2024-07-01'), ('2024-07-01', '2024-08-01'), ('2024-08-01', '2024-09-01'), ('2024-09-01', '2024-10-01'), ('2024-10-01', '2024-11-01'), ('2024-11-01', '2024-12-01'), ('2024-12-01', '2025-01-01'), ('2025-01-01', '2025-02-01'), ('2025-02-01', '2025-03-01'), ('2025-03-01', '2025-04-01'), ('2025-04-01', '2025-05-01'), ('2025-05-01', '2025-06-01')]
+    """
+    now = datetime.now()
+    end_month = now.month - 1 if now.month > 1 else 12
+    end_year = now.year if now.month > 1 else now.year - 1
+
+    current_month_year = start_year
+    current_month = 1
+    date_strings = []
+    while True:
+        if current_month_year >= end_year and current_month >= end_month:
+            break
+
+        next_month = current_month + 1 if current_month < 12 else 1
+        next_month_year = (
+            current_month_year + 1 if current_month == 12 else current_month_year
+        )
+
+        a_string = f"{current_month_year}-{str(current_month).zfill(2)}-01"
+        b_string = f"{next_month_year}-{str(next_month).zfill(2)}-01"
+        date_strings.append((a_string, b_string))
+
+        current_month_year = next_month_year
+        current_month = next_month
+
+    return date_strings
 
 
 def read_timestamp_file(filename: str) -> datetime | None:
