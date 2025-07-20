@@ -274,7 +274,7 @@ def get_user_group_by_user_id(user_id: int) -> UserGroup:
 
 
 def send_message(
-    session, receiver_username: str, subject: str, message: str, sender_id: int
+    session, receiver_username: str, subject: str, message: str, sender_id: int, prompt=True
 ):
     url = f"{USER_API_URL}/{sender_id}/messages"
 
@@ -286,5 +286,9 @@ def send_message(
         "subject": subject,
     }
 
+    if prompt:
+        logger.info(f"{'---' * 10}\nTO='{receiver_username}' SUBJECT='{subject}'\n{message}\n{'---' * 10}")
+
+        _ = input("Press enter to send...")
     message_request = session.post(url, json=data)
     message_request.raise_for_status()

@@ -34,6 +34,7 @@ def delete_entry(
     entry_id: int,
     force=False,
     deletion_msg="",
+    prompt=True
 ):
     # DUPE deletions are currently possible (harmless)
     # https://beta.vocadb.net/Artist/Versions/151812
@@ -41,6 +42,8 @@ def delete_entry(
 
     assert entry_type in get_args(Entry_type), "Invalid entry type"  # noqa: S101
     logger.warning(f"Deleting {entry_type} entry {entry_id}...")
+    if prompt:
+        _ = input("Press enter to delete...")
 
     if not force:
         # TODO comply with content removal guidelines
