@@ -9,6 +9,8 @@ cache = dc.Cache("cache")
 
 logger = get_logger()
 
+# TODO replace partially with https://docs.peewee-orm.com/ ?
+
 
 def cache_with_expiration(days=1):
     def decorator(func):

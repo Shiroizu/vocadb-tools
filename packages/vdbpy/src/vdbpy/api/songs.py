@@ -23,6 +23,8 @@ def get_song_by_id(song_id, fields=""):
     url = f"{SONG_API_URL}/{song_id}"
     return fetch_json(url, params=params)
 
+def get_song(params):
+    return fetch_json(SONG_API_URL, params=params)["items"][0]
 
 def get_songs(params):
     return fetch_json_items(SONG_API_URL, params=params)
