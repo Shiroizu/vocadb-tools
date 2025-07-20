@@ -188,6 +188,12 @@ def get_songlist_author_ids_by_song_id(song_id: int) -> list[int]:
     return [songlist["author"]["id"] for songlist in songlists]
 
 
+def get_relevant_user_ids_by_song_id(song_id: int) -> list[int]:
+    song_raters = get_song_rater_ids_by_song_id(song_id)
+    entry_creator = get_entry_creator_id_by_song_id(song_id)
+    songlist_authors = get_songlist_author_ids_by_song_id(song_id)
+    return list({*song_raters, entry_creator, *songlist_authors})
+
 # ---------------------------------------------- #
 
 
