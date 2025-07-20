@@ -35,7 +35,7 @@ def delete_entry(
     force=False,
     deletion_msg="",
     prompt=True
-):
+) -> bool:
     # DUPE deletions are currently possible (harmless)
     # https://beta.vocadb.net/Artist/Versions/151812
     # TODO fix ^
@@ -48,10 +48,13 @@ def delete_entry(
     if not force:
         # TODO comply with content removal guidelines
         logger.warning("Careful entry deletion has not been implemented.")
-        return
+        return False
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}"
     if deletion_msg:
         url += f"?notes={deletion_msg}"
 
     deletion_attempt = session.delete(url)
     deletion_attempt.raise_for_status()
+
+    return True
+
