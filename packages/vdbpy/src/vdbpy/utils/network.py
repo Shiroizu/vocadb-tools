@@ -6,6 +6,7 @@ from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
+BASE_DELAY = 0.5
 
 
 def fetch_text(url: str, session=requests, params=None):
@@ -14,7 +15,7 @@ def fetch_text(url: str, session=requests, params=None):
     # Step 1: Decode bytes as ISO-8859-1
     logger.debug(f"Parsed URL: '{r.url}'")
     r.raise_for_status()
-    time.sleep(0.5)
+    time.sleep(BASE_DELAY)
     if r.encoding == "ISO-8859-1":
         logger.info("Converting from ISO-8859-1 to UTF-8")
         return r.text.encode("ISO-8859-1").decode("utf-8")
@@ -27,7 +28,7 @@ def fetch_json(url: str, session=requests, params=None):
     r = session.get(url, params=params)
     logger.debug(f"Parsed URL: '{r.url}'")
     r.raise_for_status()
-    time.sleep(0.5)
+    time.sleep(BASE_DELAY)
     return r.json()
 
 
