@@ -9,12 +9,12 @@ from vdbpy.api.notifications import (
     get_notifications_by_user_id,
 )
 from vdbpy.api.songlists import create_or_update_songlist
+from vdbpy.api.songs import get_song_by_id
 from vdbpy.api.users import find_user_by_username
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.files import get_credentials, get_lines, save_file
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_json
 
 logger = get_logger("notifications_to_songlist")
 
@@ -24,12 +24,20 @@ logger = get_logger("notifications_to_songlist")
 
 @cache_with_expiration(days=1)
 def is_cover_with_original_as_entry(song_id: int) -> bool:
-    url = f"{WEBSITE}/api/songs/{song_id}"
-    entry = fetch_json(url)
+    entry = get_song_by_id(song_id)
     result = (entry["songType"] == "Cover") and ("originalVersionId" in entry)
     if result:
-        logger.info(f"\tCover of {WEBSITE}/S/{entry['originalVersionId']}, skipping.")
+        logger.info(f"\t  Cover of {WEBSITE}/S/{entry['originalVersionId']}, skipping.")
     return result
+
+
+@cache_with_expiration(days=1)
+def is_instrumental(song_id: int) -> bool:
+    entry = get_song_by_id(song_id, fields="artists")
+    for artist in entry["artists"]:
+        if artist["categories"] == "Vocalist" or "Vocalist" in artist["effectiveRoles"]:
+            return False
+    return True
 
 
 def filter_notifications(
@@ -37,6 +45,7 @@ def filter_notifications(
     session: requests.Session,
     skip_covers=False,
     skip_music_pvs=False,
+    skip_instruments=False,
 ) -> list[int]:
     """Returns a list of new song IDs from notifications."""
     notification_ids: list[int] = []
@@ -77,6 +86,10 @@ def filter_notifications(
 
         if skip_covers and is_cover_with_original_as_entry(song_id):
             logger.debug("\t\tSkipping cover song ")
+            continue
+
+        if skip_instruments and is_instrumental(song_id):
+            logger.debug("\t\tSkipping instrumental song ")
             continue
 
         if skip_music_pvs and notif_body.startswith("New song (music pv)"):
@@ -126,24 +139,33 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="Max notifications to fetch (default)",
     )
+
+    parser.add_argument(
+        "--include_seen_songs",
+        action="store_true",
+        help="Include already seen songs in the songlist",
+    )
+
     parser.add_argument(
         "--skip_covers",
         action="store_true",
         help="Skip covers that have original version as entry",
     )
     # TODO --skip_out_of_scope songs
-    # TODO --skip_instrumentals
     # TODO --skip_already_rated
+
     parser.add_argument(
-        "--include_seen_songs",
+        "--skip_instrumentals",
         action="store_true",
-        help="Include already seen songs in the songlist",
+        help="Skip instrumental songs (no vocals)",
     )
+
     parser.add_argument(
         "--skip_music_pvs",
         action="store_true",
         help="Skip music pvs",
     )
+
     parser.add_argument(
         "--songlist_title",
         default="",
@@ -161,6 +183,7 @@ if __name__ == "__main__":
     MAX_SONGLIST_LENGTH = args.max_songlist_length
     MAX_NOTIFS = args.max_notifs
     SKIP_COVERS = args.skip_covers
+    SKIP_INSTRUMENTALS = args.skip_instrumentals
     SKIP_MUSIC_PVS = args.skip_music_pvs
     INCLUDE_SEEN = args.include_seen_songs
     SONGLIST_TITLE = args.songlist_title
@@ -208,7 +231,11 @@ if __name__ == "__main__":
         )
 
         new_song_ids = filter_notifications(
-            all_notifications, session, SKIP_COVERS, SKIP_MUSIC_PVS
+            all_notifications,
+            session,
+            skip_covers=SKIP_COVERS,
+            skip_music_pvs=SKIP_MUSIC_PVS,
+            skip_instruments=SKIP_INSTRUMENTALS,
         )
         if not INCLUDE_SEEN:
             new_song_ids = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_song_ids)
