@@ -155,24 +155,27 @@ def get_song_rater_ids_by_song_id(song_id: int, session=None) -> list[int]:
 
 
 def get_viewcounts_by_song_id_and_service(
-    song_id: int, service: Service, api_keys: dict[Service, str]
+    song_id: int, service: Service, api_keys: dict[Service, str], precalculated_data: dict[str, int] | None = None
 ) -> list[tuple[str, str, int]]:
     # Returns a tuple of (pv_url, pv_type, viewcount)
     pvs = get_song_by_id(song_id, fields="pvs")["pvs"]
+    if precalculated_data is None:
+        precalculated_data = {}
     # [{"author":"ミナツキトーカ","disabled":false,"id":197272,"length":274,"name":"- moonlight waltz -　月夜の舞踏譜 【波音リツ・重音テト オリジナル】","publishDate":"2016-10-12T00:00:00","pvId":"sm29822681","service":"NicoNicoDouga","pvType":"Original","thumbUrl":"https://nicovideo.cdn.nimg.jp/thumbnails/29822681/29822681","url":"http://www.nicovideo.jp/watch/sm29822681"}, ...]
     viewcount_functions: dict[Service, Callable[..., int]] = {
         "NicoNicoDouga": niconico.get_viewcount,
         "Youtube": youtube.get_viewcount,
     }
-    return [
-        (
-            pv["url"],
-            pv["pvType"],
-            viewcount_functions[pv["service"]](pv["pvId"], api_keys.get(pv["service"])),
-        )
-        for pv in pvs
-        if pv["service"] == service and not pv["disabled"]
-    ]
+    new_data : list[tuple[str, str, int]] = []
+    for pv in pvs:
+        if pv["service"] == service and not pv["disabled"]:
+            if pv["pvId"] in precalculated_data:
+                new_viewcount = precalculated_data[pv["pvId"]]
+            else:
+                new_viewcount = viewcount_functions[pv["service"]](pv["pvId"], api_keys.get(pv["service"]))
+            new_data.append((pv["url"], pv["pvType"], new_viewcount))
+
+    return new_data
 
 
 @cache_without_expiration()
