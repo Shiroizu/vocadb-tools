@@ -6,7 +6,7 @@ from typing import Callable
 from vdbpy.config import WEBSITE
 from vdbpy.types import Service
 from vdbpy.utils import niconico, youtube
-from vdbpy.utils.cache import cache_without_expiration
+from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount, fetch_json, fetch_json_items
 
@@ -18,6 +18,7 @@ SONG_API_URL = f"{WEBSITE}/api/songs"
 # TODO Type: SongEntry
 
 
+@cache_with_expiration(days=2)
 def get_song_by_id(song_id, fields=""):
     params = {"fields": fields} if fields else {}
     url = f"{SONG_API_URL}/{song_id}"
