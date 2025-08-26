@@ -18,8 +18,10 @@ from vdbpy.utils.logger import get_logger
 
 logger = get_logger("notifications_to_songlist")
 
-
+# TODO --skip_out_of_scope songs
+# TODO --skip_already_rated
 # TODO unplayable media (bandcamp)
+# TODO pass options as a dict
 
 
 @cache_with_expiration(days=1)
@@ -46,12 +48,11 @@ def filter_notifications(
     skip_covers=False,
     skip_music_pvs=False,
     skip_instruments=False,
+    delete_seen_notifs=False,
 ) -> list[int]:
     """Returns a list of new song IDs from notifications."""
-    notification_ids: list[int] = []
     notification_messages: list[str] = []
     new_song_ids: list[int] = []
-    notification_messages = []
     counter = 0
 
     for item in all_notifications:
@@ -96,12 +97,14 @@ def filter_notifications(
             logger.info("\tSkipping music PV")
             continue
 
+        # delete_notifications(session, USER_ID, notification_ids)
         new_song_ids.append(song_id)
         continue
 
-    if notification_ids:
-        delete_notifications(session, USER_ID, notification_ids)
-        save_file(NOTIF_LOG_FILE, notification_messages, append=True)
+    save_file(NOTIF_LOG_FILE, notification_messages, append=True)
+    if delete_seen_notifs:
+        logger.info("Deleting seen notificatoins...")
+        delete_notifications(session, USER_ID, [item["id"] for item in all_notifications])
 
     logger.info(f"\nFound {len(new_song_ids)} new songs based on notifications.")
     return new_song_ids
@@ -124,6 +127,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--include_read_notifications",
+        "-ir",
         action="store_true",
         help="Also check already read notifications",
     )
@@ -142,26 +146,28 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--include_seen_songs",
+        "-is",
         action="store_true",
         help="Include already seen songs in the songlist",
     )
 
     parser.add_argument(
         "--skip_covers",
+        "-sc",
         action="store_true",
         help="Skip covers that have original version as entry",
     )
-    # TODO --skip_out_of_scope songs
-    # TODO --skip_already_rated
 
     parser.add_argument(
         "--skip_instrumentals",
+        "-si",
         action="store_true",
         help="Skip instrumental songs (no vocals)",
     )
 
     parser.add_argument(
         "--skip_music_pvs",
+        "-sm",
         action="store_true",
         help="Skip music pvs",
     )
@@ -171,6 +177,13 @@ def parse_args() -> argparse.Namespace:
         default="",
         type=str,
         help="Title of the songlist to create. Default is 'Songs to check (date)'",
+    )
+
+    parser.add_argument(
+        "--delete_seen_notifications",
+        "-ds",
+        action="store_true",
+        help="Delete seen notifications.",
     )
 
     return parser.parse_args()
@@ -185,7 +198,8 @@ if __name__ == "__main__":
     SKIP_COVERS = args.skip_covers
     SKIP_INSTRUMENTALS = args.skip_instrumentals
     SKIP_MUSIC_PVS = args.skip_music_pvs
-    INCLUDE_SEEN = args.include_seen_songs
+    INCLUDE_SEEN_SONGS = args.include_seen_songs
+    DELETE_SEEN_NOTIFS = args.delete_seen_notifications
     SONGLIST_TITLE = args.songlist_title
 
     CREDENTIALS_FILE = "credentials.env"
@@ -207,9 +221,12 @@ if __name__ == "__main__":
     )
     logger.info(f"\t{MAX_SONGLIST_LENGTH=} (change with --max_songlist_length N)")
     logger.info(f"\t{MAX_NOTIFS=} (change with --max_notifs N)")
-    logger.info(f"\t{SKIP_COVERS=} (change with --skip_covers)")
-    logger.info(f"\t{SKIP_MUSIC_PVS=} (change with --skip_music_pvs)")
-    logger.info(f"\t{INCLUDE_SEEN=} (change with --include_seen_songs)")
+    logger.info(f"\t{SKIP_COVERS=} (change with --skip_covers or -sc)")
+    logger.info(f"\t{SKIP_MUSIC_PVS=} (change with --skip_music_pvs or -sm)")
+    logger.info(f"\t{SKIP_INSTRUMENTALS=} (change with --skip_instruments or -si)")
+    logger.info(f"\t{INCLUDE_SEEN_SONGS=} (change with --include_seen_songs or -is)")
+    logger.info(f"\t{INCLUDE_READ_NOTIFICATIONS=} (change with --include_read_notifications or -ir)")
+    logger.info(f"\t{DELETE_SEEN_NOTIFS=} (change with --delete_seen_notifications or -ds)")
     logger.info(f"\t{songlist_title=} (change with --songlist_title S)")
 
     _ = input("\nPress enter to continue...")
@@ -236,8 +253,9 @@ if __name__ == "__main__":
             skip_covers=SKIP_COVERS,
             skip_music_pvs=SKIP_MUSIC_PVS,
             skip_instruments=SKIP_INSTRUMENTALS,
+            delete_seen_notifs=DELETE_SEEN_NOTIFS,
         )
-        if not INCLUDE_SEEN:
+        if not INCLUDE_SEEN_SONGS:
             new_song_ids = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_song_ids)
         if not new_song_ids:
             logger.warning("No new songs found")
@@ -250,3 +268,4 @@ if __name__ == "__main__":
             title=songlist_title,
         )
         save_file(SEEN_SONG_IDS_FILE, new_song_ids, append=True)
+        logger.info(f"Notifications appended to '{SEEN_SONG_IDS_FILE}'")
