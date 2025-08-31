@@ -10,7 +10,7 @@ EVENT_API_URL = f"{WEBSITE}/api/releaseEvents"
 @cache_with_expiration(days=1)
 def get_event_details_by_event_id(event_id: int, params=None):
     params = {} if params is None else params
-    api_url = f"{EVENT_API_URL}/releaseEvents/{event_id}"
+    api_url = f"{EVENT_API_URL}/{event_id}"
     """ Example https://vocadb.net/api/releaseEvents/3000
     category	"Unspecified"
     date	"2024-02-14T00:00:00Z"
