@@ -28,6 +28,13 @@ def get_random_entry():
     return fetch_json(url, params=params)["items"][0]
 
 
+def is_deleted(entry_type: Entry_type, entry_id: int) -> bool:
+    url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}"
+    entry = fetch_json(url)
+    if "deleted" in entry:
+        return entry["deleted"]
+    return False
+
 def delete_entry(
     session,
     entry_type: Entry_type,
@@ -36,9 +43,9 @@ def delete_entry(
     deletion_msg="",
     prompt=True
 ) -> bool:
-    # DUPE deletions are currently possible (harmless)
-    # https://beta.vocadb.net/Artist/Versions/151812
-    # TODO fix ^
+    if is_deleted(entry_type, entry_id):
+        logger.warning(f"Entry {entry_id} has already been deleted.")
+        return False
 
     assert entry_type in get_args(Entry_type), "Invalid entry type"  # noqa: S101
     logger.warning(f"Deleting {entry_type} entry {entry_id}...")
