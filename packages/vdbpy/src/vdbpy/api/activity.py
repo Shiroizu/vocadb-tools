@@ -1,5 +1,6 @@
 from vdbpy.config import WEBSITE
 from vdbpy.types import UserEdit
+from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import get_month_strings, parse_date
 from vdbpy.utils.logger import get_logger
@@ -10,6 +11,7 @@ logger = get_logger()
 ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
+@cache_without_expiration()
 def get_edits_by_month(year: int, month: int) -> list[UserEdit]:
     a, b = get_month_strings(year, month)
     logger.info(f"Fetching all edits from '{a}' to '{b}'...")
