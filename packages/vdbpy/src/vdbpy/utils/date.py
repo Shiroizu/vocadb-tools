@@ -50,7 +50,7 @@ def month_is_over(year: int, month: int) -> bool:
     """Verify that the given month is not ongoing or in the future."""
     logger.debug(f"Verifying date {year}-{month}")
     now = datetime.now()
-    if year >= now.year and month > now.month:
+    if year >= now.year and month >= now.month:
         logger.warning(f"Current date: {now.month}.{now.year}")
         logger.warning("Selected month is still ongoing or in the future.")
         return False
@@ -58,18 +58,59 @@ def month_is_over(year: int, month: int) -> bool:
 
 
 def get_month_strings(year: int, month: int) -> tuple[str, str]:
-    last_month_string = f"{year}-{str(month).zfill(2)}-01"
-    if month == 1:
-        month_before_last_month_string = f"{year-1}-12-01"
+    """Get datestrings for the current month.
+
+    >>> get_month_strings(2024, 1)
+    ('2024-01-01', '2024-02-01')
+    >>> get_month_strings(2024, 4)
+    ('2024-04-01', '2024-05-01')
+    >>> get_month_strings(2024, 12)
+    ('2024-12-01', '2025-01-01')
+    >>> get_month_strings(3024, 12)
+    Traceback (most recent call last):
+        ...
+    ValueError: Month 12.3024 is ongoing or in the future!
+    """
+    if not month_is_over(year, month):
+        raise ValueError(f"Month {month}.{year} is ongoing or in the future!")
+
+    first_day_of_this_month = f"{year}-{str(month).zfill(2)}-01"
+    if month == 12:
+        first_day_of_next_month = f"{year+1}-01-01"
     else:
-        month_before_last_month_string = f"{year}-{str(month-1).zfill(2)}-01"
-    return month_before_last_month_string, last_month_string
+        first_day_of_next_month = f"{year}-{str(month+1).zfill(2)}-01"
+    return first_day_of_this_month, first_day_of_next_month
+
+
+def get_last_month_strings(year: int = 0, month: int = 0) -> tuple[str, str]:
+    """Get datestrings for the previous month (current month is still ongoing).
+
+    >>> get_last_month_strings(2024, 1)
+    ('2023-12-01', '2024-01-01')
+    >>> get_last_month_strings(2024, 5)
+    ('2024-04-01', '2024-05-01')
+    >>> get_last_month_strings(2024, 12)
+    ('2024-11-01', '2024-12-01')
+    >>> get_last_month_strings()
+    ('2025-08-01', '2025-09-01')
+    """
+    if not year or not month:
+        now = datetime.now(UTC)
+        year = now.year
+        month = now.month
+    first_day_of_this_month = f"{year}-{str(month).zfill(2)}-01"
+    if month == 1:
+        first_day_of_last_month = f"{year-1}-12-01"
+    else:
+        first_day_of_last_month = f"{year}-{str(month-1).zfill(2)}-01"
+    return first_day_of_last_month, first_day_of_this_month
 
 
 def get_all_month_strings_since(start_year: int) -> list[tuple[str, str]]:
     """Get list of date string tuples since the start of the input year. Stops before the current month.
 
-    Output: ('2024-01-01', '2024-02-01'), ('2024-02-01', '2024-03-01'), ('2024-03-01', '2024-04-01'), ('2024-04-01', '2024-05-01'), ('2024-05-01', '2024-06-01'), ('2024-06-01', '2024-07-01'), ('2024-07-01', '2024-08-01'), ('2024-08-01', '2024-09-01'), ('2024-09-01', '2024-10-01'), ('2024-10-01', '2024-11-01'), ('2024-11-01', '2024-12-01'), ('2024-12-01', '2025-01-01'), ('2025-01-01', '2025-02-01'), ('2025-02-01', '2025-03-01'), ('2025-03-01', '2025-04-01'), ('2025-04-01', '2025-05-01'), ('2025-05-01', '2025-06-01')]
+    OUTPUT: get_all_month_strings_since(2025)
+    [('2025-01-01', '2025-02-01'), ('2025-02-01', '2025-03-01'), ('2025-03-01', '2025-04-01'), ('2025-04-01', '2025-05-01'), ('2025-05-01', '2025-06-01'), ('2025-06-01', '2025-07-01'), ('2025-07-01', '2025-08-01')]
     """
     now = datetime.now()
     end_month = now.month - 1 if now.month > 1 else 12

@@ -1,4 +1,4 @@
-from vdbpy.utils.date import get_month_strings, month_is_over
+from vdbpy.utils.date import get_last_month_strings, month_is_over
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount
 
@@ -27,7 +27,7 @@ def get_monthly_count(year: int, month: int, api_url: str, param_name="before") 
 
     logger.debug(f"Calculating monthly count for: {year}-{month}")
 
-    a, b = get_month_strings(year, month)
+    a, b = get_last_month_strings(year, month)
     logger.debug(f"Corresponding date strings: {a} - {b}")
 
     if not month_is_over(year, month):
