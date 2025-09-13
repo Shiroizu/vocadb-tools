@@ -1,7 +1,6 @@
 from vdbpy.config import WEBSITE
 from vdbpy.types import UserEdit
-from vdbpy.utils.cache import cache_without_expiration
-from vdbpy.utils.data import get_monthly_count
+from vdbpy.utils.data import get_last_month_strings, get_monthly_count
 from vdbpy.utils.date import get_month_strings, parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_all_items_between_dates
@@ -11,9 +10,12 @@ logger = get_logger()
 ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
-@cache_without_expiration()
-def get_edits_by_month(year: int, month: int) -> list[UserEdit]:
-    a, b = get_month_strings(year, month)
+# Redundant to cache here as fetch_all_items_between_dates caches already
+def get_edits_by_month(year= 0, month = 0) -> list[UserEdit]:
+    if not year or not month:
+        a, b = get_last_month_strings()
+    else:
+        a, b = get_month_strings(year, month)
     logger.info(f"Fetching all edits from '{a}' to '{b}'...")
     params = {"fields": "Entry,ArchivedVersion"}
     # Example https://vocadb.net/api/activityEntries?userId=28373&fields=Entry,ArchivedVersion
@@ -31,7 +33,7 @@ def get_monthly_edit_count(year: int, month: int) -> int:
 
 def get_monthly_top_editors(year: int, month: int, top_n=200) -> list[tuple[int, int]]:
     """Return a sorted list of the top monthly editors: [(user_id, edit_count),..]."""
-    edits: list[UserEdit] = get_edits_by_month(year=year, month=month)
+    edits: list[UserEdit] = get_edits_by_month(year, month)
 
     edit_counts_by_editor_id: dict[int, int] = {}
     for edit in edits:
@@ -50,7 +52,7 @@ def get_top_editors_by_field(
     field: str, year: int, month: int, top_n=200
 ) -> list[tuple[int, int]]:
     """Return a sorted list of the top monthly editors based on an edit field: [(user_id, edit_count),..]."""
-    edits: list[UserEdit] = get_edits_by_month(year=year, month=month)
+    edits: list[UserEdit] = get_edits_by_month(year, month)
 
     edit_counts_by_editor_id: dict[int, int] = {}
     for edit in edits:

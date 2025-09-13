@@ -90,9 +90,11 @@ def fetch_all_items_between_dates(
 
     all_items = []
 
+    logger.debug(f"Fetching all '{api_url}' items from '{a}' to '{b}'...")
+
     while True:
         items = fetch_cached_json(api_url, params=params)["items"]
-        logger.info(
+        logger.debug(
             f"Fetching items from '{params['since']}' to '{params['before']}'..."
         )
 
