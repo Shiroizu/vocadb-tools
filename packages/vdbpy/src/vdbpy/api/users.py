@@ -9,6 +9,7 @@ from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
+    fetch_all_items_between_dates,
     fetch_json,
     fetch_json_items,
 )
@@ -171,7 +172,7 @@ def get_created_entries_by_username(username: str) -> list[UserEdit]:
     }
 
     logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
-    return parse_edits(fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500))
+    return parse_edits(fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500))
 
 
 def get_edits_by_username(username: str) -> list[UserEdit]:
@@ -183,7 +184,7 @@ def get_edits_by_username(username: str) -> list[UserEdit]:
     }
 
     logger.debug(f"Fetching edits by user '{username}' ({user_id})")
-    return parse_edits(fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500))
+    return parse_edits(fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500))
 
 @cache_with_expiration(days=1)
 def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
