@@ -121,6 +121,11 @@ def fetch_all_items_between_dates(
 
         all_items.extend(items)
         logger.debug(f"Found {len(items)} items.")
+
+        if len(items) < page_size:
+            logger.debug(f"Less than {page_size} items, stopping.")
+            break
+
         params["before"] = items[-1][date_indicator]
 
     return all_items
