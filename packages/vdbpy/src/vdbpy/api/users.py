@@ -15,6 +15,7 @@ from vdbpy.utils.network import (
 logger = get_logger()
 
 USER_API_URL = f"{WEBSITE}/api/users"
+ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 # TOOD: Type UserEntry
 
@@ -162,27 +163,26 @@ def get_followed_artists_by_user_id(user_id: int, extra_params=None):
 def get_created_entries_by_username(username: str) -> list:
     # Also includes deleted entries
     username, user_id = find_user_by_username(username)
-    max_results = 500  # TODO verify
     params = {
         "userId": user_id,
         "fields": "Entry",
-        "getTotalCount": True,
-        "maxResults": max_results,
         "editEvent": "Created",
     }
 
     logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
-    url = f"{WEBSITE}/api/activityEntries"
-    result = fetch_json(url, params=params)
-    if not result["items"]:
-        logger.warning("No entries found!")
-        return []
-    if result["totalCount"] > max_results:
-        # TODO implement using before param
-        logger.warning(f"User has more than {max_results} entries! Update the script!")
-        _ = input("Press enter to continue...")
-    return result["items"]
+    return fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500)
 
+
+def get_edits_by_username(username: str) -> list:
+    # Also includes deleted entries
+    username, user_id = find_user_by_username(username)
+    params = {
+        "userId": user_id,
+        "fields": "Entry",
+    }
+
+    logger.debug(f"Fetching edits by user '{username}' ({user_id})")
+    return fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500)
 
 @cache_with_expiration(days=1)
 def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
@@ -201,7 +201,6 @@ def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
     }
     # {'Song': {'Created': 0, 'Updated': 0, 'Deleted': 0}, ... 'ReleaseEventSeries': {'Created': 0, 'Updated': 0, 'Deleted': 0}}
 
-    api_url = f"{WEBSITE}/api/activityEntries"
     params = {"maxResults": 1, "getTotalCount": True, "userId": user_id}
 
     if since:
@@ -210,7 +209,7 @@ def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
     if before:
         params["before"] = before
 
-    total_count = fetch_json(api_url, params=params)["totalCount"]
+    total_count = fetch_json(ACTIVITY_API_URL, params=params)["totalCount"]
     print(f"Total edits: {total_count}")
 
     combinations = [  # Sorted by how common they are
@@ -239,7 +238,7 @@ def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
         params["entryType"] = entry_type
         params["editEvent"] = edit_type
         count = 0
-        count = fetch_json(api_url, params=params)["totalCount"]
+        count = fetch_json(ACTIVITY_API_URL, params=params)["totalCount"]
         if count > 0:
             entry_matrix[entry_type][edit_type] = count
             print(

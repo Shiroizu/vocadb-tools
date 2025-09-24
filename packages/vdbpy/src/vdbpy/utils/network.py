@@ -39,13 +39,12 @@ def fetch_cached_json(url: str, session=requests, params=None):
 
 
 def fetch_json_items(
-    url, params: dict | None = None, session=requests, max_results=10**9
+    url, params: dict | None = None, session=requests, max_results=10**9, page_size=50
 ):
     logger.debug(f"Fetching all JSON items for url '{url}'")
     logger.debug(f"Params: {params}")
     all_items = []
     page = 1
-    page_size = 50
     params = params if params is not None else {}
     params["maxResults"] = page_size
     params["getTotalCount"] = True
