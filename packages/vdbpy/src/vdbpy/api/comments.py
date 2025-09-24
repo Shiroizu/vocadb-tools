@@ -30,7 +30,7 @@ def get_comments_by_user_id(user_id) -> list:
     logger.info(f"Most recent comment date is {b}\n")
     params = {"userId": user_id, "fields": "entry"}
     all_comments = fetch_all_items_between_dates(
-        COMMENT_API_URL, a, b, params=params, date_indicator="created"
+        COMMENT_API_URL, since=a, before=b, params=params, date_indicator="created"
     )
     logger.info(f"Found {len(all_comments)} comments by {user_id}")
     return all_comments
