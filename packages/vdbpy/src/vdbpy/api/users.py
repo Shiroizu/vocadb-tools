@@ -167,7 +167,7 @@ def get_created_entries_by_username(username: str) -> list[UserEdit]:
     username, user_id = find_user_by_username(username)
     params = {
         "userId": user_id,
-        "fields": "Entry",
+        "fields": "Entry,ArchivedVersion",
         "editEvent": "Created",
     }
 
@@ -180,7 +180,7 @@ def get_edits_by_username(username: str) -> list[UserEdit]:
     username, user_id = find_user_by_username(username)
     params = {
         "userId": user_id,
-        "fields": "Entry",
+        "fields": "Entry,ArchivedVersion",
     }
 
     logger.debug(f"Fetching edits by user '{username}' ({user_id})")
