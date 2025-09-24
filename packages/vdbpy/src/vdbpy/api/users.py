@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import get_args
 
+from vdbpy.api.activity import parse_edits
 from vdbpy.config import WEBSITE
-from vdbpy.types import Edit_type, Entry_type, UserGroup
+from vdbpy.types import Edit_type, Entry_type, UserEdit, UserGroup
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
@@ -160,7 +161,7 @@ def get_followed_artists_by_user_id(user_id: int, extra_params=None):
     return followed_artists
 
 
-def get_created_entries_by_username(username: str) -> list:
+def get_created_entries_by_username(username: str) -> list[UserEdit]:
     # Also includes deleted entries
     username, user_id = find_user_by_username(username)
     params = {
@@ -170,10 +171,10 @@ def get_created_entries_by_username(username: str) -> list:
     }
 
     logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
-    return fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500)
+    return parse_edits(fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500))
 
 
-def get_edits_by_username(username: str) -> list:
+def get_edits_by_username(username: str) -> list[UserEdit]:
     # Also includes deleted entries
     username, user_id = find_user_by_username(username)
     params = {
@@ -182,7 +183,7 @@ def get_edits_by_username(username: str) -> list:
     }
 
     logger.debug(f"Fetching edits by user '{username}' ({user_id})")
-    return fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500)
+    return parse_edits(fetch_json_items(ACTIVITY_API_URL, params=params, page_size=500))
 
 @cache_with_expiration(days=1)
 def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
