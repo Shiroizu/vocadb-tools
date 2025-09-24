@@ -80,7 +80,11 @@ def fetch_cached_totalcount(api_url, params: dict | None = None) -> int:
 
 @cache_without_expiration()
 def fetch_all_items_between_dates(
-    api_url, before: str, since: str = "2000-01-01T00:00:00Z", date_indicator="createDate", params: dict | None = None
+    api_url,
+    since: str = "2000-01-01T00:00:00Z",
+    before: str = "2100-01-01T00:00:00Z",
+    date_indicator="createDate",
+    params: dict | None = None,
 ) -> list:
     """Get all items between date strings by decreasing before parameter incrementally."""
     params = params if params is not None else {}
