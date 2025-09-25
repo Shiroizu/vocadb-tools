@@ -38,6 +38,7 @@ class UserEdit:
     version_id: int
     edit_event: Edit_type
     changed_fields: list[str]
+    update_notes: str
 
 
 Service = Literal[
@@ -52,3 +53,6 @@ Service = Literal[
     "Creofuga",
     "Bandcamp",
 ]
+
+VersionCheck = tuple[UserEdit, int, bool | None]
+# rule_id, result (True = No mistakes, False = Mistake found, None = Not applicable)

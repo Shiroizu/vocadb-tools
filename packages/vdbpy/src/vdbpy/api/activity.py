@@ -11,7 +11,7 @@ ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
 # Redundant to cache here as fetch_all_items_between_dates caches already
-def get_edits_by_month(year= 0, month = 0) -> list[UserEdit]:
+def get_edits_by_month(year=0, month=0) -> list[UserEdit]:
     if not year or not month:
         a, b = get_last_month_strings()
     else:
@@ -103,13 +103,14 @@ def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:
         logger.debug(f"Found edit: {WEBSITE}/{entry_type}/ViewVersion/{version_id}")
 
         user_edit = UserEdit(
-            edit_object["archivedVersion"]["author"]["id"],
-            edit_date,
-            edit_object["entry"]["entryType"],
-            edit_object["entry"]["id"],
-            version_id,
-            edit_object["editEvent"],
-            edit_object["archivedVersion"]["changedFields"],
+            user_id=edit_object["archivedVersion"]["author"]["id"],
+            edit_date=edit_date,
+            entry_type=edit_object["entry"]["entryType"],
+            entry_id=edit_object["entry"]["id"],
+            version_id=version_id,
+            edit_event=edit_object["editEvent"],
+            changed_fields=edit_object["archivedVersion"]["changedFields"],
+            update_notes=edit_object["archivedVersion"]["notes"],
         )
         logger.debug(f"Edit: {user_edit}")
         parsed_edits.append(user_edit)

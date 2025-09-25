@@ -2,13 +2,43 @@ import random
 from typing import get_args
 
 from vdbpy.config import WEBSITE
-from vdbpy.types import Entry_type
+from vdbpy.types import Edit_type, Entry_type, UserEdit
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.data import add_s
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount, fetch_json
 
 logger = get_logger()
+
+edit_event_map: dict[str, Edit_type] = {"PropertiesUpdated": "Updated", "Deleted": "Deleted", "Created": "Created"}
+
+def parse_edits_from_archived_versions(data: list[dict], entry_type: Entry_type, entry_id: int) -> list[UserEdit]:
+    parsed_edits: list[UserEdit] = []
+    for edit_object in data:
+        parsed_edits.append(
+            UserEdit(
+                user_id=edit_object["author"]["id"],
+                edit_date=edit_object["created"],
+                entry_type=entry_type,
+                entry_id=entry_id,
+                version_id=edit_object["id"],
+                edit_event=edit_event_map[edit_object["reason"]],
+                changed_fields=edit_object["changedFields"],
+                update_notes=edit_object["notes"],
+            )
+        )
+    return parsed_edits
+
+def get_entry_versions(entry_type: Entry_type, entry_id: int) -> list[UserEdit]:
+    url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
+    data = fetch_json(url)["archivedVersions"]
+    return parse_edits_from_archived_versions(data, entry_type, entry_id)
+
+
+def get_entry_version(entry_type: Entry_type, version_id: int) -> dict:
+    # TODO proper return types: Song | Album | ..
+    url = f"{WEBSITE}/api/{add_s(entry_type)}/versions/{version_id}"
+    return fetch_json(url)
 
 
 @cache_with_expiration(days=1)
