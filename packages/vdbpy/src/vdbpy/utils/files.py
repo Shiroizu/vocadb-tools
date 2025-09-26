@@ -18,6 +18,15 @@ def verify_file(filename: str) -> None:
             f.write("")
 
 
+def get_text(filename: str) -> str:
+    """Safely read lines from a file. Create file and return an empty list if necessary."""
+    verify_file(filename)
+
+    logger.debug(f"Fetching lines from file '{filename}'")
+    with open(filename, encoding="utf8") as f:
+        return f.read()
+
+
 def get_lines(filename: str) -> list[str]:
     """Safely read lines from a file. Create file and return an empty list if necessary."""
     verify_file(filename)
@@ -27,7 +36,9 @@ def get_lines(filename: str) -> list[str]:
         return f.read().splitlines()
 
 
-def get_credentials(credentials_path: str, account_name: str = "", get_all=False) -> dict | tuple[str, str]:
+def get_credentials(
+    credentials_path: str, account_name: str = "", get_all=False
+) -> dict | tuple[str, str]:
     """Load credentials from the credentials file.
 
     -------- file start

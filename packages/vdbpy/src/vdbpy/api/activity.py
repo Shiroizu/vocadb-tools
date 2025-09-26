@@ -1,7 +1,15 @@
+import json
+
 from vdbpy.config import WEBSITE
 from vdbpy.types import UserEdit
-from vdbpy.utils.data import get_last_month_strings, get_monthly_count
+from vdbpy.utils.data import (
+    UserEditJSONEncoder,
+    get_last_month_strings,
+    get_monthly_count,
+    user_edit_from_dict,
+)
 from vdbpy.utils.date import get_month_strings, parse_date
+from vdbpy.utils.files import get_text, save_file
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_all_items_between_dates
 
@@ -10,8 +18,14 @@ logger = get_logger()
 ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
-# Redundant to cache here as fetch_all_items_between_dates caches already
-def get_edits_by_month(year=0, month=0) -> list[UserEdit]:
+def get_edits_by_month(year=0, month=0, save_dir="") -> list[UserEdit]:
+    if save_dir:
+        filename = f"{save_dir}/{year}-{month}.json"
+        logger.info(f"Loading edits from '{filename}'...")
+        data = get_text(filename)
+        if data:
+            return [user_edit_from_dict(item) for item in json.loads(data)]
+
     if not year or not month:
         a, b = get_last_month_strings()
     else:
@@ -24,6 +38,13 @@ def get_edits_by_month(year=0, month=0) -> list[UserEdit]:
     parsed_edits: list[UserEdit] = parse_edits(all_new_edits)
 
     logger.debug(f"Found total of {len(all_new_edits)} edits.")
+    if save_dir:
+        logger.info(f"Saving edits to '{filename}'...")
+        save_file(
+            filename,
+            json.dumps(parsed_edits, cls=UserEditJSONEncoder, separators=(",", ":")),
+        )
+
     return parsed_edits
 
 
