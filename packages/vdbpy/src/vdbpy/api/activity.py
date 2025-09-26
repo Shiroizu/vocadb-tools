@@ -1,14 +1,14 @@
 import json
+from datetime import UTC, datetime, timedelta
 
 from vdbpy.config import WEBSITE
 from vdbpy.types import UserEdit
 from vdbpy.utils.data import (
     UserEditJSONEncoder,
-    get_last_month_strings,
     get_monthly_count,
     user_edit_from_dict,
 )
-from vdbpy.utils.date import get_month_strings, parse_date
+from vdbpy.utils.date import parse_date
 from vdbpy.utils.files import get_text, save_file
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_all_items_between_dates
@@ -18,28 +18,37 @@ logger = get_logger()
 ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
-def get_edits_by_month(year=0, month=0, save_dir="") -> list[UserEdit]:
+def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserEdit]:
+    date = datetime(year, month, day, tzinfo=UTC)
+    date_str = date.strftime("%Y-%m-%d")
+    filename = f"{save_dir}/{date_str}.json"
+
+    today = datetime.now()
+    if date >= today:
+        raise ValueError("Selected date is still ongoing or in the future.")
+
     if save_dir:
-        filename = f"{save_dir}/{year}-{month}.json"
-        logger.info(f"Loading edits from '{filename}'...")
-        data = get_text(filename)
-        if data:
+        if data := get_text(filename):
+            logger.info(f"Loading edits from '{filename}'...")
             return [user_edit_from_dict(item) for item in json.loads(data)]
 
-    if not year or not month:
-        a, b = get_last_month_strings()
-    else:
-        a, b = get_month_strings(year, month)
-    logger.info(f"Fetching all edits from '{a}' to '{b}'...")
     params = {"fields": "Entry,ArchivedVersion"}
-    # Example https://vocadb.net/api/activityEntries?userId=28373&fields=Entry,ArchivedVersion
 
-    all_new_edits = fetch_all_items_between_dates(ACTIVITY_API_URL, a, b, params=params)
-    parsed_edits: list[UserEdit] = parse_edits(all_new_edits)
+    day_after = date + timedelta(days=1)
 
-    logger.debug(f"Found total of {len(all_new_edits)} edits.")
+    logger.info(f"Fetching edits from {date} to {day_after}...")
+    edits_by_date = fetch_all_items_between_dates(
+        ACTIVITY_API_URL,
+        date.strftime("%Y-%m-%dT"),
+        day_after.strftime("%Y-%m-%dT"),
+        params=params,
+    )
+    parsed_edits: list[UserEdit] = parse_edits(edits_by_date)
+
+    logger.debug(f"Found total of {len(edits_by_date)} edits.")
+
     if save_dir:
-        logger.info(f"Saving edits to '{filename}'...")
+        logger.info(f"  Saving edits to '{filename}'...")
         save_file(
             filename,
             json.dumps(
@@ -48,6 +57,26 @@ def get_edits_by_month(year=0, month=0, save_dir="") -> list[UserEdit]:
         )
 
     return parsed_edits
+
+
+def get_edits_by_month(year=0, month=0, save_dir="") -> list[UserEdit]:
+    # Call get_edits_by_day for each day in the month
+    if not year or not month:
+        today = datetime.now()
+        year = today.year
+        month = today.month
+
+    all_edits = []
+
+    date_counter = datetime(year, month, 1, tzinfo=UTC)
+    while True:
+        if date_counter.month != month:
+            break
+        current_day_edits = get_edits_by_day(year, month, date_counter.day, save_dir)
+        all_edits.extend(current_day_edits)
+        date_counter += timedelta(days=1)
+
+    return all_edits
 
 
 def get_monthly_edit_count(year: int, month: int) -> int:
