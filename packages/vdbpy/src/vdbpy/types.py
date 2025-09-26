@@ -15,7 +15,7 @@ Entry_type = Literal[
 
 Edit_type = Literal["Created", "Updated", "Deleted"]
 
-UserGroup = Literal["Admin","Moderator", "Trusted", "Regular", "Limited", "Nothing"]
+UserGroup = Literal["Admin", "Moderator", "Trusted", "Regular", "Limited", "Nothing"]
 # Disabled User: active = false
 
 TRUSTED_PLUS: list[UserGroup] = ["Admin", "Moderator", "Trusted"]
@@ -28,6 +28,7 @@ Songlist_category = Literal[
     "Pools",
     "Other",
 ]
+
 
 @dataclass
 class UserEdit:
@@ -54,5 +55,8 @@ Service = Literal[
     "Bandcamp",
 ]
 
-VersionCheck = tuple[UserEdit, int, bool | None]
-# rule_id, result (True = No mistakes, False = Mistake found, None = Not applicable)
+RuleCheckResult = Literal[
+    "Valid", "Rule violation", "Possible rule violation", "Not applicable"
+]
+VersionCheck = tuple[UserEdit, int, RuleCheckResult]
+EntryCheck = list[list[VersionCheck]]
