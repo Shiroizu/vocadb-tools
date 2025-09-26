@@ -42,7 +42,9 @@ def get_edits_by_month(year=0, month=0, save_dir="") -> list[UserEdit]:
         logger.info(f"Saving edits to '{filename}'...")
         save_file(
             filename,
-            json.dumps(parsed_edits, cls=UserEditJSONEncoder, separators=(",", ":")),
+            json.dumps(
+                parsed_edits, cls=UserEditJSONEncoder, indent=4, separators=(",", ":")
+            ),
         )
 
     return parsed_edits
