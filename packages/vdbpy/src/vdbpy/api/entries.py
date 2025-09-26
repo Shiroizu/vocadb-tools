@@ -5,6 +5,7 @@ from vdbpy.config import WEBSITE
 from vdbpy.types import Edit_type, Entry_type, UserEdit
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import add_s
+from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount, fetch_json
 
@@ -12,6 +13,7 @@ logger = get_logger()
 
 edit_event_map: dict[str, Edit_type] = {
     "PropertiesUpdated": "Updated",
+    "Merged": "Updated",
     "Deleted": "Deleted",
     "Created": "Created",
 }
@@ -22,25 +24,45 @@ def parse_edits_from_archived_versions(
 ) -> list[UserEdit]:
     parsed_edits: list[UserEdit] = []
     for edit_object in data:
+        edit_type = edit_object["reason"]
+        if edit_type == "Merged":
+            logger.warning(
+                f"Merge detected while parsing data for {entry_type} {entry_id} v{edit_object['id']}"
+            )
+            edit_type = "Updated"
+        elif edit_type not in edit_event_map:
+            logger.warning(
+                f"Unknown edit type '{edit_type}' for {entry_type} {entry_id} v{edit_object['id']}"
+            )
+            edit_type = "Updated"
+        else:
+            edit_type = edit_event_map[edit_type]
         parsed_edits.append(
             UserEdit(
                 user_id=edit_object["author"]["id"],
-                edit_date=edit_object["created"],
+                edit_date=parse_date(edit_object["created"]),
                 entry_type=entry_type,
                 entry_id=entry_id,
                 version_id=edit_object["id"],
-                edit_event=edit_event_map[edit_object["reason"]],
+                edit_event=edit_type,
                 changed_fields=edit_object["changedFields"],
                 update_notes=edit_object["notes"],
             )
         )
     return parsed_edits
 
+
 @cache_with_expiration(days=1)
 def get_entry_versions(entry_type: Entry_type, entry_id: int) -> list[UserEdit]:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
-    data = fetch_json(url)["archivedVersions"]
-    return parse_edits_from_archived_versions(data, entry_type, entry_id)
+    data = fetch_json(url)
+    if "deleted" in data["entry"] and data["entry"]["deleted"]:
+        logger.warning(f"{entry_type} {entry_id} has been deleted.")
+        return []
+    return parse_edits_from_archived_versions(
+        data["archivedVersions"], entry_type, entry_id
+    )
+
 
 @cache_without_expiration()
 def get_entry_version(entry_type: Entry_type, version_id: int) -> dict:

@@ -60,3 +60,7 @@ RuleCheckResult = Literal[
 ]
 VersionCheck = tuple[UserEdit, int, RuleCheckResult]
 EntryCheck = list[list[VersionCheck]]
+
+Report_type = Literal[
+    "InvalidInfo", "Duplicate", "Inappropriate", "Other", "InvalidTag", "BrokenPV"
+]
