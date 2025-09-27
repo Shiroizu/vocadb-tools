@@ -36,11 +36,11 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
 
     day_after = date + timedelta(days=1)
 
-    logger.info(f"Fetching edits from {date} to {day_after}...")
+    logger.debug(f"Fetching edits from {date} to {day_after}...")
     edits_by_date = fetch_all_items_between_dates(
         ACTIVITY_API_URL,
-        date.strftime("%Y-%m-%dT"),
-        day_after.strftime("%Y-%m-%dT"),
+        date.strftime("%Y-%m-%d"),
+        day_after.strftime("%Y-%m-%d"),
         params=params,
     )
     parsed_edits: list[UserEdit] = parse_edits(edits_by_date)
