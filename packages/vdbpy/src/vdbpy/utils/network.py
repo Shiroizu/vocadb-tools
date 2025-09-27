@@ -106,10 +106,11 @@ def fetch_all_items_between_dates(
     now = datetime.now()
 
     while True:
-        if parse_date(before) < now:
+        if parse_date(params["before"]) < now:
             logger.debug("Fetching cached json since beforedate is in the past...")
             items = fetch_cached_json(api_url, params=params)["items"]
         else:
+            logger.debug("Skipping cache, date is still ongoing or in the future...")
             items = fetch_json(api_url, params=params)["items"]
         logger.debug(
             f"Fetching items from '{params['since']}' to '{params['before']}'..."
