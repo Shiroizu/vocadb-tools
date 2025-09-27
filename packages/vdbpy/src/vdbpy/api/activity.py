@@ -21,13 +21,16 @@ ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserEdit]:
     date = datetime(year, month, day, tzinfo=UTC)
     date_str = date.strftime("%Y-%m-%d")
-    filename = f"{save_dir}/{date_str}.json"
 
     today = datetime.now(tz=UTC)
-    if date >= today:
-        raise ValueError("Selected date is still ongoing or in the future.")
-
+    if date.date() >= today.date():
+        logger.warning(f"Selected date {str(today).split()[0]} is still ongoing or in the future.")
+        if save_dir:
+            logger.warning(f"Not saving edits to {save_dir} for this day.")
+            save_dir = ""
+    
     if save_dir:
+        filename = f"{save_dir}/{date_str}.json"
         if data := get_text(filename):
             logger.info(f"Loading edits from '{filename}'...")
             return [user_edit_from_dict(item) for item in json.loads(data)]
