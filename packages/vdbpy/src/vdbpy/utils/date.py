@@ -1,55 +1,86 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
 
-def parse_date(utc_date_str: str, local_date_str: str = "") -> datetime:
-    """Convert and parse local date string to utc based on the difference.
+def parse_date(
+    date_to_parse: str,
+    date_format="%Y-%m-%dT%H:%M:%S.%fZ",
+    short_date_format="%Y-%m-%d",
+) -> datetime:
+    """Parse various date formats and return datetime with UTC timezone.
 
-    local_date_str has the correct milliseconds as it matches with the version id.
-
-    >>> parse_date("2024-04-06T14:25:28.21Z", "2024-04-06T17:25:28.21")
-    datetime.datetime(2024, 4, 6, 14, 25, 28, 210000)
+    >>> parse_date("2025-09-29T04:32:04.89")
+    datetime.datetime(2025, 9, 29, 4, 32, 4, 890000, tzinfo=datetime.timezone.utc)
+    >>> parse_date("2025-09-29T00:00:00Z")
+    datetime.datetime(2025, 9, 29, 0, 0, tzinfo=datetime.timezone.utc)
+    >>> parse_date("2025-09-28T12:47:09")
+    datetime.datetime(2025, 9, 28, 12, 47, 9, tzinfo=datetime.timezone.utc)
+    >>> parse_date("2025-09-29T23:19:37.25Z")
+    datetime.datetime(2025, 9, 29, 23, 19, 37, 250000, tzinfo=datetime.timezone.utc)
+    >>> parse_date("2025-09-28T12:46:59.327")
+    datetime.datetime(2025, 9, 28, 12, 46, 59, 327000, tzinfo=datetime.timezone.utc)
+    >>> parse_date("2025-07-21T02:00:00+02:00")
+    datetime.datetime(2025, 7, 21, 0, 0, tzinfo=datetime.timezone.utc)
+    >>> parse_date("2025-07-21")
+    datetime.datetime(2025, 7, 21, 0, 0, tzinfo=datetime.timezone.utc)
     """
-    date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-    short_date_format = "%Y-%m-%d"
+    if len(date_to_parse) == 10:  # 2024-06-01
+        parsed = datetime.strptime(date_to_parse, short_date_format)
+        return parsed.replace(tzinfo=timezone.utc)
 
-    if isinstance(utc_date_str, datetime):
-        return utc_date_str  # Sometimes the type checker is confused
+    date_to_parse = date_to_parse.strip()
+    date_to_parse = date_to_parse.replace(" ", "T")
 
-    if len(utc_date_str) == 10:
-        # 2024-06-01
-        return datetime.strptime(utc_date_str, short_date_format)
+    offset = None
+    offset_sign = 1
 
-    utc_date_str = utc_date_str.replace(" ", "T")
+    # Handle timezone offset
+    if "+" in date_to_parse:
+        # Positive offset: 2025-07-21T02:00:00+02:00
+        date_to_parse, offset = date_to_parse.split("+")
+        offset_sign = -1  # Subtract to convert to UTC
+    elif date_to_parse.count("-") > 2:
+        # Negative offset: 2025-07-21T02:00:00-05:00
+        parts = date_to_parse.rsplit("-", 1)
+        if ":" in parts[1]:  # Confirm it's a timezone offset
+            date_to_parse, offset = parts
+            offset_sign = 1  # Add to convert to UTC
 
-    if not utc_date_str.endswith("Z"):
-        utc_date_str += "Z"
+    if not date_to_parse.endswith("Z"):
+        date_to_parse += "Z"
 
-    if "." not in utc_date_str:
-        utc_date_str = utc_date_str.replace("Z", ".0Z")
+    if date_to_parse.count("T") > 1:
+        raise ValueError(
+            f"Invalid date format: multiple 'T' separators in {date_to_parse}"
+        )
+    if date_to_parse.count("Z") > 1:
+        raise ValueError(
+            f"Invalid date format: multiple 'Z' characters in {date_to_parse}"
+        )
 
-    if not local_date_str:
-        return datetime.strptime(utc_date_str, date_format)
+    # Add microseconds field if missing
+    if "." not in date_to_parse and date_to_parse.endswith("Z"):
+        date_to_parse = date_to_parse.replace("Z", ".0Z")
 
-    local_date_str += "Z"
+    parsed = datetime.strptime(date_to_parse, date_format)
+    parsed = parsed.replace(tzinfo=timezone.utc)
 
-    if "." not in local_date_str:
-        local_date_str = local_date_str.replace("Z", ".0Z")
+    if offset:
+        hours = int(offset.split(":")[0])
+        minutes = int(offset.split(":")[1]) if ":" in offset else 0
+        offset_delta = timedelta(hours=hours, minutes=minutes)
+        parsed += offset_sign * offset_delta
 
-    utc_date = datetime.strptime(utc_date_str, date_format)
-    local_date = datetime.strptime(local_date_str, date_format)
-    hour_diff = round((utc_date - local_date).total_seconds() / 3600)
-
-    return local_date + timedelta(hours=hour_diff)
+    return parsed
 
 
 def month_is_over(year: int, month: int) -> bool:
     """Verify that the given month is not ongoing or in the future."""
     logger.debug(f"Verifying date {year}-{month}")
-    now = datetime.now()
+    now = datetime.now(tz=UTC)
     if year >= now.year and month >= now.month:
         logger.warning(f"Current date: {now.month}.{now.year}")
         logger.warning("Selected month is still ongoing or in the future.")
@@ -95,7 +126,7 @@ def get_last_month_strings(year: int = 0, month: int = 0) -> tuple[str, str]:
     ('2025-08-01', '2025-09-01')
     """
     if not year or not month:
-        now = datetime.now(UTC)
+        now = datetime.now(tz=UTC)
         year = now.year
         month = now.month
     first_day_of_this_month = f"{year}-{str(month).zfill(2)}-01"
@@ -112,7 +143,7 @@ def get_all_month_strings_since(start_year: int) -> list[tuple[str, str]]:
     OUTPUT: get_all_month_strings_since(2025)
     [('2025-01-01', '2025-02-01'), ('2025-02-01', '2025-03-01'), ('2025-03-01', '2025-04-01'), ('2025-04-01', '2025-05-01'), ('2025-05-01', '2025-06-01'), ('2025-06-01', '2025-07-01'), ('2025-07-01', '2025-08-01')]
     """
-    now = datetime.now()
+    now = datetime.now(tz=UTC)
     end_month = now.month - 1 if now.month > 1 else 12
     end_year = now.year if now.month > 1 else now.year - 1
 
@@ -145,5 +176,5 @@ def read_timestamp_file(filename: str) -> datetime | None:
             return datetime.fromisoformat(file.read().strip())
     except FileNotFoundError:
         with open(filename, "w", encoding="utf-8") as file:
-            file.write(str(datetime.now(UTC)))
+            file.write(str(datetime.now(tz=UTC)))
         return None

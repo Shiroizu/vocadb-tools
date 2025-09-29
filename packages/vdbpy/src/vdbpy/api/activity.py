@@ -24,11 +24,13 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
 
     today = datetime.now(tz=UTC)
     if date.date() >= today.date():
-        logger.warning(f"Selected date {str(today).split()[0]} is still ongoing or in the future.")
+        logger.warning(
+            f"Selected date {str(today).split()[0]} is still ongoing or in the future."
+        )
         if save_dir:
             logger.warning(f"Not saving edits to {save_dir} for this day.")
             save_dir = ""
-    
+
     if save_dir:
         filename = f"{save_dir}/{date_str}.json"
         if data := get_text(filename):
@@ -152,8 +154,8 @@ def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:
             continue
 
         utc_date = edit_object["createDate"]
-        local_date = edit_object["archivedVersion"]["created"]
-        edit_date = parse_date(utc_date, local_date)
+
+        edit_date = parse_date(utc_date)
         version_id = edit_object["archivedVersion"]["id"]
         logger.debug(f"Found edit: {WEBSITE}/{entry_type}/ViewVersion/{version_id}")
 

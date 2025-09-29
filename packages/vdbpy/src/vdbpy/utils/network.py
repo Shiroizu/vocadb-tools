@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 
 import requests
 
@@ -103,7 +103,7 @@ def fetch_all_items_between_dates(
     all_items = []
 
     logger.debug(f"Fetching all '{api_url}' items from '{since}' to '{before}'...")
-    now = datetime.now()
+    now = datetime.now(tz=UTC)
 
     while True:
         if parse_date(params["before"]) < now:
