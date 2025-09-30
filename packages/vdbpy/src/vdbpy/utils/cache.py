@@ -3,11 +3,7 @@ from datetime import timedelta
 import diskcache as dc
 from requests.sessions import Session
 
-from vdbpy.utils.logger import get_logger
-
 cache = dc.Cache("cache")
-
-logger = get_logger()
 
 # TODO replace partially with https://docs.peewee-orm.com/ ?
 
@@ -22,10 +18,8 @@ def cache_with_expiration(days=1):
                 k: v for k, v in kwargs.items() if not isinstance(v, Session)
             }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
-            logger.debug(f"Cache key: {key}")
 
             if key in cache:
-                logger.debug(f"Cache hit with '{key}'")
                 return cache[key]
 
             # Use original args/kwargs to call the function
@@ -48,10 +42,8 @@ def cache_without_expiration():
                 k: v for k, v in kwargs.items() if not isinstance(v, Session)
             }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
-            logger.debug(f"Cache key: {key}")
 
             if key in cache:
-                logger.debug(f"Cache hit with '{key}'")
                 return cache[key]
 
             # Use original args/kwargs to call the function
@@ -74,10 +66,8 @@ def cache_conditionally(days=1):
                 k: v for k, v in kwargs.items() if not isinstance(v, Session)
             }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
-            logger.debug(f"Cache key: {key}")
 
             if key in cache:
-                logger.debug(f"Cache hit with '{key}'")
                 return cache[key]
 
             # Use original args/kwargs to call the function
