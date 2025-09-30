@@ -174,7 +174,7 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
         name, favs, likes, score, ar_id, album_count, album_track_count = ar
         artist_entry = get_artist_by_id(ar_id, fields="webLinks")
         songcount_by_artist = get_song_count_by_artist_id(ar_id, only_main_songs=True)
-        rated_songs_percentage = round(((favs + likes) / songcount_by_artist * 100), 1)
+        rated_songs_percentage = round(((favs + likes) / songcount_by_artist * 100), 1) if songcount_by_artist else 0
         if ar_id in followed_artists_ids:
             following = True
         headers = [
