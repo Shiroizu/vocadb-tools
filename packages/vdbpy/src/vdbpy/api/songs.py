@@ -198,6 +198,22 @@ def get_relevant_user_ids_by_song_id(song_id: int, session=None) -> list[int]:
     songlist_authors = get_songlist_author_ids_by_song_id(song_id)
     return list({*song_raters, entry_creator, *songlist_authors})
 
+@cache_with_expiration(days=7)
+def get_most_rated_song_by_artist_id(artist_id: int, params=None):
+    params = {} if params is None else params
+    params["maxResults"] = 1
+    params["sort"] = "RatingScore"
+    params["artistId[]"] = artist_id
+    return fetch_json(SONG_API_URL, params=params)["items"][0]
+
+@cache_with_expiration(days=7)
+def get_most_recent_song_by_artist_id(artist_id: int, params=None):
+    params = {} if params is None else params
+    params["maxResults"] = 1
+    params["sort"] = "PublishDate"
+    params["artistId[]"] = artist_id
+    return fetch_json(SONG_API_URL, params=params)["items"][0]
+
 # ---------------------------------------------- #
 
 
