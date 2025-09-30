@@ -40,12 +40,12 @@ def get_youtube_link(artist_entry) -> str:
 def get_days_since_song_publish_date(song_entry, today: datetime) -> int:
     if "publishDate" not in song_entry:
         logger.warning(f"Song {song_entry['id']} does not include a publish date!")
-        return 0
+        return -1
 
     publish_date = parse_date(song_entry["publishDate"])
     if publish_date > today:
         logger.warning(f"Song {song_entry['id']} has a publish date in the future!")
-        return 0
+        return -1
 
     return (today - publish_date).days
 
