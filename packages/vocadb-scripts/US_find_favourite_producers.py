@@ -1,13 +1,14 @@
 """Generate a table of user's favourite producers."""
 
-# TODO youtube channel
-# TODO include most popular song
-# TODO include latest song publish date
-
 import argparse
+from datetime import UTC, datetime
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_song_count_by_artist_id
+from vdbpy.api.artists import get_artist_by_id, get_song_count_by_artist_id
+from vdbpy.api.songs import (
+    get_most_rated_song_by_artist_id,
+    get_most_recent_song_by_artist_id,
+)
 from vdbpy.api.users import (
     get_albums_by_user_id,
     get_followed_artists_by_user_id,
@@ -15,10 +16,38 @@ from vdbpy.api.users import (
     get_username_by_id,
 )
 from vdbpy.config import WEBSITE
+from vdbpy.utils.date import parse_date
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger("find-favourite-producers")
+
+
+def get_youtube_link(artist_entry) -> str:
+    if "webLinks" not in artist_entry:
+        logger.warning("Artist entry does not include any external links!")
+        return ""
+    for link in artist_entry["webLinks"]:
+        if (
+            link["category"] == "Official"
+            and not link["disabled"]
+            and link["url"].startswith("https://www.youtube.com/")
+        ):
+            return link["url"]
+    return ""
+
+
+def get_days_since_song_publish_date(song_entry, today: datetime) -> int:
+    if "publishDate" not in song_entry:
+        logger.warning(f"Song {song_entry['id']} does not include a publish date!")
+        return 0
+
+    publish_date = parse_date(song_entry["publishDate"])
+    if publish_date > today:
+        logger.warning(f"Song {song_entry['id']} has a publish date in the future!")
+        return 0
+
+    return (today - publish_date).days
 
 
 def find_favourite_producers_by_user_id(user_id: int, max_results):
@@ -96,6 +125,8 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
                     0,
                 ]
         for track in album["album"]["tracks"]:
+            if "song" not in track:
+                continue
             artist_name_from_artist_string = track["song"]["artistString"].split(
                 " feat. "
             )[0]
@@ -134,15 +165,17 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
     followed_artists_ids = [int(artist["id"]) for artist in followed_artists]
 
     table_to_print = []
+    counter = 1
+    today = datetime.now(tz=UTC)
     for ar in unique_artists_with_score[:max_results]:
-        logger.info(f"Generating row for artist {ar}...")
+        logger.info(f"Generating row for artist {counter}/{max_results}: {ar}...")
+        counter += 1
         following = False
         name, favs, likes, score, ar_id, album_count, album_track_count = ar
-        songcount_by_artist = get_song_count_by_artist_id(
-            int(ar_id), only_main_songs=True
-        )
+        artist_entry = get_artist_by_id(ar_id, fields="webLinks")
+        songcount_by_artist = get_song_count_by_artist_id(ar_id, only_main_songs=True)
         rated_songs_percentage = round(((favs + likes) / songcount_by_artist * 100), 1)
-        if int(ar_id) in followed_artists_ids:
+        if ar_id in followed_artists_ids:
             following = True
         headers = [
             "Score",
@@ -155,6 +188,9 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
             "Artist",
             "Following",
             "Entry",
+            "Youtube",
+            "Most rated song",
+            "Days since last song",
         ]
         line_to_print = (
             score,
@@ -167,6 +203,11 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
             name,
             following,
             f"{WEBSITE}/Ar/{ar_id}",
+            get_youtube_link(artist_entry),
+            f"{WEBSITE}/S/{get_most_rated_song_by_artist_id(ar_id)['id']}",
+            get_days_since_song_publish_date(
+                get_most_recent_song_by_artist_id(ar_id), today
+            ),
         )
         table_to_print.append(line_to_print)
 
@@ -196,7 +237,6 @@ if __name__ == "__main__":
     max_results = args.max_results
     OUTPUT_FILE = f"output/favourite-producers-{user_id}.csv"
     headers, producer_table = find_favourite_producers_by_user_id(user_id, max_results)
-    logger.info(f"Got {len(producer_table)} producers...")
     table = tabulate(
         producer_table, headers=headers, tablefmt="github", numalign="right"
     )
