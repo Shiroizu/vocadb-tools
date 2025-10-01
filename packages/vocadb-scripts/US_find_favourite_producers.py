@@ -179,13 +179,13 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
             following = True
         headers = [
             "Score",
+            "Artist",
             "Favs",
             "Likes",
             "Favs/Likes",
             "Rated %",
             "Album count",
-            "Album track count",
-            "Artist",
+            "Track count",
             "Following",
             "Entry",
             "Youtube",
@@ -194,13 +194,13 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
         ]
         line_to_print = (
             score,
+            name,
             favs,
             likes,
-            round(favs / likes, 1) if likes else "",
+            round(favs / likes, 1) if likes else 0,
             rated_songs_percentage,
             album_count,
             album_track_count,
-            name,
             following,
             f"{WEBSITE}/Ar/{ar_id}",
             get_youtube_link(artist_entry),
