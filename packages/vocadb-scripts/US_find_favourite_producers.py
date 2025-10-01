@@ -112,6 +112,8 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
             if artist["categories"] == "Producer" and "artist" in artist
         }
         for artist in album["album"]["artists"]:
+            if "artist" not in artist:
+                continue
             if artist["categories"] != "Producer" or artist["isSupport"]:
                 continue
             if artist["artist"]["id"] in unique_artists:
