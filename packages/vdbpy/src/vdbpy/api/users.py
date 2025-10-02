@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import get_args
 
 from vdbpy.api.activity import parse_edits
@@ -172,7 +172,9 @@ def get_created_entries_by_username(username: str) -> list[UserEdit]:
     }
 
     logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
-    return parse_edits(fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500))
+    return parse_edits(
+        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
+    )
 
 
 def get_edits_by_username(username: str) -> list[UserEdit]:
@@ -184,7 +186,10 @@ def get_edits_by_username(username: str) -> list[UserEdit]:
     }
 
     logger.debug(f"Fetching edits by user '{username}' ({user_id})")
-    return parse_edits(fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500))
+    return parse_edits(
+        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
+    )
+
 
 @cache_with_expiration(days=1)
 def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
@@ -263,7 +268,7 @@ def get_user_account_age_by_user_id(user_id: int) -> int:
     """Get user account age in days."""
     username = get_username_by_id(user_id)
     creation_date = parse_date(get_user_profile_by_username(username)["createDate"])
-    today = datetime.now()
+    today = datetime.now(UTC)
     return (today - creation_date).days
 
 
@@ -275,7 +280,12 @@ def get_user_group_by_user_id(user_id: int) -> UserGroup:
 
 
 def send_message(
-    session, receiver_username: str, subject: str, message: str, sender_id: int, prompt=True
+    session,
+    receiver_username: str,
+    subject: str,
+    message: str,
+    sender_id: int,
+    prompt=True,
 ):
     url = f"{USER_API_URL}/{sender_id}/messages"
 
@@ -288,7 +298,9 @@ def send_message(
     }
 
     if prompt:
-        logger.info(f"{'---' * 10}\nTO='{receiver_username}' SUBJECT='{subject}'\n{message}\n{'---' * 10}")
+        logger.info(
+            f"{'---' * 10}\nTO='{receiver_username}' SUBJECT='{subject}'\n{message}\n{'---' * 10}"
+        )
 
         _ = input("Press enter to send...")
     message_request = session.post(url, json=data)

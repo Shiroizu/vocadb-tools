@@ -67,7 +67,7 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
 def get_edits_by_month(year=0, month=0, save_dir="") -> list[UserEdit]:
     # Call get_edits_by_day for each day in the month
     if not year or not month:
-        today = datetime.now()
+        today = datetime.now(UTC)
         year = today.year
         month = today.month
 

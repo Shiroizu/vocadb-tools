@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 import plotly.graph_objects as go
 
@@ -38,7 +38,7 @@ def generate_date_graph(
 
 def get_monthly_graph(count_function, title="Graph"):
     """Generate a monthly graph by a given count function."""
-    current_date = datetime.now()
+    current_date = datetime.now(UTC)
     counts_by_month = []
     current_year = current_date.year
     current_month = current_date.month
