@@ -1,6 +1,6 @@
 [project]
 name = "vdbpy"
-version = "5.2.1"
+version = "5.3.0"
 description = "A base library for VocaDB scripts and private mod scripts."
 readme = "README.md"
 requires-python = ">=3.13"

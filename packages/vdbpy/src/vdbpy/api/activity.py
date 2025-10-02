@@ -23,37 +23,45 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
     date_str = date.strftime("%Y-%m-%d")
 
     today = datetime.now(tz=UTC)
-    if date.date() >= today.date():
-        logger.warning(
-            f"Selected date {str(today).split()[0]} is still ongoing or in the future."
-        )
-        if save_dir:
-            logger.warning(f"Not saving edits to {save_dir} for this day.")
-            save_dir = ""
+    if date.date() > today.date():
+        logger.warning(f"Selected date {str(today).split()[0]} is in the future.")
+        return []
 
+    previous_edits: list[UserEdit] = []
     if save_dir:
         filename = f"{save_dir}/{date_str}.json"
         if data := get_text(filename):
             logger.info(f"Loading edits from '{filename}'...")
-            return [user_edit_from_dict(item) for item in json.loads(data)]
+            previous_edits.extend(
+                [user_edit_from_dict(item) for item in json.loads(data)]
+            )
+
+            if date.date() < today.date():
+                return previous_edits
+
+            logger.warning("Date is still ongoing, fetching the most recent edits.")
+            date = previous_edits[0].edit_date
+            logger.info(
+                f"The most recent saved edit from this date is '{previous_edits[0].edit_date}'"
+            )
 
     params = {"fields": "Entry,ArchivedVersion"}
-
     day_after = date + timedelta(days=1)
-
     logger.debug(f"Fetching edits from {date} to {day_after}...")
     edits_by_date = fetch_all_items_between_dates(
         ACTIVITY_API_URL,
-        date.strftime("%Y-%m-%d"),
+        date.strftime("%Y-%m-%dT%H:%M:%SZ"),
         day_after.strftime("%Y-%m-%d"),
         params=params,
     )
-    parsed_edits: list[UserEdit] = parse_edits(edits_by_date)
 
-    logger.debug(f"Found total of {len(edits_by_date)} edits.")
+    parsed_edits: list[UserEdit] = parse_edits(edits_by_date)
+    logger.debug(f"Found total of {len(edits_by_date)} new edits.")
 
     if save_dir:
         logger.info(f"  Saving edits to '{filename}'...")
+        if previous_edits:
+            parsed_edits.extend(previous_edits)
         save_file(
             filename,
             json.dumps(
@@ -88,7 +96,9 @@ def get_monthly_edit_count(year: int, month: int) -> int:
     return get_monthly_count(year, month, ACTIVITY_API_URL)
 
 
-def get_monthly_top_editors(year: int, month: int, top_n=200, save_dir="") -> list[tuple[int, int]]:
+def get_monthly_top_editors(
+    year: int, month: int, top_n=200, save_dir=""
+) -> list[tuple[int, int]]:
     """Return a sorted list of the top monthly editors: [(user_id, edit_count),..]."""
     edits: list[UserEdit] = get_edits_by_month(year, month, save_dir=save_dir)
 
