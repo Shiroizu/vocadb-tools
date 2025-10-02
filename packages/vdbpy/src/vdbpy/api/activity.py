@@ -88,9 +88,9 @@ def get_monthly_edit_count(year: int, month: int) -> int:
     return get_monthly_count(year, month, ACTIVITY_API_URL)
 
 
-def get_monthly_top_editors(year: int, month: int, top_n=200) -> list[tuple[int, int]]:
+def get_monthly_top_editors(year: int, month: int, top_n=200, save_dir="") -> list[tuple[int, int]]:
     """Return a sorted list of the top monthly editors: [(user_id, edit_count),..]."""
-    edits: list[UserEdit] = get_edits_by_month(year, month)
+    edits: list[UserEdit] = get_edits_by_month(year, month, save_dir=save_dir)
 
     edit_counts_by_editor_id: dict[int, int] = {}
     for edit in edits:
@@ -106,10 +106,10 @@ def get_monthly_top_editors(year: int, month: int, top_n=200) -> list[tuple[int,
 
 
 def get_top_editors_by_field(
-    field: str, year: int, month: int, top_n=200
+    field: str, year: int, month: int, top_n=200, save_dir=""
 ) -> list[tuple[int, int]]:
     """Return a sorted list of the top monthly editors based on an edit field: [(user_id, edit_count),..]."""
-    edits: list[UserEdit] = get_edits_by_month(year, month)
+    edits: list[UserEdit] = get_edits_by_month(year, month, save_dir=save_dir)
 
     edit_counts_by_editor_id: dict[int, int] = {}
     for edit in edits:
