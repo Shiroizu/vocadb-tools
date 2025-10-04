@@ -13,16 +13,20 @@ from vdbpy.types import (
     Disc,
     Edit_type,
     Entry_type,
+    EventArtistParticipation,
     EventParticipation,
+    EventSeriesRelation,
     ExternalLink,
     Lyrics,
     Picture,
     ReleaseEventSeriesVersion,
     ReleaseEventVersion,
+    SonglistRelation,
     SongVersion,
     TagRelation,
     TagVersion,
     UserEdit,
+    VenueRelation,
     VenueVersion,
 )
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
@@ -421,7 +425,70 @@ def parse_tag_version(data: dict) -> TagVersion:
 
 
 def parse_release_event_version(data: dict) -> ReleaseEventVersion:
-    raise NotImplementedError
+    entry_status = data["archivedVersion"]["status"]
+    data = data["versions"]["firstData"]
+    name_non_english, name_romaji, name_english, aliases = (
+        parse_names(data["names"]) if "names" in data else ("", "", "", [])
+    )
+    raw_dnm = data["translatedName"]["defaultLanguage"]
+    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+
+    def parse_event_series_relation(data) -> EventSeriesRelation:
+        return EventSeriesRelation(
+            series_id=data["id"],
+            name_hint=data["nameHint"],
+        )
+
+    def parse_songlist_relation(data) -> SonglistRelation:
+        return SonglistRelation(
+            songlist_id=data["id"],
+            name_hint=data["nameHint"],
+        )
+
+    def parse_venue_relation(data) -> VenueRelation:
+        return VenueRelation(
+            venue_id=data["id"],
+            name_hint=data["nameHint"],
+        )
+
+    def parse_event_artists(data) -> list[EventArtistParticipation]:
+        if "artists" not in data or not data["artists"]:
+            return []
+        event_artists = []
+        for event_artist in data["artists"]:
+            event_artists.append(
+                EventArtistParticipation(
+                    artist_id=event_artist["id"],
+                    name_hint=event_artist["nameHint"],
+                    roles=event_artist["roles"].split(", "),
+                )
+            )
+        return event_artists
+
+    return ReleaseEventVersion(
+        aliases=aliases,
+        artists=parse_event_artists(data),
+        custom_venue_name=data.get("venueName", ""),
+        default_name_language=default_name_language,
+        description_eng=data.get("descriptionEng", ""),
+        description=data.get("description", ""),
+        entry_id=data["id"],
+        event_category=data["category"],
+        external_links=parse_links(data),
+        name_english=name_english,
+        name_non_english=name_non_english,
+        name_romaji=name_romaji,
+        series_number=data["seriesNumber"],
+        series=parse_event_series_relation(data["series"])
+        if "series" in data
+        else None,
+        songlist=parse_songlist_relation(data["songList"])
+        if "songlist" in data
+        else None,
+        start_date=parse_date(data["date"]) if "date" in data else None,
+        status=entry_status,
+        venue=parse_venue_relation(data["venue"]) if "venue" in data else None,
+    )
 
 
 def parse_release_event_series_version(data: dict) -> ReleaseEventSeriesVersion:

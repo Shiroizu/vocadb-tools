@@ -40,6 +40,8 @@ Artist_role = Literal[
     "VocalDataProvider",
 ]  # "Chorus", "Encoder",
 
+Event_artist_role = Literal["Default", "Dancer", "DJ", "Instrumentalist", "Organizer", "Promoter", "VJ", "Vocalist", "VoiceManipulator", "OtherPerformer", "Other"]
+
 Service = Literal[
     "NicoNicoDouga",
     "Youtube",
@@ -71,6 +73,11 @@ class ArtistParticipation:
     roles: list[Artist_role]
     name_hint: str
 
+@dataclass
+class EventArtistParticipation:
+    artist_id: int
+    roles: list[Event_artist_role]
+    name_hint: str
 
 @dataclass
 class EventParticipation:
@@ -316,10 +323,49 @@ class TagVersion(BaseEntryVersion):
 
 
 # --- ReleaseEventVersion --- #
+
+Event_category = Literal[
+    "Unspecified",
+    "AlbumRelease",
+    "Anniversary",
+    "Club",
+    "Concert",
+    "Contest",
+    "Convention",
+    "Other",
+    "Festival",
+]
+
+@dataclass
+class EventSeriesRelation:
+    series_id: int
+    name_hint: str
+
+@dataclass
+class SonglistRelation:
+    songlist_id: int
+    name_hint: str
+
+@dataclass
+class VenueRelation:
+    venue_id: int
+    name_hint: str
+
+
 @dataclass
 class ReleaseEventVersion(BaseEntryVersion):
-    pass
-
+    # https://vocadb.net/api/tags/versions/x -> versions -> firstData
+    # Missing/unsupported fields:
+    # - endDate
+    # - pvs
+    event_category: Event_category
+    start_date: datetime | None
+    series_number: int
+    series: EventSeriesRelation | None
+    songlist: SonglistRelation | None
+    venue: VenueRelation | None
+    custom_venue_name : str
+    artists: list[EventArtistParticipation]
 
 # --- VenueVersion --- #
 @dataclass
