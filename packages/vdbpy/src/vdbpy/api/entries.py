@@ -1,18 +1,21 @@
 import random
+from datetime import UTC, datetime
 from typing import get_args
 
 from vdbpy.config import WEBSITE
 from vdbpy.types import (
     PV,
     AlbumParticipation,
+    AlbumTrack,
+    AlbumVersion,
     ArtistParticipation,
-    Default_languages,
+    Disc,
     Edit_type,
     Entry_type,
-    EntryNames,
     EventParticipation,
     ExternalLink,
     Lyrics,
+    Picture,
     SongVersion,
     UserEdit,
 )
@@ -65,6 +68,109 @@ def parse_edits_from_archived_versions(
     return parsed_edits
 
 
+# --------------- Shared parsers --------------- #
+
+
+def parse_names(names: dict) -> tuple[str, str, str, list[str]]:
+    name_non_english = ""
+    name_romaji = ""
+    name_english = ""
+    aliases: list[str] = []
+
+    for entry in names:
+        language = entry["language"]
+        value = entry["value"]
+        match language:
+            case "Japanese":
+                name_non_english = value
+            case "Romaji":
+                name_romaji = value
+            case "English":
+                name_english = value
+            case "Unspecified":
+                aliases.append(value)
+
+    return name_non_english, name_romaji, name_english, aliases
+
+
+def parse_artist_participation(data) -> list[ArtistParticipation]:
+    if "artists" not in data or not data["artists"]:
+        return []
+    artist_participations = []
+    for artist_participation in data["artists"]:
+        artist_participations.append(
+            ArtistParticipation(
+                is_supporting=artist_participation["isSupport"],
+                artist_id=artist_participation["id"],
+                roles=artist_participation["roles"].split(", "),
+                name_hint=artist_participation["nameHint"],
+            )
+        )
+    return artist_participations
+
+
+def parse_pvs(data) -> list[PV]:
+    if "pvs" not in data or not data["pvs"]:
+        return []
+    pvs: list[PV] = []
+    for pv in data["pvs"]:
+        pvs.append(
+            PV(
+                author=pv["author"],
+                disabled=pv["disabled"],
+                length=pv["length"],
+                name=pv["name"],
+                pv_id=pv["pvId"],
+                pv_service=pv["service"],
+                pv_type=pv["pvType"],
+                publish_date=parse_date(pv["publishDate"])
+                if "publishDate" in pv
+                else None,
+            )
+        )
+    return pvs
+
+
+def parse_event_participations(data) -> list[EventParticipation]:
+    if "releaseEvents" not in data or not data["releaseEvents"]:
+        return []
+    event_participations = []
+    for event_participation in data["releaseEvents"]:
+        event_participations.append(
+            EventParticipation(
+                event_id=event_participation["id"],
+                name_hint=event_participation["nameHint"],
+            )
+        )
+    return event_participations
+
+
+def parse_links(data) -> list[ExternalLink]:
+    raw_links = []
+    if "externalLinks" in data:
+        raw_links = data["externalLinks"]
+    elif "webLinks" in data:  # for albums
+        raw_links = data["webLinks"]
+
+    if not raw_links:
+        return []
+
+    links = []
+    for link in raw_links:
+        links.append(
+            ExternalLink(
+                category=link["category"],
+                description=link["description"],
+                disabled=link["disabled"],
+                url=link["url"],
+            )
+        )
+    return links
+
+
+# --------------- Version parsers --------------- #
+
+
 def parse_song_version(data: dict) -> SongVersion:
     entry_status = data["archivedVersion"]["status"]
     data = data["versions"]["firstData"]
@@ -84,21 +190,6 @@ def parse_song_version(data: dict) -> SongVersion:
             )
         return album_participations
 
-    def parse_artist_participation(data) -> list[ArtistParticipation]:
-        if "artists" not in data or not data["artists"]:
-            return []
-        artist_participations = []
-        for artist_participation in data["artists"]:
-            artist_participations.append(
-                ArtistParticipation(
-                    is_supporting=artist_participation["isSupport"],
-                    artist_id=artist_participation["id"],
-                    roles=artist_participation["roles"].split(", "),
-                    name_hint=artist_participation["nameHint"],
-                )
-            )
-        return artist_participations
-
     def parse_lyrics(data) -> list[Lyrics]:
         if "lyrics" not in data or not data["lyrics"]:
             return []
@@ -107,7 +198,7 @@ def parse_song_version(data: dict) -> SongVersion:
             lyrics.append(
                 Lyrics(
                     language_codes=lyric.get("cultureCodes", []),
-                    id=lyric["id"],
+                    lyrics_id=lyric["id"],
                     source=lyric.get("source", ""),
                     translation_type=lyric["translationType"],
                     url=lyric.get("url", ""),
@@ -116,99 +207,141 @@ def parse_song_version(data: dict) -> SongVersion:
             )
         return lyrics
 
-    def parse_pvs(data) -> list[PV]:
-        if "pvs" not in data or not data["pvs"]:
-            return []
-        pvs: list[PV] = []
-        for pv in data["pvs"]:
-            pvs.append(
-                PV(
-                    author=pv["author"],
-                    disabled=pv["disabled"],
-                    length=pv["length"],
-                    name=pv["name"],
-                    pv_id=pv["pvId"],
-                    pv_service=pv["service"],
-                    pv_type=pv["pvType"],
-                    publish_date=parse_date(pv["publishDate"])
-                    if "publishDate" in pv
-                    else None,
-                )
-            )
-        return pvs
-
-    def parse_events(data) -> list[EventParticipation]:
-        if "releaseEvents" not in data or not data["releaseEvents"]:
-            return []
-        event_participations = []
-        for event_participation in data["releaseEvents"]:
-            event_participations.append(
-                EventParticipation(
-                    event_id=event_participation["id"],
-                    name_hint=event_participation["nameHint"],
-                )
-            )
-        return event_participations
-
-    def parse_links(data) -> list[ExternalLink]:
-        if "externalLinks" not in data or not data["externalLinks"]:
-            return []
-        links = []
-        for link in data["externalLinks"]:
-            links.append(
-                ExternalLink(
-                    category=link["category"],
-                    id=link["id"],
-                    url=link["url"],
-                    description=link["description"],
-                    description_url=link["descriptionUrl"],
-                    disabled=link["disabled"],
-                )
-            )
-        return links
-
-    def parse_names(names: dict) -> tuple[list[EntryNames], list[str]]:
-        primary_names: list[EntryNames] = []
-        aliases: list[str] = []
-
-        for language, value in names:
-            if language in Default_languages:
-                primary_names.append(EntryNames(language=language, value=value))
-            else:
-                aliases.append(value)
-
-        return primary_names, aliases
-
-    names, aliases = parse_names(data["names"])
+    name_non_english, name_romaji, name_english, aliases = parse_names(data["names"])
+    raw_dnm = data["translatedName"]["defaultLanguage"]
+    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
 
     return SongVersion(
-        status=entry_status,
         albums=parse_album_participation(data),
+        aliases=aliases,
         artist=parse_artist_participation(data),
+        default_name_language=default_name_language,
+        description_eng=data.get("notesEng", ""),
+        description=data.get("notes", ""),
+        external_links=parse_links(data),
+        entry_id=data["id"],
         length=data["lengthSeconds"],
         lyrics=parse_lyrics(data),
-        original_version_id=data.get("originalVersionId", 0),
+        name_non_english=name_non_english,
+        name_romaji=name_romaji,
+        name_english=name_english,
+        original_version_id=data["originalVersion"]["id"]
+        if "originalVersion" in data
+        else 0,
         publish_date=parse_date(data["publishDate"]) if "publishDate" in data else None,
         pvs=parse_pvs(data),
-        release_events=parse_events(data),
+        release_events=parse_event_participations(data),
         song_type=data["songType"],
-        id=data["id"],
-        default_name_language=data["translatedName"]["defaultLanguage"],
-        names=names,
-        aliases=aliases,
-        description=data.get("description", ""),
-        description_eng=data.get("descriptionEng", ""),
-        external_links=parse_links(data),
-        deleted=data.get("deleted", False),
+        status=entry_status,
     )
 
 
-def get_entry_versions(entry_type: Entry_type, entry_id: int) -> list[UserEdit]:
+def parse_album_version(data: dict) -> AlbumVersion:
+    entry_status = data["archivedVersion"]["status"]
+    data = data["versions"]["firstData"]
+
+    def parse_discs(data) -> list[Disc]:
+        if "discs" not in data or not data["discs"]:
+            return []
+        discs = []
+        for disc in data["discs"]:
+            discs.append(
+                Disc(
+                    disc_number=disc["discNumber"],
+                    disc_id=disc["id"],
+                    media_type=disc["mediaType"],
+                    name=disc["name"],
+                )
+            )
+        return discs
+
+    def parse_pictures(data) -> list[Picture]:
+        if "pictures" not in data or not data["pictures"]:
+            return []
+        pictures = []
+        for picture in data["pictures"]:
+            pictures.append(
+                Picture(
+                    picture_id=picture["id"],
+                    mime=picture["mime"],
+                    name=picture["name"],
+                )
+            )
+        return pictures
+
+    def parse_album_tracks(data) -> list[AlbumTrack]:
+        if "songs" not in data or not data["songs"]:
+            return []
+        album_tracks = []
+        for album_track in data["songs"]:
+            album_tracks.append(
+                AlbumTrack(
+                    disc_number=album_track["discNumber"],
+                    track_number=album_track["trackNumber"],
+                    song_id=album_track["id"],
+                    name_hint=album_track["nameHint"],
+                )
+            )
+        return album_tracks
+
+    def parse_album_publish_date(data) -> tuple[datetime | None, int, int, int]:
+        year = data.get("year", 0)
+        month = data.get("month", 0)
+        day = data.get("day", 0)
+        publish_date = (
+            datetime(year, month, day, tzinfo=UTC) if year and month and day else None
+        )
+        return publish_date, year, month, day
+
+    publish_date, year, month, day = parse_album_publish_date(
+        data["originalRelease"]["releaseDate"]
+    )
+
+    name_non_english, name_romaji, name_english, aliases = parse_names(data["names"])
+    raw_dnm = data["translatedName"]["defaultLanguage"]
+    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+
+    return AlbumVersion(
+        album_type=data["discType"],
+        aliases=aliases,
+        artists=parse_artist_participation(data),
+        barcodes=[code["value"] for code in data["identifiers"]]
+        if "identifiers" in data
+        else [],
+        catalog_number=data["originalRelease"].get("catNum", ""),
+        default_name_language=default_name_language,
+        description_eng=data.get("descriptionEng", ""),
+        description=data.get("description", ""),
+        discs=parse_discs(data),
+        external_links=parse_links(data),
+        entry_id=data["id"],
+        name_non_english=name_non_english,
+        name_romaji=name_romaji,
+        name_english=name_english,
+        pictures=parse_pictures(data),
+        publish_date=publish_date,
+        publish_day=day,
+        publish_month=month,
+        publish_year=year,
+        pvs=parse_pvs(data),  # 'publish_date': None, 'length': 0,
+        release_events=parse_event_participations(data["originalRelease"]),
+        songs=parse_album_tracks(data),
+        status=entry_status,
+    )
+
+
+# --------------- --------------- #
+
+
+def get_entry_versions(
+    entry_type: Entry_type, entry_id: int, include_deleted=False
+) -> list[UserEdit]:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
     data = fetch_json(url)
     if "deleted" in data["entry"] and data["entry"]["deleted"]:
         logger.warning(f"{entry_type} {entry_id} has been deleted.")
-        return []
+        if not include_deleted:
+            return []
     return parse_edits_from_archived_versions(
         data["archivedVersions"], entry_type, entry_id
     )
@@ -220,11 +353,16 @@ def get_raw_entry_version(entry_type: Entry_type, version_id: int) -> dict:
     return fetch_json(url)
 
 
-def get_entry_version(entry_type: Entry_type, version_id: int) -> dict | SongVersion:
+def get_entry_version(
+    entry_type: Entry_type, version_id: int
+) -> dict | AlbumVersion | SongVersion:
     data = get_raw_entry_version(entry_type, version_id)
-    if entry_type == "Song":
-        return parse_song_version(data)
-    # TODO proper return types
+    match entry_type:
+        case "Album":
+            return parse_album_version(data)
+        case "Song":
+            return parse_song_version(data)
+    # TODO other return types
     return data["versions"]["firstData"]
 
 

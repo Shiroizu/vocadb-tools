@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, TypedDict
+from typing import Literal
 
 # --- Base --- #
 
@@ -17,7 +17,9 @@ Entry_type = Literal[
 
 Entry_status = Literal["Draft", "Finished", "Approved", "Locked"]
 
-Default_languages = Literal["Unspecified", "Japanese", "Romaji", "English"]
+Default_languages = Literal[
+    "Unspecified", "Non-English", "Romaji", "English"
+]  # JP = "Non-English"
 External_link_category = Literal["Official, Commercial, Reference, Other"]
 
 Artist_role = Literal[
@@ -57,28 +59,22 @@ PV_type = Literal["Original", "Reprint", "Other"]
 @dataclass
 class ExternalLink:
     category: External_link_category
-    id: int
-    url: str
     description: str
-    description_url: str
     disabled: bool
-
-
-class EntryNames(TypedDict):
-    language: Default_languages
-    value: str
+    url: str
 
 
 @dataclass
 class BaseEntryVersion:
-    id: int
+    entry_id: int
     default_name_language: Default_languages
-    names: list[EntryNames]
+    name_non_english: str
+    name_romaji: str
+    name_english: str
     aliases: list[str]
     description: str
     description_eng: str
     external_links: list[ExternalLink]
-    deleted: bool
 
 
 @dataclass
@@ -136,7 +132,7 @@ class AlbumParticipation:
 @dataclass
 class Lyrics:
     language_codes: list[str]
-    id: int
+    lyrics_id: int
     source: str
     translation_type: Literal["Original", "Romanized", "Translation"]
     url: str
@@ -145,20 +141,15 @@ class Lyrics:
 
 @dataclass
 class SongVersion(BaseEntryVersion):
+    # https://vocadb.net/api/songs/versions/x -> versions -> firstData
     # Missing/unsupported fields:
     # - language_codes
-    # - artist_string
-    # - tags
-    #
-    # https://vocadb.net/api/songs/versions/x
-    #  -> versions -> firstData
-
     albums: list[AlbumParticipation]
     artist: list[ArtistParticipation]
     length: int
     lyrics: list[Lyrics]
-    min_milli_bpm = int
     max_milli_bpm = int
+    min_milli_bpm = int
     original_version_id: int
     publish_date: datetime | None
     pvs: list[PV]
@@ -167,10 +158,70 @@ class SongVersion(BaseEntryVersion):
     status: Entry_status  # from archivedVersion
 
 
-# --- ArtistVersion --- #
-# TODO
-
 # --- AlbumVersion --- #
+
+Album_type = Literal[
+    "Unknown",
+    "Album",
+    "Single",
+    "EP",
+    "SplitAlbum",
+    "Compilation",
+    "Video",
+    "Artbook",
+    "Other",
+    # Game, Fanmade, Instrumental, Drama
+]
+
+
+@dataclass
+class Disc:
+    disc_number: int
+    disc_id: int
+    media_type: Literal["Audio", "Video"]
+    name: str
+
+
+@dataclass
+class Picture:
+    picture_id: int
+    mime: str
+    name: str
+
+
+@dataclass
+class AlbumTrack:
+    disc_number: int
+    track_number: int
+    song_id: int
+    name_hint: str
+
+
+@dataclass
+class AlbumVersion(BaseEntryVersion):
+    # https://vocadb.net/api/albums/versions/x -> versions -> firstData
+    # Missing/unsupported fields:
+    # - mainPicture
+    # Skipped fields:
+    # - mainPictureMime
+    # - releaseEvent (legacy), e.g. https://vocadb.net/api/albums/versions/204261
+    album_type: Album_type
+    artists: list[ArtistParticipation]
+    barcodes: list[str]
+    catalog_number: str  # part of originalRelease
+    discs: list[Disc]
+    pictures: list[Picture]
+    publish_date: datetime | None  # part of originalRelease
+    publish_day: int
+    publish_month: int
+    publish_year: int
+    pvs: list[PV]
+    release_events: list[EventParticipation]  # part of originalRelease
+    songs: list[AlbumTrack]
+    status: Entry_status
+
+
+# --- ArtistVersion --- #
 # TODO
 
 # --- TagVersion --- #
