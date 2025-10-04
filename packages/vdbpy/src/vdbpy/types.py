@@ -65,19 +65,6 @@ class ExternalLink:
 
 
 @dataclass
-class BaseEntryVersion:
-    entry_id: int
-    default_name_language: Default_languages
-    name_non_english: str
-    name_romaji: str
-    name_english: str
-    aliases: list[str]
-    description: str
-    description_eng: str
-    external_links: list[ExternalLink]
-
-
-@dataclass
 class ArtistParticipation:
     is_supporting: bool
     artist_id: int
@@ -102,6 +89,20 @@ class PV:
     pv_type: PV_type
     publish_date: datetime | None
     # thumbUrl: str
+
+
+@dataclass
+class BaseEntryVersion:
+    entry_id: int
+    default_name_language: Default_languages
+    name_non_english: str
+    name_romaji: str
+    name_english: str
+    aliases: list[str]
+    description: str
+    description_eng: str
+    external_links: list[ExternalLink]
+    status: Entry_status  # from archivedVersion
 
 
 # --- Song --- #
@@ -155,7 +156,6 @@ class SongVersion(BaseEntryVersion):
     pvs: list[PV]
     release_events: list[EventParticipation]
     song_type: Song_type
-    status: Entry_status  # from archivedVersion
 
 
 # --- AlbumVersion --- #
@@ -210,7 +210,7 @@ class AlbumVersion(BaseEntryVersion):
     barcodes: list[str]
     catalog_number: str  # part of originalRelease
     discs: list[Disc]
-    pictures: list[Picture]
+    additional_pictures: list[Picture]
     publish_date: datetime | None  # part of originalRelease
     publish_day: int
     publish_month: int
@@ -218,24 +218,87 @@ class AlbumVersion(BaseEntryVersion):
     pvs: list[PV]
     release_events: list[EventParticipation]  # part of originalRelease
     songs: list[AlbumTrack]
-    status: Entry_status
 
 
 # --- ArtistVersion --- #
-# TODO
+
+Voicebank_type = Literal[
+    "Vocaloid",
+    "UTAU",
+    "CeVIO",
+    "OtherVoiceSynthesizer",
+    "SynthesizerV",
+    "NEUTRINO",
+    "VoiSona",
+    "NewType",
+    "Voiceroid",
+    "VOICEVOX",
+    "ACEVirtualSinger",
+    "AIVOICE",
+]
+
+Basic_artist_type = Literal[
+    "Unknown",
+    "Circle",
+    "Label",
+    "OtherGroup",
+    "Producer",
+    "Animator",
+    "Illustrator",
+    "Lyricist",
+    "OtherVocalist",
+    "OtherIndividual",
+    "CoverArtist",
+    "Instrumentalist",
+]
+# "Utaite", "Band", "Vocalist", "Character", "Designer"
+
+Artist_type = Voicebank_type | Basic_artist_type
+
+
+@dataclass
+class ArtistVersion(BaseEntryVersion):
+    # https://vocadb.net/api/artists/versions/x -> versions -> firstData
+    # Missing/unsupported fields:
+    # Skipped fields:
+    # - mainPictureMime
+    # - members
+    artist_type: Artist_type
+    group_ids: list[int]
+    vb_voice_provider_ids: list[int]
+    vb_manager_ids: list[int]
+    vb_illustrator_ids: list[int]
+    vb_chara_designer_ids: list[int]
+    vb_base_id: int
+    vb_release_date: datetime | None
+    additional_pictures: list[Picture]
+
 
 # --- TagVersion --- #
-# TODO
+@dataclass
+class TagVersion(BaseEntryVersion):
+    pass
+
 
 # --- ReleaseEventVersion --- #
-# TODO
+@dataclass
+class ReleaseEventVersion(BaseEntryVersion):
+    pass
+
 
 # --- VenueVersion --- #
-# TODO
+@dataclass
+class VenueVersion(BaseEntryVersion):
+    pass
+
 
 # --- ReleaseEventSeriesVersion --- #
-# TODO
+@dataclass
+class ReleaseEventSeriesVersion(BaseEntryVersion):
+    pass
 
+
+# --------------------------------- #
 
 Songlist_category = Literal[
     "Nothing",

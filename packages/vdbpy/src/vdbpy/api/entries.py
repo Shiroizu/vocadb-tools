@@ -9,6 +9,7 @@ from vdbpy.types import (
     AlbumTrack,
     AlbumVersion,
     ArtistParticipation,
+    ArtistVersion,
     Disc,
     Edit_type,
     Entry_type,
@@ -16,8 +17,12 @@ from vdbpy.types import (
     ExternalLink,
     Lyrics,
     Picture,
+    ReleaseEventSeriesVersion,
+    ReleaseEventVersion,
     SongVersion,
+    TagVersion,
     UserEdit,
+    VenueVersion,
 )
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import add_s
@@ -68,7 +73,7 @@ def parse_edits_from_archived_versions(
     return parsed_edits
 
 
-# --------------- Shared parsers --------------- #
+# --------------- Shared version parsers --------------- #
 
 
 def parse_names(names: dict) -> tuple[str, str, str, list[str]]:
@@ -168,6 +173,21 @@ def parse_links(data) -> list[ExternalLink]:
     return links
 
 
+def parse_pictures(data) -> list[Picture]:
+    if "pictures" not in data or not data["pictures"]:
+        return []
+    pictures = []
+    for picture in data["pictures"]:
+        pictures.append(
+            Picture(
+                picture_id=picture["id"],
+                mime=picture["mime"],
+                name=picture["name"],
+            )
+        )
+    return pictures
+
+
 # --------------- Version parsers --------------- #
 
 
@@ -255,20 +275,6 @@ def parse_album_version(data: dict) -> AlbumVersion:
             )
         return discs
 
-    def parse_pictures(data) -> list[Picture]:
-        if "pictures" not in data or not data["pictures"]:
-            return []
-        pictures = []
-        for picture in data["pictures"]:
-            pictures.append(
-                Picture(
-                    picture_id=picture["id"],
-                    mime=picture["mime"],
-                    name=picture["name"],
-                )
-            )
-        return pictures
-
     def parse_album_tracks(data) -> list[AlbumTrack]:
         if "songs" not in data or not data["songs"]:
             return []
@@ -318,7 +324,7 @@ def parse_album_version(data: dict) -> AlbumVersion:
         name_non_english=name_non_english,
         name_romaji=name_romaji,
         name_english=name_english,
-        pictures=parse_pictures(data),
+        additional_pictures=parse_pictures(data),
         publish_date=publish_date,
         publish_day=day,
         publish_month=month,
@@ -328,6 +334,71 @@ def parse_album_version(data: dict) -> AlbumVersion:
         songs=parse_album_tracks(data),
         status=entry_status,
     )
+
+
+def parse_artist_version(data: dict) -> ArtistVersion:
+    entry_status = data["archivedVersion"]["status"]
+    data = data["versions"]["firstData"]
+    name_non_english, name_romaji, name_english, aliases = parse_names(data["names"])
+    raw_dnm = data["translatedName"]["defaultLanguage"]
+    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+
+    def parse_groups(data) -> dict[str, list[int]]:
+        group_link_types = [
+            "CharacterDesigner",
+            "Group",
+            "Illustrator",
+            "Manager",
+            "VoiceProvider",
+        ]
+        groups_by_link_type = {
+            group_link_type: [] for group_link_type in group_link_types
+        }
+        for group in data["groups"]:
+            link_type = group["linkType"]
+            if link_type not in group_link_types:
+                logger.warning(f"Unknown link type '{link_type} for Ar/{data['id']}")
+            groups_by_link_type[link_type].append(group["id"])
+        return groups_by_link_type
+
+    groups_by_link_type = parse_groups(data)
+    return ArtistVersion(
+        additional_pictures=parse_pictures(data),
+        aliases=aliases,
+        artist_type=data["artistType"],
+        default_name_language=default_name_language,
+        description_eng=data["descriptionEng"],
+        description=data["description"],
+        entry_id=data["id"],
+        external_links=parse_links(data),
+        group_ids=groups_by_link_type["Group"],
+        name_english=name_english,
+        name_non_english=name_non_english,
+        name_romaji=name_romaji,
+        status=entry_status,
+        vb_base_id=data["baseVoicebank"]["id"] if "baseVoicebank" in data else 0,
+        vb_chara_designer_ids=groups_by_link_type["CharacterDesigner"],
+        vb_illustrator_ids=groups_by_link_type["Illustrator"],
+        vb_manager_ids=groups_by_link_type["Manager"],
+        vb_voice_provider_ids=groups_by_link_type["VoiceProvider"],
+        vb_release_date=parse_date(data["releaseDate"]) if "releaseDate" in data else None,
+    )
+
+
+def parse_tag_version(data: dict) -> TagVersion:
+    raise NotImplementedError
+
+
+def parse_release_event_version(data: dict) -> ReleaseEventVersion:
+    raise NotImplementedError
+
+
+def parse_release_event_series_version(data: dict) -> ReleaseEventSeriesVersion:
+    raise NotImplementedError
+
+
+def parse_venue_version(data: dict) -> VenueVersion:
+    raise NotImplementedError
 
 
 # --------------- --------------- #
@@ -353,16 +424,35 @@ def get_raw_entry_version(entry_type: Entry_type, version_id: int) -> dict:
     return fetch_json(url)
 
 
-def get_entry_version(
+def get_entry_version(  # noqa: PLR0911
     entry_type: Entry_type, version_id: int
-) -> dict | AlbumVersion | SongVersion:
+) -> (
+    AlbumVersion
+    | ArtistVersion
+    | SongVersion
+    | TagVersion
+    | ReleaseEventVersion
+    | ReleaseEventSeriesVersion
+    | VenueVersion
+):
     data = get_raw_entry_version(entry_type, version_id)
     match entry_type:
         case "Album":
             return parse_album_version(data)
+        case "Artist":
+            return parse_artist_version(data)
         case "Song":
             return parse_song_version(data)
-    # TODO other return types
+        case "Tag":
+            return parse_tag_version(data)
+        case "ReleaseEvent":
+            return parse_release_event_version(data)
+        case "ReleaseEventSeries":
+            return parse_release_event_series_version(data)
+        case "Venue":
+            return parse_venue_version(data)
+        case _:
+            raise Exception(f"Unknown entry type {entry_type}")
     return data["versions"]["firstData"]
 
 
