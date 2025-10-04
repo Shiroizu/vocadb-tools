@@ -40,7 +40,19 @@ Artist_role = Literal[
     "VocalDataProvider",
 ]  # "Chorus", "Encoder",
 
-Event_artist_role = Literal["Default", "Dancer", "DJ", "Instrumentalist", "Organizer", "Promoter", "VJ", "Vocalist", "VoiceManipulator", "OtherPerformer", "Other"]
+Event_artist_role = Literal[
+    "Default",
+    "Dancer",
+    "DJ",
+    "Instrumentalist",
+    "Organizer",
+    "Promoter",
+    "VJ",
+    "Vocalist",
+    "VoiceManipulator",
+    "OtherPerformer",
+    "Other",
+]
 
 Service = Literal[
     "NicoNicoDouga",
@@ -73,11 +85,13 @@ class ArtistParticipation:
     roles: list[Artist_role]
     name_hint: str
 
+
 @dataclass
 class EventArtistParticipation:
     artist_id: int
     roles: list[Event_artist_role]
     name_hint: str
+
 
 @dataclass
 class EventParticipation:
@@ -336,15 +350,18 @@ Event_category = Literal[
     "Festival",
 ]
 
+
 @dataclass
 class EventSeriesRelation:
     series_id: int
     name_hint: str
 
+
 @dataclass
 class SonglistRelation:
     songlist_id: int
     name_hint: str
+
 
 @dataclass
 class VenueRelation:
@@ -358,24 +375,27 @@ class ReleaseEventVersion(BaseEntryVersion):
     # Missing/unsupported fields:
     # - endDate
     # - pvs
+    autofilled_names: tuple[str, str, str] | None
     event_category: Event_category
     start_date: datetime | None
     series_number: int
     series: EventSeriesRelation | None
     songlist: SonglistRelation | None
     venue: VenueRelation | None
-    custom_venue_name : str
+    custom_venue_name: str
     artists: list[EventArtistParticipation]
-
-# --- VenueVersion --- #
-@dataclass
-class VenueVersion(BaseEntryVersion):
-    pass
 
 
 # --- ReleaseEventSeriesVersion --- #
 @dataclass
 class ReleaseEventSeriesVersion(BaseEntryVersion):
+    autofilled_names: tuple[str, str, str] | None
+    event_category: Event_category
+
+
+# --- VenueVersion --- #
+@dataclass
+class VenueVersion(BaseEntryVersion):
     pass
 
 
