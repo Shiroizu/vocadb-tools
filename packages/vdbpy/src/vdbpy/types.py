@@ -208,6 +208,111 @@ UserGroup = Literal["Admin", "Moderator", "Trusted", "Regular", "Limited", "Noth
 TRUSTED_PLUS: list[UserGroup] = ["Admin", "Moderator", "Trusted"]
 MOD_PLUS: list[UserGroup] = ["Admin", "Moderator"]
 
+# From github/vocadb/VocaDbModel/Domain/{entry_type}s/{entry_type}Diff.cs
+Changed_song_fields = Literal[
+    "Artists",
+    "Length",
+    "Lyrics",
+    "Names",
+    "Notes",
+    "OriginalName",
+    "OriginalVersion",
+    "PublishDate",
+    "PVs",
+    "ReleaseEvent",
+    "ReleaseEvents",
+    "SongType",
+    "Status",
+    "WebLinks",
+    "Bpm",
+    "CultureCodes",
+]
+Changed_album_fields = Literal[
+    "Artists",
+    "Cover",
+    "Description",
+    "Discs",
+    "DiscType",
+    "Identifiers",
+    "Names",
+    "OriginalName",
+    "OriginalRelease",
+    "Pictures",
+    "PVs",
+    "Status",
+    "Tracks",
+    "WebLinks",
+]
+Changed_artist_fields = Literal[
+    "Albums",
+    "ArtistType",
+    "BaseVoicebank",
+    "Description",
+    "Groups",
+    "Names",
+    "OriginalName",
+    "Picture",
+    "Pictures",
+    "ReleaseDate",
+    "Status",
+    "WebLinks",
+    "CultureCodes",
+]
+Changed_tag_fields = Literal[
+    "CategoryName",
+    "Description",
+    "HideFromSuggestions",
+    "Names",
+    "OriginalName",
+    "Parent",
+    "Picture",
+    "RelatedTags",
+    "Status",
+    "Targets",
+    "WebLinks",
+]
+Changed_venue_fields = Literal[
+    "Address",
+    "AddressCountryCode",
+    "Coordinates",
+    "Description",
+    "OriginalName",
+    "Names",
+    "Status",
+    "WebLinks",
+]
+Changed_release_event_fields = Literal[
+    "Artists",
+    "Category",
+    "Date",
+    "Description",
+    "MainPicture",
+    "Names",
+    "OriginalName",
+    "PVs",
+    "Series",
+    "SeriesNumber",
+    "SeriesSuffix",
+    "SongList",
+    "Status",
+    "Venue",
+    "VenueName",
+    "WebLinks",
+]
+Changed_release_event_series_fields = Literal[
+    "Category", "Description", "OriginalName", "Names", "Picture", "Status", "WebLinks"
+]
+
+Changed_fields = (
+    Changed_song_fields
+    | Changed_album_fields
+    | Changed_artist_fields
+    | Changed_tag_fields
+    | Changed_venue_fields
+    | Changed_release_event_fields
+    | Changed_release_event_series_fields
+)
+
 
 @dataclass
 class UserEdit:
@@ -217,7 +322,7 @@ class UserEdit:
     entry_id: int
     version_id: int
     edit_event: Edit_type
-    changed_fields: list[str]
+    changed_fields: list[Changed_fields]
     update_notes: str
 
 
