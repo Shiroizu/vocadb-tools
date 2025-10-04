@@ -20,6 +20,7 @@ from vdbpy.types import (
     ReleaseEventSeriesVersion,
     ReleaseEventVersion,
     SongVersion,
+    TagRelation,
     TagVersion,
     UserEdit,
     VenueVersion,
@@ -34,6 +35,7 @@ logger = get_logger()
 
 edit_event_map: dict[str, Edit_type] = {
     "PropertiesUpdated": "Updated",
+    "Updated": "Updated",
     "Merged": "Updated",
     "Deleted": "Deleted",
     "Created": "Created",
@@ -154,7 +156,7 @@ def parse_links(data) -> list[ExternalLink]:
     raw_links = []
     if "externalLinks" in data:
         raw_links = data["externalLinks"]
-    elif "webLinks" in data:  # for albums
+    elif "webLinks" in data:  # inconsistent naming
         raw_links = data["webLinks"]
 
     if not raw_links:
@@ -381,12 +383,41 @@ def parse_artist_version(data: dict) -> ArtistVersion:
         vb_illustrator_ids=groups_by_link_type["Illustrator"],
         vb_manager_ids=groups_by_link_type["Manager"],
         vb_voice_provider_ids=groups_by_link_type["VoiceProvider"],
-        vb_release_date=parse_date(data["releaseDate"]) if "releaseDate" in data else None,
+        vb_release_date=parse_date(data["releaseDate"])
+        if "releaseDate" in data
+        else None,
     )
 
 
 def parse_tag_version(data: dict) -> TagVersion:
-    raise NotImplementedError
+    entry_status = data["archivedVersion"]["status"]
+    data = data["versions"]["firstData"]
+    name_non_english, name_romaji, name_english, aliases = parse_names(data["names"])
+    raw_dnm = data["translatedName"]["defaultLanguage"]
+    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+
+    def parse_tag_relation(data) -> TagRelation:
+        return TagRelation(
+            tag_id=data["id"],
+            name_hint=data["nameHint"],
+        )
+
+    return TagVersion(
+        aliases=aliases,
+        default_name_language=default_name_language,
+        description_eng=data["descriptionEng"],
+        description=data["description"],
+        entry_id=data["id"],
+        external_links=parse_links(data),
+        name_english=name_english,
+        name_non_english=name_non_english,
+        name_romaji=name_romaji,
+        status=entry_status,
+        tag_category=data["categoryName"],
+        hidden_from_suggestions=data["hideFromSuggestions"],
+        parent_tag=parse_tag_relation(data["parent"]) if "parent" in data else None,
+        related_tags=[parse_tag_relation(tag) for tag in data["relatedTags"]],
+    )
 
 
 def parse_release_event_version(data: dict) -> ReleaseEventVersion:
