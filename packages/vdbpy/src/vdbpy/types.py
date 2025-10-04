@@ -396,7 +396,11 @@ class ReleaseEventSeriesVersion(BaseEntryVersion):
 # --- VenueVersion --- #
 @dataclass
 class VenueVersion(BaseEntryVersion):
-    pass
+    autofilled_names: tuple[str, str, str] | None
+    address: str | None
+    country_code: str | None
+    latitude: float | None
+    longitude: float | None
 
 
 # --------------------------------- #
@@ -411,7 +415,15 @@ Songlist_category = Literal[
 
 # --- Entry --- #
 
-EntryVersion = SongVersion  | ArtistVersion | AlbumVersion | TagVersion | ReleaseEventVersion | VenueVersion | ReleaseEventSeriesVersion
+EntryVersion = (
+    SongVersion
+    | ArtistVersion
+    | AlbumVersion
+    | TagVersion
+    | ReleaseEventVersion
+    | ReleaseEventSeriesVersion
+    | VenueVersion
+)
 
 # --- MikuMod --- #
 
