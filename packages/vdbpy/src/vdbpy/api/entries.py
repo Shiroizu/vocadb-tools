@@ -10,6 +10,7 @@ from vdbpy.types import (
     AlbumVersion,
     ArtistParticipation,
     ArtistVersion,
+    BaseEntryVersion,
     Disc,
     Edit_type,
     Entry_type,
@@ -88,18 +89,19 @@ def parse_names(data: dict) -> tuple[str, str, str, list[str]]:
     name_english = ""
     aliases: list[str] = []
 
-    for entry in data["names"]:
-        language = entry["language"]
-        value = entry["value"]
-        match language:
-            case "Japanese":
-                name_non_english = value
-            case "Romaji":
-                name_romaji = value
-            case "English":
-                name_english = value
-            case "Unspecified":
-                aliases.append(value)
+    if "names" in data:
+        for entry in data["names"]:
+            language = entry["language"]
+            value = entry["value"]
+            match language:
+                case "Japanese":
+                    name_non_english = value
+                case "Romaji":
+                    name_romaji = value
+                case "English":
+                    name_english = value
+                case "Unspecified":
+                    aliases.append(value)
 
     return name_non_english, name_romaji, name_english, aliases
 
@@ -143,6 +145,9 @@ def parse_pvs(data) -> list[PV]:
 
 
 def parse_event_participations(data) -> list[EventParticipation]:
+    if "originalRelease" not in data:
+        return []
+    data = data["originalRelease"]
     if "releaseEvents" not in data or not data["releaseEvents"]:
         return []
     event_participations = []
@@ -197,9 +202,34 @@ def parse_pictures(data) -> list[Picture]:
 # --------------- Version parsers --------------- #
 
 
-def parse_song_version(data: dict) -> SongVersion:
+def parse_base_entry_version(data: dict) -> tuple[dict, BaseEntryVersion]:
     entry_status = data["archivedVersion"]["status"]
     data = data["versions"]["firstData"]
+
+    name_non_english, name_romaji, name_english, aliases = parse_names(data)
+    raw_dnm = (
+        data["translatedName"]["defaultLanguage"]
+        if "translatedName" in data
+        else "Unspecified"
+    )
+    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+
+    return data, BaseEntryVersion(
+        aliases=aliases,
+        default_name_language=default_name_language,
+        description_eng=data.get("descriptionEng", ""),
+        description=data.get("description", ""),
+        entry_id=data["id"],
+        external_links=parse_links(data),
+        name_english=name_english,
+        name_non_english=name_non_english,
+        name_romaji=name_romaji,
+        status=entry_status,
+    )
+
+
+def parse_song_version(data: dict) -> SongVersion:
+    data, base_entry_version = parse_base_entry_version(data)
 
     def parse_album_participation(data) -> list[AlbumParticipation]:
         if "albums" not in data or not data["albums"]:
@@ -233,24 +263,11 @@ def parse_song_version(data: dict) -> SongVersion:
             )
         return lyrics
 
-    name_non_english, name_romaji, name_english, aliases = parse_names(data)
-    raw_dnm = data["translatedName"]["defaultLanguage"]
-    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
-
     return SongVersion(
         albums=parse_album_participation(data),
-        aliases=aliases,
         artist=parse_artist_participation(data),
-        default_name_language=default_name_language,
-        description_eng=data.get("notesEng", ""),
-        description=data.get("notes", ""),
-        external_links=parse_links(data),
-        entry_id=data["id"],
-        length=data["lengthSeconds"],
+        length=data.get("lengthSeconds", 0),
         lyrics=parse_lyrics(data),
-        name_non_english=name_non_english,
-        name_romaji=name_romaji,
-        name_english=name_english,
         original_version_id=data["originalVersion"]["id"]
         if "originalVersion" in data
         else 0,
@@ -258,13 +275,12 @@ def parse_song_version(data: dict) -> SongVersion:
         pvs=parse_pvs(data),
         release_events=parse_event_participations(data),
         song_type=data["songType"],
-        status=entry_status,
+        **base_entry_version.__dict__,
     )
 
 
 def parse_album_version(data: dict) -> AlbumVersion:
-    entry_status = data["archivedVersion"]["status"]
-    data = data["versions"]["firstData"]
+    data, base_entry_version = parse_base_entry_version(data)
 
     def parse_discs(data) -> list[Disc]:
         if "discs" not in data or not data["discs"]:
@@ -297,6 +313,13 @@ def parse_album_version(data: dict) -> AlbumVersion:
         return album_tracks
 
     def parse_album_publish_date(data) -> tuple[datetime | None, int, int, int]:
+        if (
+            "originalRelease" not in data
+            or "releaseDate" not in data["originalRelease"]
+        ):
+            return None, 0, 0, 0
+
+        data = data["originalRelease"]["releaseDate"]
         year = data.get("year", 0)
         month = data.get("month", 0)
         day = data.get("day", 0)
@@ -305,49 +328,32 @@ def parse_album_version(data: dict) -> AlbumVersion:
         )
         return publish_date, year, month, day
 
-    publish_date, year, month, day = parse_album_publish_date(
-        data["originalRelease"]["releaseDate"]
-    )
-
-    name_non_english, name_romaji, name_english, aliases = parse_names(data)
-    raw_dnm = data["translatedName"]["defaultLanguage"]
-    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+    publish_date, year, month, day = parse_album_publish_date(data)
 
     return AlbumVersion(
         album_type=data["discType"],
-        aliases=aliases,
         artists=parse_artist_participation(data),
         barcodes=[code["value"] for code in data["identifiers"]]
         if "identifiers" in data
         else [],
-        catalog_number=data["originalRelease"].get("catNum", ""),
-        default_name_language=default_name_language,
-        description_eng=data.get("descriptionEng", ""),
-        description=data.get("description", ""),
+        catalog_number=data["originalRelease"].get("catNum", "")
+        if "originalRelease" in data
+        else "",
         discs=parse_discs(data),
-        external_links=parse_links(data),
-        entry_id=data["id"],
-        name_non_english=name_non_english,
-        name_romaji=name_romaji,
-        name_english=name_english,
         additional_pictures=parse_pictures(data),
         publish_date=publish_date,
         publish_day=day,
         publish_month=month,
         publish_year=year,
         pvs=parse_pvs(data),  # 'publish_date': None, 'length': 0,
-        release_events=parse_event_participations(data["originalRelease"]),
+        release_events=parse_event_participations(data),
         songs=parse_album_tracks(data),
-        status=entry_status,
+        **base_entry_version.__dict__,
     )
 
 
 def parse_artist_version(data: dict) -> ArtistVersion:
-    entry_status = data["archivedVersion"]["status"]
-    data = data["versions"]["firstData"]
-    name_non_english, name_romaji, name_english, aliases = parse_names(data)
-    raw_dnm = data["translatedName"]["defaultLanguage"]
-    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+    data, base_entry_version = parse_base_entry_version(data)
 
     def parse_groups(data) -> dict[str, list[int]]:
         group_link_types = [
@@ -370,18 +376,8 @@ def parse_artist_version(data: dict) -> ArtistVersion:
     groups_by_link_type = parse_groups(data)
     return ArtistVersion(
         additional_pictures=parse_pictures(data),
-        aliases=aliases,
         artist_type=data["artistType"],
-        default_name_language=default_name_language,
-        description_eng=data["descriptionEng"],
-        description=data["description"],
-        entry_id=data["id"],
-        external_links=parse_links(data),
         group_ids=groups_by_link_type["Group"],
-        name_english=name_english,
-        name_non_english=name_non_english,
-        name_romaji=name_romaji,
-        status=entry_status,
         vb_base_id=data["baseVoicebank"]["id"] if "baseVoicebank" in data else 0,
         vb_chara_designer_ids=groups_by_link_type["CharacterDesigner"],
         vb_illustrator_ids=groups_by_link_type["Illustrator"],
@@ -390,15 +386,12 @@ def parse_artist_version(data: dict) -> ArtistVersion:
         vb_release_date=parse_date(data["releaseDate"])
         if "releaseDate" in data
         else None,
+        **base_entry_version.__dict__,
     )
 
 
 def parse_tag_version(data: dict) -> TagVersion:
-    entry_status = data["archivedVersion"]["status"]
-    data = data["versions"]["firstData"]
-    name_non_english, name_romaji, name_english, aliases = parse_names(data)
-    raw_dnm = data["translatedName"]["defaultLanguage"]
-    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+    data, base_entry_version = parse_base_entry_version(data)
 
     def parse_tag_relation(data) -> TagRelation:
         return TagRelation(
@@ -407,35 +400,23 @@ def parse_tag_version(data: dict) -> TagVersion:
         )
 
     return TagVersion(
-        aliases=aliases,
-        default_name_language=default_name_language,
-        description_eng=data["descriptionEng"],
-        description=data["description"],
-        entry_id=data["id"],
-        external_links=parse_links(data),
-        name_english=name_english,
-        name_non_english=name_non_english,
-        name_romaji=name_romaji,
-        status=entry_status,
-        tag_category=data["categoryName"],
-        hidden_from_suggestions=data["hideFromSuggestions"],
+        tag_category=data.get("categoryName", ""),
+        hidden_from_suggestions=data.get("hideFromSuggestions", False),
         parent_tag=parse_tag_relation(data["parent"]) if "parent" in data else None,
-        related_tags=[parse_tag_relation(tag) for tag in data["relatedTags"]],
+        related_tags=[parse_tag_relation(tag) for tag in data["relatedTags"]]
+        if "relatedTags" in data
+        else [],
+        **base_entry_version.__dict__,
     )
 
 
 def parse_release_event_version(data: dict) -> ReleaseEventVersion:
-    entry_status = data["archivedVersion"]["status"]
-    data = data["versions"]["firstData"]
-    autofilled_names = None
-    if "names" in data:
-        name_non_english, name_romaji, name_english, aliases = parse_names(data)
-    else:
-        name_non_english = name_romaji = name_english = ""
-        aliases = []
-        autofilled_names = data["translatedName"].values()
-    raw_dnm = data["translatedName"]["defaultLanguage"]
-    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+    data, base_entry_version = parse_base_entry_version(data)
+    autofilled_names = (
+        data["translatedName"].values()
+        if "names" not in data and "translatedName" in data
+        else None
+    )
 
     def parse_event_series_relation(data) -> EventSeriesRelation:
         return EventSeriesRelation(
@@ -470,19 +451,10 @@ def parse_release_event_version(data: dict) -> ReleaseEventVersion:
         return event_artists
 
     return ReleaseEventVersion(
-        aliases=aliases,
-        artists=parse_event_artists(data),
         autofilled_names=autofilled_names,
+        artists=parse_event_artists(data),
         custom_venue_name=data.get("venueName", ""),
-        default_name_language=default_name_language,
-        description_eng=data.get("descriptionEng", ""),
-        description=data.get("description", ""),
-        entry_id=data["id"],
         event_category=data["category"],
-        external_links=parse_links(data),
-        name_english=name_english,
-        name_non_english=name_non_english,
-        name_romaji=name_romaji,
         series_number=data["seriesNumber"],
         series=parse_event_series_relation(data["series"])
         if "series" in data
@@ -491,37 +463,23 @@ def parse_release_event_version(data: dict) -> ReleaseEventVersion:
         if "songlist" in data
         else None,
         start_date=parse_date(data["date"]) if "date" in data else None,
-        status=entry_status,
         venue=parse_venue_relation(data["venue"]) if "venue" in data else None,
+        **base_entry_version.__dict__,
     )
 
 
 def parse_release_event_series_version(data: dict) -> ReleaseEventSeriesVersion:
-    entry_status = data["archivedVersion"]["status"]
-    data = data["versions"]["firstData"]
-    autofilled_names = None
-    if "names" in data:
-        name_non_english, name_romaji, name_english, aliases = parse_names(data)
-    else:
-        name_non_english = name_romaji = name_english = ""
-        aliases = []
-        autofilled_names = data["translatedName"].values()
-    raw_dnm = data["translatedName"]["defaultLanguage"]
-    default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+    data, base_entry_version = parse_base_entry_version(data)
+    autofilled_names = (
+        data["translatedName"].values()
+        if "names" not in data and "translatedName" in data
+        else None
+    )
 
     return ReleaseEventSeriesVersion(
         autofilled_names=autofilled_names,
         event_category=data["category"],
-        aliases=aliases,
-        default_name_language=default_name_language,
-        description_eng=data.get("descriptionEng", ""),
-        description=data.get("description", ""),
-        entry_id=data["id"],
-        external_links=parse_links(data),
-        name_english=name_english,
-        name_non_english=name_non_english,
-        name_romaji=name_romaji,
-        status=entry_status,
+        **base_entry_version.__dict__,
     )
 
 

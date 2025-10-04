@@ -411,7 +411,7 @@ Songlist_category = Literal[
 
 # --- Entry --- #
 
-EntryVersion = SongVersion  # | ArtistVersion | AlbumVersion | TagVersion | ReleaseEventVersion | VenueVersion | ReleaseEventSeriesVersion
+EntryVersion = SongVersion  | ArtistVersion | AlbumVersion | TagVersion | ReleaseEventVersion | VenueVersion | ReleaseEventSeriesVersion
 
 # --- MikuMod --- #
 
