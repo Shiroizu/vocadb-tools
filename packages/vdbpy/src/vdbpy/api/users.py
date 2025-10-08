@@ -190,6 +190,16 @@ def get_edits_by_username(username: str) -> list[UserEdit]:
         fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
     )
 
+def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit:
+    params = {
+        "userId": user_id,
+        "fields": "Entry,ArchivedVersion",
+        "maxResults": 1
+    }
+
+    logger.debug(f"Fetching most recent edit by user id '{user_id}'")
+    return parse_edits(fetch_json(ACTIVITY_API_URL, params=params)["items"])[0]
+
 
 @cache_with_expiration(days=1)
 def get_entry_matrix_by_user_id(user_id: int, since="", before=""):

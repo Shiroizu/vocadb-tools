@@ -119,9 +119,9 @@ def save_file(filepath: str, content: str | list, append=False) -> None:
         content_to_write = str(content)
 
     with path.open(mode, encoding="utf-8") as f:
-        f.write(content_to_write)
         if append:
             f.write("\n")
+        f.write(content_to_write)
 
     logger.debug(f"File saved: '{filepath}'")
 
@@ -149,9 +149,14 @@ def replace_line_in_file(
     for line in lines:
         condition = line.startswith(old_line) if startswith else (line == old_line)
         if condition and counter > 0:
-            new_lines.append(new_line)
+            if new_line:
+                new_lines.append(new_line)
             counter -= 1
         else:
             new_lines.append(line)
 
     save_file(filename, new_lines)
+
+
+def remove_line_from_file(filename: str, line_to_remove: str, count=1, starswith=False):
+    replace_line_in_file(filename, line_to_remove, "", count, starswith)
