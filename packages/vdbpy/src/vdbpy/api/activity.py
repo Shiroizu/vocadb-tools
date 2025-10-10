@@ -30,11 +30,11 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
     edits_from_today_requested = False
 
     if date.date() > today.date():
-        logger.warning(f"Selected date {date_str} is in the future.")
+        logger.debug(f"Selected date {date_str} is in the future.")
         return []
 
     if date.date() == today.date():
-        logger.warning(f"Selected date {date_str} is today.")
+        logger.debug(f"Selected date {date_str} is today.")
         edits_from_today_requested = True
 
     day_after = date + timedelta(days=1)
@@ -43,12 +43,12 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
     if save_dir:
         filename = f"{save_dir}/{date_str}{PARTIAL_SLUG}.json"
         if os.path.isfile(filename):
-            logger.warning("Partial save file found.")
+            logger.debug("Partial save file found.")
             partial_save = True
         else:
             filename = f"{save_dir}/{date_str}.json"
         if data := get_text(filename):
-            logger.info(f"Loading edits from '{filename}'...")
+            logger.debug(f"Loading edits from '{filename}'...")
             previous_edits.extend(
                 [user_edit_from_dict(item) for item in json.loads(data)]
             )
@@ -57,13 +57,13 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
                 return previous_edits
 
             date = previous_edits[0].edit_date
-            logger.info(
+            logger.debug(
                 f"The most recent saved edit from this date is '{previous_edits[0].edit_date}'"
             )
 
     params = {"fields": "Entry,ArchivedVersion"}
 
-    logger.info(f"Fetching edits from {date} to {day_after}...")
+    logger.debug(f"Fetching edits from {date} to {day_after}...")
     edits_by_date = fetch_all_items_between_dates(
         ACTIVITY_API_URL,
         date.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -81,7 +81,7 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
                     parsed_edits.append(prev_edit)
 
         new_edits = len(parsed_edits) - prev_length
-        logger.info(f"Found total of {new_edits} new edits for date {date_str}")
+        logger.debug(f"Found total of {new_edits} new edits for date {date_str}")
         if not edits_from_today_requested:
             save_file(
                 f"{save_dir}/{date_str}.json",

@@ -54,12 +54,12 @@ def parse_edits_from_archived_versions(
     for edit_object in data:
         edit_type = edit_object["reason"]
         if edit_type == "Merged":
-            logger.warning(
+            logger.debug(
                 f"Merge detected while parsing data for {entry_type} {entry_id} v{edit_object['id']}"
             )
             edit_type = "Updated"
         elif edit_type not in edit_event_map:
-            logger.warning(
+            logger.debug(
                 f"Unknown edit type '{edit_type}' for {entry_type} {entry_id} v{edit_object['id']}"
             )
             edit_type = "Updated"
