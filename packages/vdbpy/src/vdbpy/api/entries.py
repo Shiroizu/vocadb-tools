@@ -511,7 +511,7 @@ def get_entry_versions(
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
     data = fetch_json(url)
     if "deleted" in data["entry"] and data["entry"]["deleted"]:
-        logger.warning(f"{entry_type} {entry_id} has been deleted.")
+        logger.debug(f"{entry_type} {entry_id} has been deleted.")
         if not include_deleted:
             return []
     return parse_edits_from_archived_versions(
