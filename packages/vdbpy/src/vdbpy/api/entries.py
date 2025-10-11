@@ -505,22 +505,57 @@ def parse_venue_version(data: dict) -> VenueVersion:
 # --------------- --------------- #
 
 
-def get_entry_versions(
+def get_entry_details(entry_type: Entry_type, entry_id: int) -> dict:
+    url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/details"
+    return fetch_json(url)
+
+
+@cache_with_expiration(days=1)
+def is_entry_deleted(entry_type: Entry_type, entry_id: int) -> bool:
+    entry_details = get_entry_details(entry_type, entry_id)
+    if "deleted" in entry_details:
+        return entry_details["deleted"]
+    return False
+
+
+def get_edits_by_entry(
     entry_type: Entry_type, entry_id: int, include_deleted=False
 ) -> list[UserEdit]:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
     data = fetch_json(url)
-    if "deleted" in data["entry"] and data["entry"]["deleted"]:
-        logger.debug(f"{entry_type} {entry_id} has been deleted.")
-        if not include_deleted:
+    if not include_deleted:
+        # print("Album", get_entry_versions("Album", 49682))
+        # print("Tag", get_entry_versions("Tag", 9363))
+        # print("ReleaseEvent", get_entry_versions("ReleaseEvent", 9785))
+        # print("ReleaseEventSeries", get_entry_versions("ReleaseEventSeries", 997))
+        if entry_type in ["Album", "Tag", "ReleaseEvent", "ReleaseEventSeries"]:
+            if is_entry_deleted(entry_type, entry_id):
+                logger.debug(f"{entry_type} {entry_id} has been deleted.")
+                return []
+
+        # print("Artist", get_entry_versions("Artist", 81663)) # works
+        # print("Song", get_entry_versions("Song", 1)) # works
+        # print("Venue", get_entry_versions("Venue", 418)) # works
+        elif "deleted" in data["entry"] and data["entry"]["deleted"]:
+            logger.debug(f"{entry_type} {entry_id} has been deleted.")
             return []
+
     return parse_edits_from_archived_versions(
         data["archivedVersions"], entry_type, entry_id
     )
 
 
 @cache_without_expiration()
-def get_raw_entry_version(entry_type: Entry_type, version_id: int) -> dict:
+def get_edits_by_entry_before_version_id(
+    entry_type: Entry_type, entry_id: int, version_id: int, include_deleted=False
+) -> list[UserEdit]:
+    edits = get_edits_by_entry(entry_type, entry_id, include_deleted)
+    edits_before_version_id = [edit for edit in edits if edit.version_id <= version_id]
+    return edits_before_version_id
+
+
+@cache_without_expiration()
+def get_raw_edits_by_entry(entry_type: Entry_type, version_id: int) -> dict:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/versions/{version_id}"
     return fetch_json(url)
 
@@ -536,7 +571,7 @@ def get_entry_version(  # noqa: PLR0911
     | ReleaseEventSeriesVersion
     | VenueVersion
 ):
-    data = get_raw_entry_version(entry_type, version_id)
+    data = get_raw_edits_by_entry(entry_type, version_id)
     match entry_type:
         case "Album":
             return parse_album_version(data)
