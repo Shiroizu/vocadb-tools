@@ -63,7 +63,9 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir="") -> list[UserE
 
     params = {"fields": "Entry,ArchivedVersion"}
 
-    logger.debug(f"Fetching edits from {date} to {day_after}...")
+    logger.info(
+        f"Fetching edits from {str(date).split()[0]} to {str(day_after).split()[0]}..."
+    )
     edits_by_date = fetch_all_items_between_dates(
         ACTIVITY_API_URL,
         date.strftime("%Y-%m-%dT%H:%M:%SZ"),

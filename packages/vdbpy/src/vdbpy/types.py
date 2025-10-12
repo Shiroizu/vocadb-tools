@@ -15,6 +15,16 @@ Entry_type = Literal[
     "ReleaseEventSeries",
 ]
 
+entry_type_to_url: dict[Entry_type, str] = {
+    "Song": "S",
+    "Artist": "Ar",
+    "Album": "Al",
+    "Venue": "Venue/Details",
+    "Tag": "T",
+    "ReleaseEvent": "E",
+    "ReleaseEventSeries": "Es",
+}
+
 Entry_status = Literal["Draft", "Finished", "Approved", "Locked"]
 
 Default_languages = Literal[
@@ -554,7 +564,12 @@ class UserEdit:
 
 
 RuleCheckResult = Literal[
-    "Valid", "Rule violation", "Possible rule violation", "Not applicable", None
+    "Valid",
+    "Rule violation",
+    "Possible rule violation",
+    "Not applicable",
+    "Unrelated fields",
+    None,
 ]
 VersionCheck = tuple[UserEdit, int, RuleCheckResult]
 EntryCheck = list[list[VersionCheck]]

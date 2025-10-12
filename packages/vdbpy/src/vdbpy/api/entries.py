@@ -29,6 +29,7 @@ from vdbpy.types import (
     UserEdit,
     VenueRelation,
     VenueVersion,
+    entry_type_to_url,
 )
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import add_s
@@ -550,8 +551,7 @@ def get_edits_by_entry_before_version_id(
     entry_type: Entry_type, entry_id: int, version_id: int, include_deleted=False
 ) -> list[UserEdit]:
     edits = get_edits_by_entry(entry_type, entry_id, include_deleted)
-    edits_before_version_id = [edit for edit in edits if edit.version_id <= version_id]
-    return edits_before_version_id
+    return [edit for edit in edits if edit.version_id <= version_id]
 
 
 @cache_without_expiration()
@@ -646,3 +646,7 @@ def delete_entry(
     deletion_attempt.raise_for_status()
 
     return True
+
+
+def get_entry_link(entry_type: Entry_type, entry_id: int) -> str:
+    return f"{WEBSITE}/{entry_type_to_url[entry_type]}/{entry_id}"
