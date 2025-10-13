@@ -13,6 +13,7 @@ from vdbpy.types import (
     BaseEntryVersion,
     Disc,
     Edit_type,
+    Entry,
     Entry_type,
     EventArtistParticipation,
     EventParticipation,
@@ -30,6 +31,7 @@ from vdbpy.types import (
     VenueRelation,
     VenueVersion,
     entry_type_to_url,
+    entry_url_to_type,
 )
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import add_s
@@ -650,3 +652,16 @@ def delete_entry(
 
 def get_entry_link(entry_type: Entry_type, entry_id: int) -> str:
     return f"{WEBSITE}/{entry_type_to_url[entry_type]}/{entry_id}"
+
+
+def get_entry_from_link(entry_link: str) -> Entry:
+    # https://vocadb.net/S/83619
+    # --> ("Song", 83619)
+    link = entry_link.split(WEBSITE + "/")[1]
+    if "venue" in link.lower():
+        entry_id = int(link.split("/")[2])
+        return ("Venue", entry_id)
+
+    entry_type_slug, entry_id_str, *_ = link.split("/")
+    entry_type = entry_url_to_type[entry_type_slug]
+    return (entry_type, int(entry_id_str))

@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
+from types import ModuleType
 from typing import Literal
 
 # --- Base --- #
+
 
 Entry_type = Literal[
     "Song",
@@ -15,6 +17,8 @@ Entry_type = Literal[
     "ReleaseEventSeries",
 ]
 
+Entry = tuple[Entry_type, int]  # entry_id
+
 entry_type_to_url: dict[Entry_type, str] = {
     "Song": "S",
     "Artist": "Ar",
@@ -24,6 +28,8 @@ entry_type_to_url: dict[Entry_type, str] = {
     "ReleaseEvent": "E",
     "ReleaseEventSeries": "Es",
 }
+
+entry_url_to_type: dict[str, Entry_type] = {v: k for k, v in entry_type_to_url.items()}
 
 Entry_status = Literal["Draft", "Finished", "Approved", "Locked"]
 
@@ -574,6 +580,29 @@ RuleCheckResult = Literal[
 VersionCheck = tuple[UserEdit, int, RuleCheckResult]
 EntryCheck = list[list[VersionCheck]]
 
+
 Report_type = Literal[
     "InvalidInfo", "Duplicate", "Inappropriate", "Other", "InvalidTag", "BrokenPV"
 ]
+
+
+@dataclass
+class EntryReport:
+    report_id: int
+    entry_type: Entry_type
+    entry_id: int
+    date: datetime
+    report_type: Report_type
+    notes: str
+    author: int | Literal["anon"]
+
+
+RuleModules = dict[int, tuple[str, ModuleType]]
+# rule_id: (rule_name, rule_module)
+
+EntryReportWithVersion = tuple[EntryReport, int]
+ParsedEntryReport = list[EntryReportWithVersion | Entry]
+ParsedReportsByRuleId = dict[int, ParsedEntryReport]
+ParsedReportsByRuleIdByUserId = dict[int, ParsedReportsByRuleId]
+
+Report_result = Literal["Success", "Too old", "Too recent", "Skipped", "Error"]
