@@ -27,6 +27,7 @@ entry_type_to_url: dict[Entry_type, str] = {
     "Tag": "T",
     "ReleaseEvent": "E",
     "ReleaseEventSeries": "Es",
+    "SongList": "L",
 }
 
 entry_url_to_type: dict[str, Entry_type] = {v: k for k, v in entry_type_to_url.items()}
