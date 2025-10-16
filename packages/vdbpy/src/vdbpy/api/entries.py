@@ -216,12 +216,16 @@ def parse_base_entry_version(data: dict) -> tuple[dict, BaseEntryVersion]:
         else "Unspecified"
     )
     default_name_language = "Non-English" if raw_dnm == "Japanese" else raw_dnm
+    desc = data.get("notes", "") if "notes" in data else data.get("description", "")
+    desc_eng = (
+        data.get("notesEng", "") if "notes" in data else data.get("descriptionEng", "")
+    )
 
     return data, BaseEntryVersion(
         aliases=aliases,
         default_name_language=default_name_language,
-        description_eng=data.get("descriptionEng", ""),
-        description=data.get("description", ""),
+        description=desc,
+        description_eng=desc_eng,
         entry_id=data["id"],
         external_links=parse_links(data),
         name_english=name_english,
@@ -268,7 +272,7 @@ def parse_song_version(data: dict) -> SongVersion:
 
     return SongVersion(
         albums=parse_album_participation(data),
-        artist=parse_artist_participation(data),
+        artists=parse_artist_participation(data),
         length=data.get("lengthSeconds", 0),
         lyrics=parse_lyrics(data),
         original_version_id=data["originalVersion"]["id"]

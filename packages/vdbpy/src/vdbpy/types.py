@@ -183,7 +183,7 @@ class SongVersion(BaseEntryVersion):
     # Missing/unsupported fields:
     # - language_codes
     albums: list[AlbumParticipation]
-    artist: list[ArtistParticipation]
+    artists: list[ArtistParticipation]
     length: int
     lyrics: list[Lyrics]
     max_milli_bpm = int
@@ -605,4 +605,8 @@ ParsedEntryReport = list[EntryReportWithVersion | Entry]
 ParsedReportsByRuleId = dict[int, ParsedEntryReport]
 ParsedReportsByRuleIdByUserId = dict[int, ParsedReportsByRuleId]
 
-Report_result = Literal["Success", "Too old", "Too recent", "Skipped", "Error"]
+Report_result = Literal[
+    "Success", "Too old", "Too recent", "Skipped", "Error", "Deleted"
+]
+
+Test_version = tuple[RuleCheckResult, list[tuple[Entry_type, int]]]
