@@ -2,6 +2,7 @@ import random
 from datetime import UTC, datetime
 from typing import get_args
 
+from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE
 from vdbpy.types import (
     PV,
@@ -655,6 +656,9 @@ def delete_entry(
 
 
 def get_entry_link(entry_type: Entry_type, entry_id: int) -> str:
+    if entry_type == "User":
+        username = get_username_by_id(entry_id)
+        return f"{WEBSITE}/Profile/{username}"
     return f"{WEBSITE}/{entry_type_to_url[entry_type]}/{entry_id}"
 
 

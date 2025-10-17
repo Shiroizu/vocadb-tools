@@ -15,6 +15,7 @@ Entry_type = Literal[
     "SongList",
     "Venue",
     "ReleaseEventSeries",
+    "User"
 ]
 
 Entry = tuple[Entry_type, int]  # entry_id
