@@ -1,14 +1,24 @@
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
-from vdbpy.utils.network import fetch_json, fetch_json_items
+from vdbpy.utils.network import (
+    fetch_json,
+    fetch_json_items,
+    fetch_json_items_with_total_count,
+)
 
 EVENT_API_URL = f"{WEBSITE}/api/releaseEvents"
 
 # TODO: Type EventEntry
 
 
-def get_events(params):
+def get_events(params) -> list:
     return fetch_json_items(EVENT_API_URL, params=params)
+
+
+def get_events_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+    return fetch_json_items_with_total_count(
+        EVENT_API_URL, params=params, max_results=max_results
+    )
 
 
 def get_event(params):

@@ -45,7 +45,7 @@ def fetch_cached_json(url: str, session=requests, params=None):
 
 def fetch_json_items(
     url, params: dict | None = None, session=requests, max_results=10**9, page_size=50
-):
+) -> list:
     logger.debug(f"Fetching all JSON items for url '{url}'")
     logger.debug(f"Params: {params}")
     if url == ACTIVITY_API_URL:
@@ -67,6 +67,35 @@ def fetch_json_items(
         all_items.extend(items)
         if len(all_items) >= max_results:
             return all_items[:max_results]
+        page += 1
+
+
+def fetch_json_items_with_total_count(
+    url, params: dict | None = None, session=requests, max_results=10**9, page_size=50
+) -> tuple[list, int]:
+    logger.debug(f"Fetching all JSON items with total count for url '{url}'")
+    logger.debug(f"Params: {params}")
+    if url == ACTIVITY_API_URL:
+        logger.warning(f"Start param not supported for '{ACTIVITY_API_URL}'!")
+        logger.warning("Use fetch_all_items_between_dates instead.")
+    all_items = []
+    page = 1
+    params = params if params is not None else {}
+    params["maxResults"] = page_size
+    params["getTotalCount"] = True
+    while True:
+        params["start"] = str(page_size * (page - 1))
+        json = fetch_json(url, session=session, params=params)
+        items = json["items"]
+        totalcount = json["totalCount"]
+
+        if not items:
+            return all_items, totalcount
+        logger.info(f"Page {page}/{1+(totalcount//page_size)}")
+        all_items.extend(items)
+
+        if len(all_items) >= max_results:
+            return all_items[:max_results], totalcount
         page += 1
 
 

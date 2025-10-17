@@ -1,6 +1,11 @@
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
-from vdbpy.utils.network import fetch_json, fetch_json_items, fetch_totalcount
+from vdbpy.utils.network import (
+    fetch_json,
+    fetch_json_items,
+    fetch_json_items_with_total_count,
+    fetch_totalcount,
+)
 
 ARTIST_API_URL = f"{WEBSITE}/api/artists"
 SONG_API_URL = f"{WEBSITE}/api/songs"
@@ -8,13 +13,19 @@ SONG_API_URL = f"{WEBSITE}/api/songs"
 # TODO: Type ArtistEntry
 
 
-def get_artists(params):
+def get_artists(params) -> list:
     return fetch_json_items(ARTIST_API_URL, params=params)
 
 
 def get_artist(params):
     result = fetch_json(ARTIST_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
+
+
+def get_artists_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+    return fetch_json_items_with_total_count(
+        ARTIST_API_URL, params=params, max_results=max_results
+    )
 
 
 @cache_with_expiration(days=1)

@@ -8,7 +8,12 @@ from vdbpy.types import Service
 from vdbpy.utils import niconico, youtube
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_cached_totalcount, fetch_json, fetch_json_items
+from vdbpy.utils.network import (
+    fetch_cached_totalcount,
+    fetch_json,
+    fetch_json_items,
+    fetch_json_items_with_total_count,
+)
 
 logger = get_logger()
 
@@ -29,8 +34,14 @@ def get_song(params):
     return result["items"][0] if result["items"] else {}
 
 
-def get_songs(params):
+def get_songs(params) -> list:
     return fetch_json_items(SONG_API_URL, params=params)
+
+
+def get_songs_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+    return fetch_json_items_with_total_count(
+        SONG_API_URL, params=params, max_results=max_results
+    )
 
 
 def get_songs_by_artist_id(artist_id: int, params=None):

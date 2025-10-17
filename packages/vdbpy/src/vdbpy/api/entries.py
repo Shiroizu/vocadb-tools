@@ -1,8 +1,19 @@
 import random
 from datetime import UTC, datetime
-from typing import get_args
+from typing import (
+    Callable,
+    get_args,
+)
 
-from vdbpy.api.users import get_username_by_id
+from vdbpy.api.albums import get_albums_with_total_count
+from vdbpy.api.artists import get_artists_with_total_count
+from vdbpy.api.events import get_events_with_total_count
+from vdbpy.api.series import get_many_series_with_total_count
+from vdbpy.api.songlists import get_featured_songlists_with_total_count
+from vdbpy.api.songs import get_songs_with_total_count
+from vdbpy.api.tags import get_tags_with_total_count
+from vdbpy.api.users import get_username_by_id, get_users_with_total_count
+from vdbpy.api.venues import get_venues_with_total_count
 from vdbpy.config import WEBSITE
 from vdbpy.types import (
     PV,
@@ -673,3 +684,47 @@ def get_entry_from_link(entry_link: str) -> Entry:
     entry_type_slug, entry_id_str, *_ = link.split("/")
     entry_type = entry_url_to_type[entry_type_slug]
     return (entry_type, int(entry_id_str))
+
+
+def search_entry(name: str, entry_type: Entry_type, max_results=10) -> str:
+    search_functions: dict[Entry_type, tuple[Callable[..., tuple[list, int]], str]] = {
+        "Song": (get_songs_with_total_count, "RatingScore"),
+        "Album": (get_albums_with_total_count, "CollectionCount"),
+        "Artist": (get_artists_with_total_count, "FollowerCount"),
+        "Tag": (get_tags_with_total_count, "UsageCount"),
+        "SongList": (get_featured_songlists_with_total_count, "None"),
+        "Venue": (get_venues_with_total_count, "None"),
+        "ReleaseEvent": (get_events_with_total_count, "None"),
+        "ReleaseEventSeries": (get_many_series_with_total_count, "None"),
+        "User": (get_users_with_total_count, "RegisterDate"),
+    }
+
+    params = {
+        "nameMatchMode": "Exact",
+        "getTotalCount": True,
+        "query": name,
+    }
+    search_function, sort_rule = search_functions[entry_type]
+    params["sort"] = sort_rule
+    results, total_count = search_function(params, max_results=max_results)
+    if not results or total_count > 1:
+        params["nameMatchMode"] = "Partial"
+        results, total_count = search_function(params, max_results=max_results)
+    if not results:
+        return "No results found for 'name'"
+
+    links = [
+        get_entry_link(entry_type, entry["id"])  # type: ignore
+        for entry in results[:max_results]  # type: ignore
+    ]
+
+    if len(links) == 1:
+        return links[0]
+
+    bullet_point_links = [f"- {link}" for link in links]
+    if total_count > max_results:
+        bullet_point_links.append("- ...")
+
+    return (
+        f"Found {total_count} entries for '{name}':\n{'\n'.join(bullet_point_links)}"
+    )

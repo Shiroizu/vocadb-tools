@@ -3,7 +3,12 @@ import time
 from vdbpy.config import WEBSITE
 from vdbpy.types import Songlist_category
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_json, fetch_json_items, fetch_text
+from vdbpy.utils.network import (
+    fetch_json,
+    fetch_json_items,
+    fetch_json_items_with_total_count,
+    fetch_text,
+)
 
 # TODO: Type SonglistEntry
 
@@ -11,12 +16,22 @@ SONGLIST_API_URL = f"{WEBSITE}/api/songLists"
 
 logger = get_logger()
 
-def get_featured_songlists(params):
+
+def get_featured_songlists(params) -> list:
     return fetch_json_items(SONGLIST_API_URL + "/featured", params=params)
+
 
 def get_featured_songlist(params):
     result = fetch_json(SONGLIST_API_URL + "/featured", params=params)
     return result["items"][0] if result["items"] else {}
+
+
+def get_featured_songlists_with_total_count(
+    params, max_results=10**9
+) -> tuple[list, int]:
+    return fetch_json_items_with_total_count(
+        SONGLIST_API_URL + "/featured", params=params, max_results=max_results
+    )
 
 
 def create_or_update_songlist(

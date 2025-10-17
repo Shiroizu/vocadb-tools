@@ -1,13 +1,23 @@
 from vdbpy.config import WEBSITE
-from vdbpy.utils.network import fetch_json, fetch_json_items
+from vdbpy.utils.network import (
+    fetch_json,
+    fetch_json_items,
+    fetch_json_items_with_total_count,
+)
 
 VENUE_API_URL = f"{WEBSITE}/api/venues"
 
 # TODO: Type VenueEntry
 
 
-def get_venues(params):
+def get_venues(params) -> list:
     return fetch_json_items(VENUE_API_URL, params=params)
+
+
+def get_venues_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+    return fetch_json_items_with_total_count(
+        VENUE_API_URL, params=params, max_results=max_results
+    )
 
 
 def get_venue(params):

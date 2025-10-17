@@ -1,5 +1,9 @@
 from vdbpy.config import WEBSITE
-from vdbpy.utils.network import fetch_json, fetch_json_items
+from vdbpy.utils.network import (
+    fetch_json,
+    fetch_json_items,
+    fetch_json_items_with_total_count,
+)
 
 ALBUM_API_URL = f"{WEBSITE}/api/albums"
 SONG_API_URL = f"{WEBSITE}/api/songs"
@@ -7,8 +11,14 @@ SONG_API_URL = f"{WEBSITE}/api/songs"
 # TODO: Type AlbumEntry
 
 
-def get_albums(params):
+def get_albums(params) -> list:
     return fetch_json_items(ALBUM_API_URL, params=params)
+
+
+def get_albums_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+    return fetch_json_items_with_total_count(
+        ALBUM_API_URL, params=params, max_results=max_results
+    )
 
 
 def get_album(params):

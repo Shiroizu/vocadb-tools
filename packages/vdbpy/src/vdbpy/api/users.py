@@ -12,6 +12,7 @@ from vdbpy.utils.network import (
     fetch_all_items_between_dates,
     fetch_json,
     fetch_json_items,
+    fetch_json_items_with_total_count,
 )
 
 logger = get_logger()
@@ -24,6 +25,12 @@ ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 def get_users(params):
     return fetch_json_items(USER_API_URL, params=params)
+
+
+def get_users_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+    return fetch_json_items_with_total_count(
+        USER_API_URL, params=params, max_results=max_results
+    )
 
 
 def get_user(params):
