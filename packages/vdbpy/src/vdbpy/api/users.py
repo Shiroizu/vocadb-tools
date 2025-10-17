@@ -22,6 +22,15 @@ ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 # TOOD: Type UserEntry
 
 
+def get_users(params):
+    return fetch_json_items(USER_API_URL, params=params)
+
+
+def get_user(params):
+    result = fetch_json(USER_API_URL, params=params)
+    return result["items"][0] if result["items"] else {}
+
+
 @cache_with_expiration(days=7)
 def get_username_by_id(user_id: int, include_usergroup=False) -> str:
     user_api_url = f"{USER_API_URL}/{user_id}"
@@ -190,12 +199,9 @@ def get_edits_by_username(username: str) -> list[UserEdit]:
         fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
     )
 
+
 def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit:
-    params = {
-        "userId": user_id,
-        "fields": "Entry,ArchivedVersion",
-        "maxResults": 1
-    }
+    params = {"userId": user_id, "fields": "Entry,ArchivedVersion", "maxResults": 1}
 
     logger.debug(f"Fetching most recent edit by user id '{user_id}'")
     return parse_edits(fetch_json(ACTIVITY_API_URL, params=params)["items"])[0]

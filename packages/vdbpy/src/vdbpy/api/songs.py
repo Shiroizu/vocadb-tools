@@ -18,15 +18,16 @@ SONG_API_URL = f"{WEBSITE}/api/songs"
 # TODO Type: SongEntry
 
 
-@cache_with_expiration(days=2)
 def get_song_by_id(song_id, fields=""):
     params = {"fields": fields} if fields else {}
     url = f"{SONG_API_URL}/{song_id}"
     return fetch_json(url, params=params)
 
+
 def get_song(params):
     result = fetch_json(SONG_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
+
 
 def get_songs(params):
     return fetch_json_items(SONG_API_URL, params=params)
@@ -156,7 +157,10 @@ def get_song_rater_ids_by_song_id(song_id: int, session=None) -> list[int]:
 
 
 def get_viewcounts_by_song_id_and_service(
-    song_id: int, service: Service, api_keys: dict[Service, str], precalculated_data: dict[str, int] | None = None
+    song_id: int,
+    service: Service,
+    api_keys: dict[Service, str],
+    precalculated_data: dict[str, int] | None = None,
 ) -> list[tuple[str, str, int]]:
     # Returns a tuple of (pv_url, pv_type, viewcount)
     pvs = get_song_by_id(song_id, fields="pvs")["pvs"]
@@ -167,13 +171,15 @@ def get_viewcounts_by_song_id_and_service(
         "NicoNicoDouga": niconico.get_viewcount,
         "Youtube": youtube.get_viewcount,
     }
-    new_data : list[tuple[str, str, int]] = []
+    new_data: list[tuple[str, str, int]] = []
     for pv in pvs:
         if pv["service"] == service and not pv["disabled"]:
             if pv["pvId"] in precalculated_data:
                 new_viewcount = precalculated_data[pv["pvId"]]
             else:
-                new_viewcount = viewcount_functions[pv["service"]](pv["pvId"], api_keys.get(pv["service"]))
+                new_viewcount = viewcount_functions[pv["service"]](
+                    pv["pvId"], api_keys.get(pv["service"])
+                )
             new_data.append((pv["url"], pv["pvType"], new_viewcount))
 
     return new_data
@@ -198,6 +204,7 @@ def get_relevant_user_ids_by_song_id(song_id: int, session=None) -> list[int]:
     songlist_authors = get_songlist_author_ids_by_song_id(song_id)
     return list({*song_raters, entry_creator, *songlist_authors})
 
+
 @cache_with_expiration(days=7)
 def get_most_rated_song_by_artist_id(artist_id: int, params=None):
     params = {} if params is None else params
@@ -206,6 +213,7 @@ def get_most_rated_song_by_artist_id(artist_id: int, params=None):
     params["artistId[]"] = artist_id
     return fetch_json(SONG_API_URL, params=params)["items"][0]
 
+
 @cache_with_expiration(days=7)
 def get_most_recent_song_by_artist_id(artist_id: int, params=None):
     params = {} if params is None else params
@@ -213,6 +221,7 @@ def get_most_recent_song_by_artist_id(artist_id: int, params=None):
     params["sort"] = "PublishDate"
     params["artistId[]"] = artist_id
     return fetch_json(SONG_API_URL, params=params)["items"][0]
+
 
 # ---------------------------------------------- #
 

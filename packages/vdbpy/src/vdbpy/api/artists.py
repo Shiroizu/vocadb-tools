@@ -11,9 +11,11 @@ SONG_API_URL = f"{WEBSITE}/api/songs"
 def get_artists(params):
     return fetch_json_items(ARTIST_API_URL, params=params)
 
+
 def get_artist(params):
     result = fetch_json(ARTIST_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
+
 
 @cache_with_expiration(days=1)
 def get_artist_by_id(artist_id, fields=""):

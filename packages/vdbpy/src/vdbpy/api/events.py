@@ -1,10 +1,19 @@
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
-from vdbpy.utils.network import fetch_json
+from vdbpy.utils.network import fetch_json, fetch_json_items
 
 EVENT_API_URL = f"{WEBSITE}/api/releaseEvents"
 
 # TODO: Type EventEntry
+
+
+def get_events(params):
+    return fetch_json_items(EVENT_API_URL, params=params)
+
+
+def get_event(params):
+    result = fetch_json(EVENT_API_URL, params=params)
+    return result["items"][0] if result["items"] else {}
 
 
 @cache_with_expiration(days=1)
