@@ -686,7 +686,7 @@ def get_entry_from_link(entry_link: str) -> Entry:
     return (entry_type, int(entry_id_str))
 
 
-def search_entry(name: str, entry_type: Entry_type, max_results=10) -> str:
+def search_entry(name: str, entry_type: Entry_type, max_results=3) -> str:
     search_functions: dict[Entry_type, tuple[Callable[..., tuple[list, int]], str]] = {
         "Song": (get_songs_with_total_count, "RatingScore"),
         "Album": (get_albums_with_total_count, "CollectionCount"),
