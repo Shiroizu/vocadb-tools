@@ -11,11 +11,11 @@ SONGLIST_API_URL = f"{WEBSITE}/api/songLists"
 
 logger = get_logger()
 
-def get_songlists(params):
-    return fetch_json_items(SONGLIST_API_URL, params=params)
+def get_featured_songlists(params):
+    return fetch_json_items(SONGLIST_API_URL + "/featured", params=params)
 
-def get_songlist(params):
-    result = fetch_json(SONGLIST_API_URL, params=params)
+def get_featured_songlist(params):
+    result = fetch_json(SONGLIST_API_URL + "/featured", params=params)
     return result["items"][0] if result["items"] else {}
 
 
