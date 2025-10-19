@@ -17,14 +17,31 @@ def get_notification_by_id(session, notification_id: int) -> dict:
     return fetch_json(notif_url, session=session)
 
 
-@cache_with_expiration(days=1)
-def get_messages_by_user_id(user_id: int, session) -> list[dict]:
+def get_messages_by_user_id(
+    session, user_id: int, include_sent=True, include_received=True, max_results=50
+) -> list[dict]:
     notif_url = f"{USERS_API_URL}/{user_id}/messages"
 
-    received = fetch_json_items(
-        notif_url, session=session, params={"inbox": "Received"}
+    received = (
+        fetch_json_items(
+            notif_url,
+            session=session,
+            params={"inbox": "Received"},
+            max_results=max_results,
+        )
+        if include_received
+        else []
     )
-    sent = fetch_json_items(notif_url, session=session, params={"inbox": "Sent"})
+    sent = (
+        fetch_json_items(
+            notif_url,
+            session=session,
+            params={"inbox": "Sent"},
+            max_results=max_results,
+        )
+        if include_sent
+        else []
+    )
 
     return received + sent
 
@@ -48,7 +65,6 @@ def delete_notifications(
 ):
     logger.info(f"Got total of {len(notification_ids)} notifications to delete.")
     for sublist in split_list(notification_ids):
-        # https://vocadb.net/api/users/329/messages?messageId=1947289&messageId=1946744&messageId=
         deletion_url = f"{USERS_API_URL}/{user_id}/messages?"
         query = [f"messageId={notif_id}" for notif_id in sublist]
         deletion_url += "&".join(query)

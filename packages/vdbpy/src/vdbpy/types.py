@@ -15,7 +15,7 @@ Entry_type = Literal[
     "SongList",
     "Venue",
     "ReleaseEventSeries",
-    "User"
+    "User",
 ]
 
 Entry = tuple[Entry_type, int]  # entry_id
@@ -612,3 +612,5 @@ Report_result = Literal[
 ]
 
 Test_version = tuple[RuleCheckResult, list[tuple[Entry_type, int]]]
+
+User_rule_check_result = Literal[RuleCheckResult, "Fix", "Ignored rule violation"]

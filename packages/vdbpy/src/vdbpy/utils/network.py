@@ -46,6 +46,7 @@ def fetch_cached_json(url: str, session=requests, params=None):
 def fetch_json_items(
     url, params: dict | None = None, session=requests, max_results=10**9, page_size=50
 ) -> list:
+    params = params if params is not None else {}
     logger.debug(f"Fetching all JSON items for url '{url}'")
     logger.debug(f"Params: {params}")
     if url == ACTIVITY_API_URL:
@@ -53,6 +54,9 @@ def fetch_json_items(
         logger.warning("Use fetch_all_items_between_dates instead.")
     all_items = []
     page = 1
+    if "maxResults" in params and max_results == 10**9:
+        max_results = params["maxResults"]
+
     params = params if params is not None else {}
     params["maxResults"] = page_size
     params["getTotalCount"] = True
@@ -63,7 +67,7 @@ def fetch_json_items(
         totalcount = json["totalCount"]
         if not items:
             return all_items
-        logger.info(f"Page {page}/{1+(totalcount//page_size)}")
+        logger.debug(f"Page {page}/{1+(totalcount//page_size)}")
         all_items.extend(items)
         if len(all_items) >= max_results:
             return all_items[:max_results]
@@ -73,6 +77,7 @@ def fetch_json_items(
 def fetch_json_items_with_total_count(
     url, params: dict | None = None, session=requests, max_results=10**9, page_size=50
 ) -> tuple[list, int]:
+    params = params if params is not None else {}
     logger.debug(f"Fetching all JSON items with total count for url '{url}'")
     logger.debug(f"Params: {params}")
     if url == ACTIVITY_API_URL:
@@ -104,6 +109,8 @@ def fetch_totalcount(api_url, params: dict | None = None) -> int:
     params["maxResults"] = 1
     params["getTotalCount"] = True
     totalcount = fetch_json(api_url, params=params)["totalCount"]
+    if not totalcount:
+        return 0
     return int(totalcount)
 
 

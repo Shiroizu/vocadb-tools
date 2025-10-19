@@ -13,6 +13,7 @@ from vdbpy.utils.network import (
     fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
+    fetch_totalcount,
 )
 
 logger = get_logger()
@@ -36,6 +37,18 @@ def get_users_with_total_count(params, max_results=10**9) -> tuple[list, int]:
 def get_user(params):
     result = fetch_json(USER_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
+
+
+def get_50_most_recent_users() -> list:
+    # Inverse sorting not supported for RegisterDate
+    # 1) Get total count
+    # 2) Query with start = total count - 50
+    params: dict = {"includeDisabled": True}
+    total_count = fetch_totalcount(USER_API_URL, params=params)
+    params["start"] = total_count - 50
+    params["sort"] = "RegisterDate"
+    params["maxResults"] = 50
+    return fetch_json(USER_API_URL, params=params)["items"][::-1]
 
 
 @cache_with_expiration(days=7)
