@@ -573,7 +573,7 @@ def get_edits_by_entry_before_version_id(
 
 
 @cache_without_expiration()
-def get_raw_edits_by_entry(entry_type: Entry_type, version_id: int) -> dict:
+def get_raw_edit_by_entry(entry_type: Entry_type, version_id: int) -> dict:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/versions/{version_id}"
     return fetch_json(url)
 
@@ -589,7 +589,7 @@ def get_entry_version(  # noqa: PLR0911
     | ReleaseEventSeriesVersion
     | VenueVersion
 ):
-    data = get_raw_edits_by_entry(entry_type, version_id)
+    data = get_raw_edit_by_entry(entry_type, version_id)
     match entry_type:
         case "Album":
             return parse_album_version(data)
