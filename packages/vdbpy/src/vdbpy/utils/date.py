@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
 
 from vdbpy.utils.logger import get_logger
 
@@ -169,7 +170,7 @@ def get_all_month_strings_since(start_year: int) -> list[tuple[str, str]]:
     return date_strings
 
 
-def read_timestamp_file(filename: str) -> datetime | None:
+def read_timestamp_file(filename: Path) -> datetime | None:
     """Read a timestamp from a file, or None if not found."""
     try:
         with open(filename, encoding="utf-8") as file:

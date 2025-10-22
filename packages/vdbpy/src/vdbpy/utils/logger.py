@@ -5,7 +5,7 @@ from logging.handlers import RotatingFileHandler
 
 def get_logger(
     log_filename: str = "", max_bytes: int = 5 * 1024 * 1024, backup_count: int = 3
-):
+) -> logging.Logger:
     # 5 * 1024 * 1024 bytes = 5MB ~ 50k lines
     if not log_filename:
         return logging.getLogger(__name__)

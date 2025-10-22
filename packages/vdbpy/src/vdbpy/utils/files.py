@@ -18,18 +18,20 @@ def verify_file(filename: str) -> None:
             f.write("")
 
 
-def get_text(filename: str) -> str:
+def get_text(filename: str | Path) -> str:
     """Safely read lines from a file. Create file and return an empty list if necessary."""
-    verify_file(filename)
+    if isinstance(filename, str):
+        verify_file(filename)
 
     logger.debug(f"Fetching lines from file '{filename}'")
     with open(filename, encoding="utf8") as f:
         return f.read()
 
 
-def get_lines(filename: str) -> list[str]:
+def get_lines(filename: str | Path) -> list[str]:
     """Safely read lines from a file. Create file and return an empty list if necessary."""
-    verify_file(filename)
+    if isinstance(filename, str):
+        verify_file(filename)
 
     logger.debug(f"Fetching lines from file '{filename}'")
     with open(filename, encoding="utf8") as f:
@@ -37,7 +39,7 @@ def get_lines(filename: str) -> list[str]:
 
 
 def get_credentials(
-    credentials_path: str, account_name: str = "", get_all=False
+    credentials_path: str | Path, account_name: str = "", get_all=False
 ) -> dict | tuple[str, str]:
     """Load credentials from the credentials file.
 
@@ -107,7 +109,7 @@ def sanitize_filename(filename: str) -> str:
     return sanitized
 
 
-def save_file(filepath: str, content: str | list, append=False) -> None:
+def save_file(filepath: str | Path, content: str | list, append=False) -> None:
     """Safely writes content to a file, creating necessary directories."""
     path = Path(filepath)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,19 +128,19 @@ def save_file(filepath: str, content: str | list, append=False) -> None:
     logger.debug(f"File saved: '{filepath}'")
 
 
-def clear_file(filepath: str):
+def clear_file(filepath: str | Path):
     """Clear file if it exists."""
     save_file(filepath, "", append=False)
 
 
-def write_dict(filename: str, data: dict, separator=":"):
+def write_dict(filename: str | Path, data: dict, separator=":"):
     """Write dict keys and values to a file."""
     lines = [f"{key}{separator}{value}" for key, value in data.items()]
     save_file(filename, lines)
 
 
 def replace_line_in_file(
-    filename: str, old_line: str, new_line: str, count=1, startswith=False
+    filename: Path | str, old_line: str, new_line: str, count=1, startswith=False
 ):
     logger.debug(f"Replacing line on file '{filename}'")
     logger.debug(f"Old line: {old_line}")
@@ -158,5 +160,7 @@ def replace_line_in_file(
     save_file(filename, new_lines)
 
 
-def remove_line_from_file(filename: str, line_to_remove: str, count=1, starswith=False):
+def remove_line_from_file(
+    filename: str | Path, line_to_remove: str, count=1, starswith=False
+):
     replace_line_in_file(filename, line_to_remove, "", count, starswith)
