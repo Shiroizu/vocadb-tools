@@ -8,7 +8,7 @@ from vdbpy.utils.logger import get_logger
 logger = get_logger()
 
 
-def verify_file(filename: str) -> None:
+def verify_file(filename: str | Path) -> None:
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -20,8 +20,7 @@ def verify_file(filename: str) -> None:
 
 def get_text(filename: str | Path) -> str:
     """Safely read lines from a file. Create file and return an empty list if necessary."""
-    if isinstance(filename, str):
-        verify_file(filename)
+    verify_file(filename)
 
     logger.debug(f"Fetching lines from file '{filename}'")
     with open(filename, encoding="utf8") as f:
@@ -30,8 +29,7 @@ def get_text(filename: str | Path) -> str:
 
 def get_lines(filename: str | Path) -> list[str]:
     """Safely read lines from a file. Create file and return an empty list if necessary."""
-    if isinstance(filename, str):
-        verify_file(filename)
+    verify_file(filename)
 
     logger.debug(f"Fetching lines from file '{filename}'")
     with open(filename, encoding="utf8") as f:
