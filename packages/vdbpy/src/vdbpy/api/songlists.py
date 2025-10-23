@@ -1,7 +1,7 @@
 import time
 
 from vdbpy.config import WEBSITE
-from vdbpy.types import Songlist_category
+from vdbpy.types.core import SonglistCategory
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_json,
@@ -42,7 +42,7 @@ def create_or_update_songlist(
     songlist_id=0,
     title="",
     description="",
-    category: Songlist_category = "Nothing",
+    category: SonglistCategory = "Nothing",
 ):
     """Create or update a songlist.
 

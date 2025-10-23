@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from vdbpy.config import WEBSITE
-from vdbpy.types import UserEdit
+from vdbpy.types.core import UserEdit
 from vdbpy.utils.data import (
     UserEditJSONEncoder,
     get_monthly_count,

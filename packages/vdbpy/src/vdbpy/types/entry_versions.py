@@ -1,46 +1,18 @@
 from dataclasses import dataclass
 from datetime import datetime
-from types import ModuleType
 from typing import Literal
 
-# --- Base --- #
+# ------------ Shared types ------------ #
 
+type EntryStatus = Literal["Draft", "Finished", "Approved", "Locked"]
 
-Entry_type = Literal[
-    "Song",
-    "Artist",
-    "Album",
-    "Tag",
-    "ReleaseEvent",
-    "SongList",
-    "Venue",
-    "ReleaseEventSeries",
-    "User",
-]
-
-Entry = tuple[Entry_type, int]  # entry_id
-
-entry_type_to_url: dict[Entry_type, str] = {
-    "Song": "S",
-    "Artist": "Ar",
-    "Album": "Al",
-    "Venue": "Venue/Details",
-    "Tag": "T",
-    "ReleaseEvent": "E",
-    "ReleaseEventSeries": "Es",
-    "SongList": "L",
-}
-
-entry_url_to_type: dict[str, Entry_type] = {v: k for k, v in entry_type_to_url.items()}
-
-Entry_status = Literal["Draft", "Finished", "Approved", "Locked"]
-
-Default_languages = Literal[
+type DefaultLanguages = Literal[
     "Unspecified", "Non-English", "Romaji", "English"
 ]  # JP = "Non-English"
-External_link_category = Literal["Official, Commercial, Reference, Other"]
+type ExternalLinkCategory = Literal["Official", "Commercial", "Reference", "Other"]
 
-Artist_role = Literal[
+
+type ArtistRole = Literal[
     "Default",
     "Other",
     "Animator",
@@ -58,7 +30,7 @@ Artist_role = Literal[
     "VocalDataProvider",
 ]  # "Chorus", "Encoder",
 
-Event_artist_role = Literal[
+type EventArtistRole = Literal[
     "Default",
     "Dancer",
     "DJ",
@@ -72,7 +44,7 @@ Event_artist_role = Literal[
     "Other",
 ]
 
-Service = Literal[
+type Service = Literal[
     "NicoNicoDouga",
     "Youtube",
     "SoundCloud",
@@ -85,12 +57,12 @@ Service = Literal[
     "Bandcamp",
 ]
 
-PV_type = Literal["Original", "Reprint", "Other"]
+type PvType = Literal["Original", "Reprint", "Other"]
 
 
 @dataclass
 class ExternalLink:
-    category: External_link_category
+    category: ExternalLinkCategory
     description: str
     disabled: bool
     url: str
@@ -100,14 +72,14 @@ class ExternalLink:
 class ArtistParticipation:
     is_supporting: bool
     artist_id: int
-    roles: list[Artist_role]
+    roles: list[ArtistRole]
     name_hint: str
 
 
 @dataclass
 class EventArtistParticipation:
     artist_id: int
-    roles: list[Event_artist_role]
+    roles: list[EventArtistRole]
     name_hint: str
 
 
@@ -125,7 +97,7 @@ class PV:
     name: str
     pv_id: str
     pv_service: Service
-    pv_type: PV_type
+    pv_type: PvType
     publish_date: datetime | None
     # thumbUrl: str
 
@@ -133,7 +105,7 @@ class PV:
 @dataclass
 class BaseEntryVersion:
     entry_id: int
-    default_name_language: Default_languages
+    default_name_language: DefaultLanguages
     name_non_english: str
     name_romaji: str
     name_english: str
@@ -141,12 +113,12 @@ class BaseEntryVersion:
     description: str
     description_eng: str
     external_links: list[ExternalLink]
-    status: Entry_status  # from archivedVersion
+    status: EntryStatus  # from archivedVersion
 
 
-# --- Song --- #
+# ------------ SongVersion ------------ #
 
-Song_type = Literal[
+type SongType = Literal[
     "Unspecified",
     "Original",
     "Remaster",
@@ -194,12 +166,12 @@ class SongVersion(BaseEntryVersion):
     publish_date: datetime | None
     pvs: list[PV]
     release_events: list[EventParticipation]
-    song_type: Song_type
+    song_type: SongType
 
 
-# --- AlbumVersion --- #
+# ------------ AlbumVersion ------------ #
 
-Album_type = Literal[
+type AlbumType = Literal[
     "Unknown",
     "Album",
     "Single",
@@ -244,7 +216,7 @@ class AlbumVersion(BaseEntryVersion):
     # Skipped fields:
     # - mainPictureMime
     # - releaseEvent (legacy), e.g. https://vocadb.net/api/albums/versions/204261
-    album_type: Album_type
+    album_type: AlbumType
     artists: list[ArtistParticipation]
     barcodes: list[str]
     catalog_number: str  # part of originalRelease
@@ -261,7 +233,7 @@ class AlbumVersion(BaseEntryVersion):
 
 # --- ArtistVersion --- #
 
-Voicebank_type = Literal[
+type VoicebankType = Literal[
     "Vocaloid",
     "UTAU",
     "CeVIO",
@@ -276,7 +248,7 @@ Voicebank_type = Literal[
     "AIVOICE",
 ]
 
-Basic_artist_type = Literal[
+type BasicArtistType = Literal[
     "Unknown",
     "Circle",
     "Label",
@@ -292,7 +264,7 @@ Basic_artist_type = Literal[
 ]
 # "Utaite", "Band", "Vocalist", "Character", "Designer"
 
-Artist_type = Voicebank_type | Basic_artist_type
+type ArtistType = VoicebankType | BasicArtistType
 
 
 @dataclass
@@ -301,7 +273,7 @@ class ArtistVersion(BaseEntryVersion):
     # Skipped fields:
     # - mainPictureMime
     # - members
-    artist_type: Artist_type
+    artist_type: ArtistType
     group_ids: list[int]
     vb_voice_provider_ids: list[int]
     vb_manager_ids: list[int]
@@ -314,7 +286,7 @@ class ArtistVersion(BaseEntryVersion):
 
 # --- TagVersion --- #
 
-Tag_category = Literal[
+type TagCategory = Literal[
     "Genres",
     "Animation",
     "Composition",
@@ -348,7 +320,7 @@ class TagVersion(BaseEntryVersion):
     # https://vocadb.net/api/tags/versions/x -> versions -> firstData
     # Missing/unsupported fields:
     # - targets (new & old)
-    tag_category: Tag_category | str
+    tag_category: TagCategory | str
     hidden_from_suggestions: bool
     parent_tag: TagRelation | None
     related_tags: list[TagRelation]
@@ -356,7 +328,7 @@ class TagVersion(BaseEntryVersion):
 
 # --- ReleaseEventVersion --- #
 
-Event_category = Literal[
+type EventCategory = Literal[
     "Unspecified",
     "AlbumRelease",
     "Anniversary",
@@ -394,7 +366,7 @@ class ReleaseEventVersion(BaseEntryVersion):
     # - endDate
     # - pvs
     autofilled_names: tuple[str, str, str] | None
-    event_category: Event_category
+    event_category: EventCategory
     start_date: datetime | None
     series_number: int
     series: EventSeriesRelation | None
@@ -408,7 +380,7 @@ class ReleaseEventVersion(BaseEntryVersion):
 @dataclass
 class ReleaseEventSeriesVersion(BaseEntryVersion):
     autofilled_names: tuple[str, str, str] | None
-    event_category: Event_category
+    event_category: EventCategory
 
 
 # --- VenueVersion --- #
@@ -421,19 +393,9 @@ class VenueVersion(BaseEntryVersion):
     longitude: float | None
 
 
-# --------------------------------- #
+# --- EntryVersion --- #
 
-Songlist_category = Literal[
-    "Nothing",
-    "Concerts",
-    "VocaloidRanking",
-    "Pools",
-    "Other",
-]
-
-# --- Entry --- #
-
-EntryVersion = (
+type EntryVersion = (
     SongVersion
     | ArtistVersion
     | AlbumVersion
@@ -442,175 +404,3 @@ EntryVersion = (
     | ReleaseEventSeriesVersion
     | VenueVersion
 )
-
-# --- MikuMod --- #
-
-Edit_type = Literal["Created", "Updated", "Deleted"]
-
-UserGroup = Literal["Admin", "Moderator", "Trusted", "Regular", "Limited", "Nothing"]
-# Disabled User: active = false
-
-TRUSTED_PLUS: list[UserGroup] = ["Admin", "Moderator", "Trusted"]
-MOD_PLUS: list[UserGroup] = ["Admin", "Moderator"]
-
-# From github/vocadb/VocaDbModel/Domain/{entry_type}s/{entry_type}Diff.cs
-Changed_song_fields = Literal[
-    "Artists",
-    "Length",
-    "Lyrics",
-    "Names",
-    "Notes",
-    "OriginalName",
-    "OriginalVersion",
-    "PublishDate",
-    "PVs",
-    "ReleaseEvent",
-    "ReleaseEvents",
-    "SongType",
-    "Status",
-    "WebLinks",
-    "Bpm",
-    "CultureCodes",
-]
-Changed_album_fields = Literal[
-    "Artists",
-    "Cover",
-    "Description",
-    "Discs",
-    "DiscType",
-    "Identifiers",
-    "Names",
-    "OriginalName",
-    "OriginalRelease",
-    "Pictures",
-    "PVs",
-    "Status",
-    "Tracks",
-    "WebLinks",
-]
-Changed_artist_fields = Literal[
-    "Albums",
-    "ArtistType",
-    "BaseVoicebank",
-    "Description",
-    "Groups",
-    "Names",
-    "OriginalName",
-    "Picture",
-    "Pictures",
-    "ReleaseDate",
-    "Status",
-    "WebLinks",
-    "CultureCodes",
-]
-Changed_tag_fields = Literal[
-    "CategoryName",
-    "Description",
-    "HideFromSuggestions",
-    "Names",
-    "OriginalName",
-    "Parent",
-    "Picture",
-    "RelatedTags",
-    "Status",
-    "Targets",
-    "WebLinks",
-]
-Changed_venue_fields = Literal[
-    "Address",
-    "AddressCountryCode",
-    "Coordinates",
-    "Description",
-    "OriginalName",
-    "Names",
-    "Status",
-    "WebLinks",
-]
-Changed_release_event_fields = Literal[
-    "Artists",
-    "Category",
-    "Date",
-    "Description",
-    "MainPicture",
-    "Names",
-    "OriginalName",
-    "PVs",
-    "Series",
-    "SeriesNumber",
-    "SeriesSuffix",
-    "SongList",
-    "Status",
-    "Venue",
-    "VenueName",
-    "WebLinks",
-]
-Changed_release_event_series_fields = Literal[
-    "Category", "Description", "OriginalName", "Names", "Picture", "Status", "WebLinks"
-]
-
-Changed_fields = (
-    Changed_song_fields
-    | Changed_album_fields
-    | Changed_artist_fields
-    | Changed_tag_fields
-    | Changed_venue_fields
-    | Changed_release_event_fields
-    | Changed_release_event_series_fields
-)
-
-
-@dataclass
-class UserEdit:
-    user_id: int
-    edit_date: datetime
-    entry_type: Entry_type
-    entry_id: int
-    version_id: int
-    edit_event: Edit_type
-    changed_fields: list[Changed_fields]
-    update_notes: str
-
-
-RuleCheckResult = Literal[
-    "Valid",
-    "Rule violation",
-    "Possible rule violation",
-    "Not applicable",
-    "Unrelated fields",
-    None,
-]
-VersionCheck = tuple[UserEdit, int, RuleCheckResult]
-EntryCheck = list[list[VersionCheck]]
-
-
-Report_type = Literal[
-    "InvalidInfo", "Duplicate", "Inappropriate", "Other", "InvalidTag", "BrokenPV"
-]
-
-
-@dataclass
-class EntryReport:
-    report_id: int
-    entry_type: Entry_type
-    entry_id: int
-    date: datetime
-    report_type: Report_type
-    notes: str
-    author: int | Literal["anon"]
-
-
-RuleModules = dict[int, tuple[str, ModuleType]]
-# rule_id: (rule_name, rule_module)
-
-EntryReportWithVersion = tuple[EntryReport, int]
-ParsedEntryReport = list[EntryReportWithVersion | Entry]
-ParsedReportsByRuleId = dict[int, ParsedEntryReport]
-ParsedReportsByRuleIdByUserId = dict[int, ParsedReportsByRuleId]
-
-Report_result = Literal[
-    "Success", "Too old", "Too recent", "Skipped", "Error", "Deleted"
-]
-
-Test_version = tuple[RuleCheckResult, list[tuple[Entry_type, int]]]
-
-User_rule_check_result = Literal[RuleCheckResult, "Fix", "Ignored rule violation"]

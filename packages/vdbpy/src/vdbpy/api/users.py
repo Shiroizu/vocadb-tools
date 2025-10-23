@@ -3,7 +3,7 @@ from typing import get_args
 
 from vdbpy.api.activity import parse_edits
 from vdbpy.config import WEBSITE
-from vdbpy.types import Edit_type, Entry_type, UserEdit, UserGroup
+from vdbpy.types.core import EditType, EntryType, UserEdit, UserGroup
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
@@ -239,8 +239,8 @@ def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
     # but these do not return anything
 
     entry_matrix = {
-        entry_type: {edit_type: 0 for edit_type in get_args(Edit_type)}
-        for entry_type in get_args(Entry_type)
+        entry_type: {edit_type: 0 for edit_type in get_args(EditType)}
+        for entry_type in get_args(EntryType)
     }
     # {'Song': {'Created': 0, 'Updated': 0, 'Deleted': 0}, ... 'ReleaseEventSeries': {'Created': 0, 'Updated': 0, 'Deleted': 0}}
 

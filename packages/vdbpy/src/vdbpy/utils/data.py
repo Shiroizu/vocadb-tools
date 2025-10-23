@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from vdbpy.types import UserEdit
+from vdbpy.types.core import UserEdit
 from vdbpy.utils.date import get_last_month_strings, month_is_over
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount

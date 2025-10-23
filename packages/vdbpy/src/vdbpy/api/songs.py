@@ -4,7 +4,7 @@ import time
 from typing import Callable
 
 from vdbpy.config import WEBSITE
-from vdbpy.types import Service
+from vdbpy.types.entry_versions import Service
 from vdbpy.utils import niconico, youtube
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.logger import get_logger

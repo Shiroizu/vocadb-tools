@@ -3,7 +3,7 @@ from typing import Literal
 import requests
 
 from vdbpy.config import WEBSITE
-from vdbpy.types import Entry_type
+from vdbpy.types.core import EntryType
 from vdbpy.utils.data import add_s, get_monthly_count
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
@@ -61,7 +61,7 @@ def get_the_oldest_comment_by_user_id(user_id=0):
 
 
 def remove_comment_by_id(
-    session, entry_type: Entry_type | Literal["User"], comment_id: int
+    session, entry_type: EntryType | Literal["User"], comment_id: int
 ):
     url = f"{WEBSITE}/api/{add_s(entry_type)}/comments/{comment_id}"
     if entry_type == "User":

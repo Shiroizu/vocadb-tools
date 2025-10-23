@@ -15,7 +15,8 @@ from vdbpy.api.tags import get_tags_with_total_count
 from vdbpy.api.users import get_username_by_id, get_users_with_total_count
 from vdbpy.api.venues import get_venues_with_total_count
 from vdbpy.config import WEBSITE
-from vdbpy.types import (
+from vdbpy.types.core import EditType, Entry, EntryType, UserEdit
+from vdbpy.types.entry_versions import (
     PV,
     AlbumParticipation,
     AlbumTrack,
@@ -24,9 +25,6 @@ from vdbpy.types import (
     ArtistVersion,
     BaseEntryVersion,
     Disc,
-    Edit_type,
-    Entry,
-    Entry_type,
     EventArtistParticipation,
     EventParticipation,
     EventSeriesRelation,
@@ -39,11 +37,8 @@ from vdbpy.types import (
     SongVersion,
     TagRelation,
     TagVersion,
-    UserEdit,
     VenueRelation,
     VenueVersion,
-    entry_type_to_url,
-    entry_url_to_type,
 )
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import add_s
@@ -53,7 +48,7 @@ from vdbpy.utils.network import fetch_cached_totalcount, fetch_json
 
 logger = get_logger()
 
-edit_event_map: dict[str, Edit_type] = {
+edit_event_map: dict[str, EditType] = {
     "PropertiesUpdated": "Updated",
     "Updated": "Updated",
     "Merged": "Updated",
@@ -61,9 +56,22 @@ edit_event_map: dict[str, Edit_type] = {
     "Created": "Created",
 }
 
+entry_type_to_url: dict[EntryType, str] = {
+    "Song": "S",
+    "Artist": "Ar",
+    "Album": "Al",
+    "Venue": "Venue/Details",
+    "Tag": "T",
+    "ReleaseEvent": "E",
+    "ReleaseEventSeries": "Es",
+    "SongList": "L",
+}
+
+entry_url_to_type: dict[str, EntryType] = {v: k for k, v in entry_type_to_url.items()}
+
 
 def parse_edits_from_archived_versions(
-    data: list[dict], entry_type: Entry_type, entry_id: int
+    data: list[dict], entry_type: EntryType, entry_id: int
 ) -> list[UserEdit]:
     parsed_edits: list[UserEdit] = []
     for edit_object in data:
@@ -524,13 +532,13 @@ def parse_venue_version(data: dict) -> VenueVersion:
 # --------------- --------------- #
 
 
-def get_entry_details(entry_type: Entry_type, entry_id: int) -> dict:
+def get_entry_details(entry_type: EntryType, entry_id: int) -> dict:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/details"
     return fetch_json(url)
 
 
 @cache_with_expiration(days=1)
-def is_entry_deleted(entry_type: Entry_type, entry_id: int) -> bool:
+def is_entry_deleted(entry_type: EntryType, entry_id: int) -> bool:
     entry_details = get_entry_details(entry_type, entry_id)
     if "deleted" in entry_details:
         return entry_details["deleted"]
@@ -538,7 +546,7 @@ def is_entry_deleted(entry_type: Entry_type, entry_id: int) -> bool:
 
 
 def get_edits_by_entry(
-    entry_type: Entry_type, entry_id: int, include_deleted=False
+    entry_type: EntryType, entry_id: int, include_deleted=False
 ) -> list[UserEdit]:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
     data = fetch_json(url)
@@ -566,20 +574,20 @@ def get_edits_by_entry(
 
 @cache_without_expiration()
 def get_edits_by_entry_before_version_id(
-    entry_type: Entry_type, entry_id: int, version_id: int, include_deleted=False
+    entry_type: EntryType, entry_id: int, version_id: int, include_deleted=False
 ) -> list[UserEdit]:
     edits = get_edits_by_entry(entry_type, entry_id, include_deleted)
     return [edit for edit in edits if edit.version_id <= version_id]
 
 
 @cache_without_expiration()
-def get_raw_edit_by_entry(entry_type: Entry_type, version_id: int) -> dict:
+def get_raw_edit_by_entry(entry_type: EntryType, version_id: int) -> dict:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/versions/{version_id}"
     return fetch_json(url)
 
 
 def get_entry_version(  # noqa: PLR0911
-    entry_type: Entry_type, version_id: int
+    entry_type: EntryType, version_id: int
 ) -> (
     AlbumVersion
     | ArtistVersion
@@ -617,7 +625,7 @@ def get_cached_entry_count_by_entry_type(entry_type: str):
 
 
 def get_random_entry():
-    entry_type = random.choice(get_args(Entry_type))
+    entry_type = random.choice(get_args(EntryType))
     logger.info(f"Chose entry type '{entry_type}'")
     entry_type = add_s(entry_type)
     total = get_cached_entry_count_by_entry_type(entry_type)
@@ -627,7 +635,7 @@ def get_random_entry():
     return fetch_json(url, params=params)["items"][0]
 
 
-def is_deleted(entry_type: Entry_type, entry_id: int) -> bool:
+def is_deleted(entry_type: EntryType, entry_id: int) -> bool:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}"
     entry = fetch_json(url)
     if "deleted" in entry:
@@ -637,7 +645,7 @@ def is_deleted(entry_type: Entry_type, entry_id: int) -> bool:
 
 def delete_entry(
     session,
-    entry_type: Entry_type,
+    entry_type: EntryType,
     entry_id: int,
     force=False,
     deletion_msg="",
@@ -647,7 +655,7 @@ def delete_entry(
         logger.warning(f"Entry {entry_id} has already been deleted.")
         return False
 
-    assert entry_type in get_args(Entry_type), "Invalid entry type"  # noqa: S101
+    assert entry_type in get_args(EntryType), "Invalid entry type"  # noqa: S101
     logger.warning(f"Deleting {entry_type} entry {entry_id}...")
     if prompt:
         _ = input("Press enter to delete...")
@@ -666,7 +674,7 @@ def delete_entry(
     return True
 
 
-def get_entry_link(entry_type: Entry_type, entry_id: int) -> str:
+def get_entry_link(entry_type: EntryType, entry_id: int) -> str:
     if entry_type == "User":
         username = get_username_by_id(entry_id)
         return f"{WEBSITE}/Profile/{username}"
@@ -686,8 +694,8 @@ def get_entry_from_link(entry_link: str) -> Entry:
     return (entry_type, int(entry_id_str))
 
 
-def search_entry(name: str, entry_type: Entry_type, max_results=3) -> str:
-    search_functions: dict[Entry_type, tuple[Callable[..., tuple[list, int]], str]] = {
+def search_entry(name: str, entry_type: EntryType, max_results=3) -> str:
+    search_functions: dict[EntryType, tuple[Callable[..., tuple[list, int]], str]] = {
         "Song": (get_songs_with_total_count, "RatingScore"),
         "Album": (get_albums_with_total_count, "CollectionCount"),
         "Artist": (get_artists_with_total_count, "FollowerCount"),
@@ -725,6 +733,4 @@ def search_entry(name: str, entry_type: Entry_type, max_results=3) -> str:
     if total_count > max_results:
         bullet_point_links.append("- ...")
 
-    return (
-        f"Found {total_count} entries for '{name}':\n{'\n'.join(bullet_point_links)}"
-    )
+    return f"Found {total_count} entries for '{name}':\n{'\n'.join(bullet_point_links)}"
