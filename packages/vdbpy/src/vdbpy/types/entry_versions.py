@@ -233,7 +233,7 @@ class AlbumVersion(BaseEntryVersion):
 
 # --- ArtistVersion --- #
 
-type VoicebankType = Literal[
+VoicebankType = Literal[
     "Vocaloid",
     "UTAU",
     "CeVIO",
@@ -248,7 +248,7 @@ type VoicebankType = Literal[
     "AIVOICE",
 ]
 
-type BasicArtistType = Literal[
+BasicArtistType = Literal[
     "Unknown",
     "Circle",
     "Label",
