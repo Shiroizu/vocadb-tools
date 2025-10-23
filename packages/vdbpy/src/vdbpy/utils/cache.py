@@ -3,9 +3,14 @@ from datetime import timedelta
 import diskcache as dc
 from requests.sessions import Session
 
+from vdbpy.utils.logger import get_logger
+
 cache = dc.Cache("cache")
 
 # TODO replace partially with https://docs.peewee-orm.com/ ?
+
+
+logger = get_logger()
 
 
 def cache_with_expiration(days=1):
@@ -19,8 +24,13 @@ def cache_with_expiration(days=1):
             }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
 
-            if key in cache:
-                return cache[key]
+            try:
+                if key in cache:
+                    return cache[key]
+            except AttributeError:
+                logger.warning(
+                    "Couldn't get 'key' from cache due to mismatching types."
+                )
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
@@ -43,8 +53,13 @@ def cache_without_expiration():
             }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
 
-            if key in cache:
-                return cache[key]
+            try:
+                if key in cache:
+                    return cache[key]
+            except AttributeError:
+                logger.warning(
+                    "Couldn't get 'key' from cache due to mismatching types."
+                )
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
@@ -67,8 +82,13 @@ def cache_conditionally(days=1):
             }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
 
-            if key in cache:
-                return cache[key]
+            try:
+                if key in cache:
+                    return cache[key]
+            except AttributeError:
+                logger.warning(
+                    "Couldn't get 'key' from cache due to mismatching types."
+                )
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
