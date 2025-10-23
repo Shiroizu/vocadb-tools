@@ -719,7 +719,7 @@ def search_entry(name: str, entry_type: EntryType, max_results=3) -> str:
         params["nameMatchMode"] = "Partial"
         results, total_count = search_function(params, max_results=max_results)
     if not results:
-        return "No results found for 'name'"
+        return f"No results found for '{name}'"
 
     links = [
         get_entry_link(entry_type, entry["id"])  # type: ignore
