@@ -178,15 +178,13 @@ def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:
     logger.debug(f"Got {len(edit_objects)} edits to parse.")
     parsed_edits: list[UserEdit] = []
     for edit_object in edit_objects:
-        logger.debug(f"Parsing edit object {edit_object}")
+        # logger.debug(f"Parsing edit object {edit_object}")
         entry_type = edit_object["entry"]["entryType"]
         entry_id = edit_object["entry"]["id"]
         if edit_object["editEvent"] == "Deleted":
             # Deletion example: https://vocadb.net/Song/Versions/597650
             if "author" not in edit_object:
-                logger.debug(
-                    f"Entry {entry_type}/{entry_id} deleted by regular user (?)"
-                )
+                logger.debug(f"Entry {entry_type}/{entry_id} deleted by unknown user")
                 continue
             deleter = edit_object["author"]["name"]
             usergroup = edit_object["author"]["groupId"]
@@ -215,6 +213,6 @@ def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:
             changed_fields=edit_object["archivedVersion"]["changedFields"],
             update_notes=edit_object["archivedVersion"]["notes"],
         )
-        logger.debug(f"Edit: {user_edit}")
+        # logger.debug(f"Edit: {user_edit}")
         parsed_edits.append(user_edit)
     return parsed_edits

@@ -15,10 +15,10 @@ ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
 def fetch_text(url: str, session=requests, params=None):
-    logger.debug(f"Params: {params}")
+    logger.debug(f"Fetching text from url '{url}' with params {params}")
     r = session.get(url, params=params)
-    # Step 1: Decode bytes as ISO-8859-1
-    logger.debug(f"Parsed URL: '{r.url}'")
+    if params:
+        logger.debug(f"Parsed URL: '{r.url}'")
     r.raise_for_status()
     time.sleep(BASE_DELAY)
     if r.encoding == "ISO-8859-1":
@@ -28,10 +28,10 @@ def fetch_text(url: str, session=requests, params=None):
 
 
 def fetch_json(url: str, session=requests, params=None):
-    logger.debug(f"Fetching JSON from url '{url}'")
-    logger.debug(f"Params: {params}")
+    logger.debug(f"Fetching JSON from url '{url}' with params {params}")
     r = session.get(url, params=params)
-    logger.debug(f"Parsed URL: '{r.url}'")
+    if params:
+        logger.debug(f"Parsed URL: '{r.url}'")
     r.raise_for_status()
     time.sleep(BASE_DELAY)
     return r.json()
