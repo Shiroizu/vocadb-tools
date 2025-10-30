@@ -1,15 +1,13 @@
 from datetime import UTC, datetime
 from typing import get_args
 
-from vdbpy.api.activity import parse_edits
-from vdbpy.config import WEBSITE
-from vdbpy.types.core import EditType, EntryType, UserEdit, UserGroup
-from vdbpy.utils.cache import cache_with_expiration
+from vdbpy.config import ACTIVITY_API_URL, USER_API_URL, WEBSITE
+from vdbpy.types.core import EditType, EntryType, UserGroup
+from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
-    fetch_all_items_between_dates,
     fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
@@ -18,28 +16,25 @@ from vdbpy.utils.network import (
 
 logger = get_logger()
 
-USER_API_URL = f"{WEBSITE}/api/users"
-ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
-
-# TOOD: Type UserEntry
+type User = dict  # TODO
 
 
-def get_users(params):
+def get_users(params) -> list[User]:
     return fetch_json_items(USER_API_URL, params=params)
 
 
-def get_users_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+def get_users_with_total_count(params, max_results=10**9) -> tuple[list[User], int]:
     return fetch_json_items_with_total_count(
         USER_API_URL, params=params, max_results=max_results
     )
 
 
-def get_user(params):
+def get_user(params) -> User:
     result = fetch_json(USER_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
 
 
-def get_50_most_recent_users() -> list:
+def get_50_most_recent_users() -> list[User]:
     # Inverse sorting not supported for RegisterDate
     # 1) Get total count
     # 2) Query with start = total count - 50
@@ -51,7 +46,6 @@ def get_50_most_recent_users() -> list:
     return fetch_json(USER_API_URL, params=params)["items"][::-1]
 
 
-@cache_with_expiration(days=7)
 def get_username_by_id(user_id: int, include_usergroup=False) -> str:
     user_api_url = f"{USER_API_URL}/{user_id}"
     data = fetch_json(user_api_url)
@@ -60,8 +54,13 @@ def get_username_by_id(user_id: int, include_usergroup=False) -> str:
     return data["name"]
 
 
+@cache_without_expiration()
+def get_cached_username_by_id(user_id: int, include_usergroup=False) -> str:
+    return get_username_by_id(user_id, include_usergroup)
+
+
 @cache_with_expiration(days=1)
-def get_user_profile_by_username(username: str) -> dict:
+def get_user_profile_by_username_1d(username: str) -> dict:  # TODO
     """Get user profile data.
 
     # -- Mod cred data --
@@ -115,13 +114,13 @@ def get_user_profile_by_username(username: str) -> dict:
     return fetch_json(api_url)
 
 
-def get_user_profile_by_id(user_id: int) -> dict:
+def get_user_profile_by_id(user_id: int) -> dict:  # TODO
     username = get_username_by_id(user_id)
-    return get_user_profile_by_username(username)
+    return get_user_profile_by_username_1d(username)
 
 
-@cache_with_expiration(days=7)
-def find_user_by_username_and_mode(username: str, mode: str) -> tuple[str, int]:
+@cache_with_expiration(days=1)
+def find_user_by_username_and_mode_1d(username: str, mode: str) -> tuple[str, int]:
     # Available values : Auto, Partial, StartsWith, Exact, Words
 
     valid_search_modes = ["auto", "partial", "startswith", "exact", "words"]
@@ -148,88 +147,28 @@ def find_user_by_username_and_mode(username: str, mode: str) -> tuple[str, int]:
     return ("", 0)
 
 
-# TODO permanent cache ver
-@cache_with_expiration(days=7)
-def find_user_by_username(username: str) -> tuple[str, int]:
+@cache_with_expiration(days=1)
+def find_user_by_username_1d(username: str) -> tuple[str, int]:
     # Available values : Auto, Partial, StartsWith, Exact, Words
 
-    exact_match = find_user_by_username_and_mode(username, "Exact")
+    exact_match = find_user_by_username_and_mode_1d(username, "Exact")
     if exact_match[1]:
         return exact_match
 
-    return find_user_by_username_and_mode(username, "Partial")
+    return find_user_by_username_and_mode_1d(username, "Partial")
+
+
+@cache_without_expiration()
+def find_cached_user_by_username(username: str) -> tuple[str, int]:
+    return find_user_by_username_1d(username)
 
 
 # ------------------------------------------- #
 
 
-@cache_with_expiration(days=7)
-def get_rated_songs_by_user_id(user_id: int, extra_params=None):
-    logger.info(f"Fetching rated songs for user id {user_id}")
-    api_url = f"{USER_API_URL}/{user_id}/ratedSongs"
-    rated_songs = fetch_json_items(api_url, extra_params)
-    logger.info(f"Found total of {len(rated_songs)} rated songs.")
-    return rated_songs
-
-
-@cache_with_expiration(days=7)
-def get_albums_by_user_id(user_id: int, extra_params=None):
-    logger.info(f"Fetching albums for user id {user_id}")
-    api_url = f"{USER_API_URL}/{user_id}/albums"
-    albums = fetch_json_items(api_url, extra_params)
-    logger.info(f"Found total of {len(albums)} albums.")
-    return albums
-
-
-@cache_with_expiration(days=7)
-def get_followed_artists_by_user_id(user_id: int, extra_params=None):
-    logger.info(f"Fetching followed artists for user id {user_id}")
-    api_url = f"{USER_API_URL}/{user_id}/followedArtists"
-    followed_artists = fetch_json_items(api_url, extra_params)
-    if followed_artists:
-        followed_artists = [ar["artist"] for ar in followed_artists]
-    logger.info(f"Found total of {len(followed_artists)} followed artists")
-    return followed_artists
-
-
-def get_created_entries_by_username(username: str) -> list[UserEdit]:
-    # Also includes deleted entries
-    username, user_id = find_user_by_username(username)
-    params = {
-        "userId": user_id,
-        "fields": "Entry,ArchivedVersion",
-        "editEvent": "Created",
-    }
-
-    logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
-    return parse_edits(
-        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
-    )
-
-
-def get_edits_by_username(username: str) -> list[UserEdit]:
-    # Also includes deleted entries
-    username, user_id = find_user_by_username(username)
-    params = {
-        "userId": user_id,
-        "fields": "Entry,ArchivedVersion",
-    }
-
-    logger.debug(f"Fetching edits by user '{username}' ({user_id})")
-    return parse_edits(
-        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
-    )
-
-
-def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit:
-    params = {"userId": user_id, "fields": "Entry,ArchivedVersion", "maxResults": 1}
-
-    logger.debug(f"Fetching most recent edit by user id '{user_id}'")
-    return parse_edits(fetch_json(ACTIVITY_API_URL, params=params)["items"])[0]
-
-
 @cache_with_expiration(days=1)
-def get_entry_matrix_by_user_id(user_id: int, since="", before=""):
+def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
+    # TODO move elsewhere
     # 1) Check the total counts of the most common entryType/editEvent combinations:
     # 2) Stop when total count reached to reduce the number of API calls
     #
@@ -304,41 +243,10 @@ def get_monthly_user_count(year: int, month: int) -> int:
 def get_user_account_age_by_user_id(user_id: int) -> int:
     """Get user account age in days."""
     username = get_username_by_id(user_id)
-    creation_date = parse_date(get_user_profile_by_username(username)["createDate"])
+    creation_date = parse_date(get_user_profile_by_username_1d(username)["createDate"])
     today = datetime.now(UTC)
     return (today - creation_date).days
 
 
 def get_user_group_by_user_id(user_id: int) -> UserGroup:
     return fetch_json(f"{USER_API_URL}/{user_id}")["groupId"]
-
-
-# -------------------------------------- #
-
-
-def send_message(
-    session,
-    receiver_username: str,
-    subject: str,
-    message: str,
-    sender_id: int,
-    prompt=True,
-):
-    url = f"{USER_API_URL}/{sender_id}/messages"
-
-    data = {
-        "body": message,
-        "highPriority": False,
-        "receiver": {"name": receiver_username},
-        "sender": {"id": sender_id},
-        "subject": subject,
-    }
-
-    if prompt:
-        logger.info(
-            f"{'---' * 10}\nTO='{receiver_username}' SUBJECT='{subject}'\n{message}\n{'---' * 10}"
-        )
-
-        _ = input("Press enter to send...")
-    message_request = session.post(url, json=data)
-    message_request.raise_for_status()

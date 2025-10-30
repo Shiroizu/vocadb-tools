@@ -3,21 +3,23 @@ import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from vdbpy.config import WEBSITE
-from vdbpy.types.core import UserEdit
+from vdbpy.api.entries import get_versions_url, is_entry_deleted
+from vdbpy.api.users import find_user_by_username_1d
+from vdbpy.config import ACTIVITY_API_URL
+from vdbpy.parsers.edits import parse_edits, parse_edits_from_archived_versions
+from vdbpy.types.core import EntryType, UserEdit
+from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.data import (
     UserEditJSONEncoder,
     get_monthly_count,
     user_edit_from_dict,
 )
-from vdbpy.utils.date import parse_date
 from vdbpy.utils.files import get_text, save_file
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_all_items_between_dates
+from vdbpy.utils.network import fetch_all_items_between_dates, fetch_json
 
 logger = get_logger()
 
-ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 PARTIAL_SLUG = "-partial"
 
 
@@ -132,48 +134,71 @@ def get_monthly_edit_count(year: int, month: int) -> int:
     return get_monthly_count(year, month, ACTIVITY_API_URL)
 
 
-# --------------------------------------- #
+def get_created_entries_by_username(username: str) -> list[UserEdit]:
+    # Also includes deleted entries
+    username, user_id = find_user_by_username_1d(username)
+    params = {
+        "userId": user_id,
+        "fields": "Entry,ArchivedVersion",
+        "editEvent": "Created",
+    }
+
+    logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
+    return parse_edits(
+        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
+    )
 
 
-def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:
-    logger.debug(f"Got {len(edit_objects)} edits to parse.")
-    parsed_edits: list[UserEdit] = []
-    for edit_object in edit_objects:
-        # logger.debug(f"Parsing edit object {edit_object}")
-        entry_type = edit_object["entry"]["entryType"]
-        entry_id = edit_object["entry"]["id"]
-        if edit_object["editEvent"] == "Deleted":
-            # Deletion example: https://vocadb.net/Song/Versions/597650
-            if "author" not in edit_object:
-                logger.debug(f"Entry {entry_type}/{entry_id} deleted by unknown user")
-                continue
-            deleter = edit_object["author"]["name"]
-            usergroup = edit_object["author"]["groupId"]
-            logger.debug(
-                f"Entry {entry_type}/{entry_id} deleted by {deleter} ({usergroup})!"
-            )
-            continue  # edit object doesn't include archivedVersion
+def get_edits_by_username(username: str) -> list[UserEdit]:
+    # Also includes deleted entries
+    username, user_id = find_user_by_username_1d(username)
+    params = {
+        "userId": user_id,
+        "fields": "Entry,ArchivedVersion",
+    }
 
-        if "archivedVersion" not in edit_object:
-            logger.warning(f"{entry_type}/{entry_id} has no archived version!")
-            continue
+    logger.debug(f"Fetching edits by user '{username}' ({user_id})")
+    return parse_edits(
+        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
+    )
 
-        utc_date = edit_object["createDate"]
 
-        edit_date = parse_date(utc_date)
-        version_id = edit_object["archivedVersion"]["id"]
-        logger.debug(f"Found edit: {WEBSITE}/{entry_type}/ViewVersion/{version_id}")
+def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit:
+    params = {"userId": user_id, "fields": "Entry,ArchivedVersion", "maxResults": 1}
 
-        user_edit = UserEdit(
-            user_id=edit_object["archivedVersion"]["author"]["id"],
-            edit_date=edit_date,
-            entry_type=edit_object["entry"]["entryType"],
-            entry_id=edit_object["entry"]["id"],
-            version_id=version_id,
-            edit_event=edit_object["editEvent"],
-            changed_fields=edit_object["archivedVersion"]["changedFields"],
-            update_notes=edit_object["archivedVersion"]["notes"],
-        )
-        # logger.debug(f"Edit: {user_edit}")
-        parsed_edits.append(user_edit)
-    return parsed_edits
+    logger.debug(f"Fetching most recent edit by user id '{user_id}'")
+    return parse_edits(fetch_json(ACTIVITY_API_URL, params=params)["items"])[0]
+
+
+def get_edits_by_entry(
+    entry_type: EntryType, entry_id: int, include_deleted=False
+) -> list[UserEdit]:
+    data = fetch_json(get_versions_url(entry_type, entry_id))
+    if not include_deleted:
+        # print("Album", get_entry_versions("Album", 49682))
+        # print("Tag", get_entry_versions("Tag", 9363))
+        # print("ReleaseEvent", get_entry_versions("ReleaseEvent", 9785))
+        # print("ReleaseEventSeries", get_entry_versions("ReleaseEventSeries", 997))
+        if entry_type in ["Album", "Tag", "ReleaseEvent", "ReleaseEventSeries"]:
+            if is_entry_deleted(entry_type, entry_id):
+                logger.debug(f"{entry_type} {entry_id} has been deleted.")
+                return []
+
+        # print("Artist", get_entry_versions("Artist", 81663)) # works
+        # print("Song", get_entry_versions("Song", 1)) # works
+        # print("Venue", get_entry_versions("Venue", 418)) # works
+        elif "deleted" in data["entry"] and data["entry"]["deleted"]:
+            logger.debug(f"{entry_type} {entry_id} has been deleted.")
+            return []
+
+    return parse_edits_from_archived_versions(
+        data["archivedVersions"], entry_type, entry_id
+    )
+
+
+@cache_without_expiration()
+def get_cached_edits_by_entry_before_version_id(
+    entry_type: EntryType, entry_id: int, version_id: int, include_deleted=False
+) -> list[UserEdit]:
+    edits = get_edits_by_entry(entry_type, entry_id, include_deleted)
+    return [edit for edit in edits if edit.version_id <= version_id]

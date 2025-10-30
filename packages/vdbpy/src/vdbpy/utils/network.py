@@ -3,15 +3,13 @@ from datetime import UTC, datetime
 
 import requests
 
-from vdbpy.config import WEBSITE
+from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 BASE_DELAY = 0.5
-
-ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 
 
 def fetch_text(url: str, session=requests, params=None):

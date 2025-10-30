@@ -1,6 +1,6 @@
 import time
 
-from vdbpy.config import WEBSITE
+from vdbpy.config import SONGLIST_API_URL, WEBSITE
 from vdbpy.types.core import SonglistCategory
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
@@ -10,25 +10,23 @@ from vdbpy.utils.network import (
     fetch_text,
 )
 
-# TODO: Type SonglistEntry
-
-SONGLIST_API_URL = f"{WEBSITE}/api/songLists"
+type Songlist = dict  # TODO
 
 logger = get_logger()
 
 
-def get_featured_songlists(params) -> list:
+def get_featured_songlists(params) -> list[Songlist]:
     return fetch_json_items(SONGLIST_API_URL + "/featured", params=params)
 
 
-def get_featured_songlist(params):
+def get_featured_songlist(params) -> Songlist:
     result = fetch_json(SONGLIST_API_URL + "/featured", params=params)
     return result["items"][0] if result["items"] else {}
 
 
 def get_featured_songlists_with_total_count(
     params, max_results=10**9
-) -> tuple[list, int]:
+) -> tuple[list[Songlist], int]:
     return fetch_json_items_with_total_count(
         SONGLIST_API_URL + "/featured", params=params, max_results=max_results
     )
@@ -43,7 +41,7 @@ def create_or_update_songlist(
     title="",
     description="",
     category: SonglistCategory = "Nothing",
-):
+) -> None:
     """Create or update a songlist.
 
     Specfify songlist_id for updating a list.
@@ -87,7 +85,7 @@ def create_or_update_songlist(
 
 def create_songlists_with_size_limit(
     session, song_ids: list[int], author_id, title="", max_length=200
-):
+) -> None:
     """Create songlists with a maximum size limit, splitting the songlist into sublists."""
     if not title.strip():
         title = "Songlist"
@@ -136,12 +134,3 @@ def parse_csv_songlist(csv: list[str], delimiter=";") -> list[list[str]]:
             assert len(fixed_line) == 7  # noqa: S101
             lines[lines.index(line)] = fixed_line
     return lines
-
-
-def get_song_entries_by_songlist_id(songlist_id: int, params=None):
-    params = {} if params is None else params
-    # artistParticipationStatus=Everything
-    # childVoicebanks=false
-    # fields=AdditionalNames,MainPicture
-    url = f"{SONGLIST_API_URL}/{songlist_id}/songs"
-    return fetch_json_items(url, params=params)

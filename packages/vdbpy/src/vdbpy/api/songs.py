@@ -3,7 +3,7 @@ import random
 import time
 from typing import Callable
 
-from vdbpy.config import WEBSITE
+from vdbpy.config import SONG_API_URL, SONGLIST_API_URL, USER_API_URL
 from vdbpy.types.entry_versions import Service
 from vdbpy.utils import niconico, youtube
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
@@ -18,45 +18,44 @@ from vdbpy.utils.network import (
 logger = get_logger()
 
 
-SONG_API_URL = f"{WEBSITE}/api/songs"
+type Song = dict  # TODO
+type User = dict  # TODO
 
-# TODO Type: SongEntry
 
-
-def get_song_by_id(song_id, fields=""):
+def get_song_by_id(song_id, fields="") -> Song:
     params = {"fields": fields} if fields else {}
     url = f"{SONG_API_URL}/{song_id}"
     return fetch_json(url, params=params)
 
 
-def get_song(params):
+def get_song(params) -> Song:
     result = fetch_json(SONG_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
 
 
-def get_songs(params) -> list:
+def get_songs(params) -> list[Song]:
     return fetch_json_items(SONG_API_URL, params=params)
 
 
-def get_songs_with_total_count(params, max_results=10**9) -> tuple[list, int]:
+def get_songs_with_total_count(params, max_results=10**9) -> tuple[list[Song], int]:
     return fetch_json_items_with_total_count(
         SONG_API_URL, params=params, max_results=max_results
     )
 
 
-def get_songs_by_artist_id(artist_id: int, params=None):
+def get_songs_by_artist_id(artist_id: int, params=None) -> list[Song]:
     params = {} if params is None else params
     params["artistId[]"] = artist_id
     return get_songs(params)
 
 
-def get_songs_by_tag_id(tag_id: int, params=None):
+def get_songs_by_tag_id(tag_id: int, params=None) -> list[Song]:
     params = {} if params is None else params
     params["tagId[]"] = tag_id
     return get_songs(params)
 
 
-def get_song_entry_by_pv(pv_service: str, pv_id: str):
+def get_song_by_pv(pv_service: str, pv_id: str) -> Song:
     return fetch_json(
         f"{SONG_API_URL}/byPv",
         params={
@@ -69,7 +68,8 @@ def get_song_entry_by_pv(pv_service: str, pv_id: str):
 
 def get_tag_voters_by_song_id_and_tag_ids(
     song_id: int, tag_ids: list[int], session
-) -> dict[int, list]:
+) -> dict[int, list[User]]:
+    # TODO generic get tag voters
     url = f"{SONG_API_URL}/{song_id}/tagUsages"
     tag_votes: dict[int, list] = {}
     taggings = fetch_json(url, session=session)
@@ -92,7 +92,7 @@ def get_tag_voters_by_song_id_and_tag_ids(
     return tag_votes
 
 
-def get_random_rated_song_by_user(user: tuple[str, int]) -> int:
+def get_random_rated_song_id_by_user(user: tuple[str, int]) -> int:
     username, user_id = user
     params = {
         "userCollectionId": user_id,
@@ -110,7 +110,7 @@ def get_random_rated_song_by_user(user: tuple[str, int]) -> int:
     return fetch_json(SONG_API_URL, params=params)["items"][0]["id"]
 
 
-def get_related_songs_by_song_id(song_id: int):
+def get_related_songs_by_song_id(song_id: int):  # TODO:
     url = f"{SONG_API_URL}/{song_id}/related"
     return fetch_json(url)
 
@@ -179,8 +179,8 @@ def get_viewcounts_by_song_id_and_service(
         precalculated_data = {}
     # [{"author":"ミナツキトーカ","disabled":false,"id":197272,"length":274,"name":"- moonlight waltz -　月夜の舞踏譜 【波音リツ・重音テト オリジナル】","publishDate":"2016-10-12T00:00:00","pvId":"sm29822681","service":"NicoNicoDouga","pvType":"Original","thumbUrl":"https://nicovideo.cdn.nimg.jp/thumbnails/29822681/29822681","url":"http://www.nicovideo.jp/watch/sm29822681"}, ...]
     viewcount_functions: dict[Service, Callable[..., int]] = {
-        "NicoNicoDouga": niconico.get_viewcount,
-        "Youtube": youtube.get_viewcount,
+        "NicoNicoDouga": niconico.get_viewcount_1d,
+        "Youtube": youtube.get_viewcount_1d,
     }
     new_data: list[tuple[str, str, int]] = []
     for pv in pvs:
@@ -197,7 +197,8 @@ def get_viewcounts_by_song_id_and_service(
 
 
 @cache_without_expiration()
-def get_entry_creator_id_by_song_id(song_id: int) -> int:
+def get_cached_entry_creator_id_by_song_id(song_id: int) -> int:
+    # TODO generic get_entry_creator
     url = f"{SONG_API_URL}/{song_id}/versions"
     return fetch_json(url)["archivedVersions"][-1]["author"]["id"]
 
@@ -211,13 +212,13 @@ def get_songlist_author_ids_by_song_id(song_id: int) -> list[int]:
 
 def get_relevant_user_ids_by_song_id(song_id: int, session=None) -> list[int]:
     song_raters = get_song_rater_ids_by_song_id(song_id, session)
-    entry_creator = get_entry_creator_id_by_song_id(song_id)
+    entry_creator = get_cached_entry_creator_id_by_song_id(song_id)
     songlist_authors = get_songlist_author_ids_by_song_id(song_id)
     return list({*song_raters, entry_creator, *songlist_authors})
 
 
-@cache_with_expiration(days=7)
-def get_most_rated_song_by_artist_id(artist_id: int, params=None):
+@cache_with_expiration(days=1)
+def get_most_rated_song_by_artist_id_1d(artist_id: int, params=None) -> Song:
     params = {} if params is None else params
     params["maxResults"] = 1
     params["sort"] = "RatingScore"
@@ -225,8 +226,8 @@ def get_most_rated_song_by_artist_id(artist_id: int, params=None):
     return fetch_json(SONG_API_URL, params=params)["items"][0]
 
 
-@cache_with_expiration(days=7)
-def get_most_recent_song_by_artist_id(artist_id: int, params=None):
+@cache_with_expiration(days=1)
+def get_most_recent_song_by_artist_id_1d(artist_id: int, params=None) -> Song:
     params = {} if params is None else params
     params["maxResults"] = 1
     params["sort"] = "PublishDate"
@@ -312,3 +313,21 @@ def mark_pvs_unavailable_by_song_id(session, song_id: int, service=""):
 
     else:
         logger.info(f"No PV links to update for song {song_id}")
+
+
+def get_song_entries_by_songlist_id(songlist_id: int, params=None) -> list[Song]:
+    params = {} if params is None else params
+    # artistParticipationStatus=Everything
+    # childVoicebanks=false
+    # fields=AdditionalNames,MainPicture
+    url = f"{SONGLIST_API_URL}/{songlist_id}/songs"
+    return fetch_json_items(url, params=params)
+
+
+@cache_with_expiration(days=7)
+def get_rated_songs_by_user_id_7d(user_id: int, extra_params=None) -> list[Song]:
+    logger.info(f"Fetching rated songs for user id {user_id}")
+    api_url = f"{USER_API_URL}/{user_id}/ratedSongs"
+    rated_songs = fetch_json_items(api_url, extra_params)
+    logger.info(f"Found total of {len(rated_songs)} rated songs.")
+    return rated_songs

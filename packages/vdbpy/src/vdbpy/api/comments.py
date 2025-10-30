@@ -2,7 +2,7 @@ from typing import Literal
 
 import requests
 
-from vdbpy.config import WEBSITE
+from vdbpy.config import COMMENT_API_URL, WEBSITE
 from vdbpy.types.core import EntryType
 from vdbpy.utils.data import add_s, get_monthly_count
 from vdbpy.utils.date import parse_date
@@ -14,11 +14,10 @@ from vdbpy.utils.network import (
 
 logger = get_logger()
 
-COMMENT_API_URL = f"{WEBSITE}/api/comments"
+type Comment = dict  # TODO
 
 
-def get_comments_by_user_id(user_id) -> list:
-    # TODO comment type
+def get_comments_by_user_id(user_id) -> list[Comment]:
     logger.debug(f"Fetching all comments for user id {user_id}")
     a = str(parse_date(get_the_oldest_comment_by_user_id(user_id)["created"])).split()[
         0
@@ -40,7 +39,7 @@ def get_monthly_comment_count(year: int, month: int) -> int:
     return get_monthly_count(year, month, COMMENT_API_URL)
 
 
-def get_the_most_recent_comment_by_user_id(user_id=0):
+def get_the_most_recent_comment_by_user_id(user_id=0) -> Comment:
     params = {
         "userId": user_id,
         "sortRule": "CreateDateDescending",
@@ -50,7 +49,7 @@ def get_the_most_recent_comment_by_user_id(user_id=0):
     return fetch_json(COMMENT_API_URL, params=params)["items"][0]
 
 
-def get_the_oldest_comment_by_user_id(user_id=0):
+def get_the_oldest_comment_by_user_id(user_id=0) -> Comment:
     params = {
         "userId": user_id,
         "sortRule": "CreateDate",
@@ -62,7 +61,7 @@ def get_the_oldest_comment_by_user_id(user_id=0):
 
 def remove_comment_by_id(
     session, entry_type: EntryType | Literal["User"], comment_id: int
-):
+) -> bool:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/comments/{comment_id}"
     if entry_type == "User":
         url = f"{WEBSITE}/api/users/profileComments/{comment_id}"
@@ -74,12 +73,13 @@ def remove_comment_by_id(
     except requests.exceptions.HTTPError:
         logger.warning(f"Comment {comment_id} could not be deleted.")
         logger.warning(f"{deletion_attempt.status_code}: {deletion_attempt.text}")
-        return
+        return False
 
     logger.info("Comment deleted.")
+    return True
 
 
-def remove_all_comments_by_user_id(session, user_id: int, prompt_interval=1):
+def remove_all_comments_by_user_id(session, user_id: int, prompt_interval=1) -> int:
     all_comments = get_comments_by_user_id(user_id)
     counter = 0
     for comment in all_comments:
@@ -95,7 +95,10 @@ def remove_all_comments_by_user_id(session, user_id: int, prompt_interval=1):
 
         if prompt_interval > 0 and counter % prompt_interval == 0:
             _ = input("Press enter to delete comment.")
-            counter += 1
-        remove_comment_by_id(session, entry_type, comment_id)
 
-    logger.info(f"Deleted {len(all_comments)} comments by {user_id}")
+        removed = remove_comment_by_id(session, entry_type, comment_id)
+        if removed:
+            counter += 1
+
+    logger.info(f"Deleted {counter} comments out of {len(all_comments)} for {user_id}")
+    return counter

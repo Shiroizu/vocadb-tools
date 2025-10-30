@@ -5,8 +5,8 @@ from vdbpy.utils.network import fetch_json
 logger = get_logger()
 
 
-@cache_with_expiration(days=4)
-def get_viewcount(video_id: str, api_key: str) -> int:
+@cache_with_expiration(days=1)
+def get_viewcount_1d(video_id: str, api_key: str) -> int:
     if not api_key:
         raise ValueError("API key required for Youtube API.")
     yt_base_url = "https://www.googleapis.com/youtube/v3/videos"
