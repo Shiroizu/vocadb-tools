@@ -132,45 +132,6 @@ def get_monthly_edit_count(year: int, month: int) -> int:
     return get_monthly_count(year, month, ACTIVITY_API_URL)
 
 
-def get_monthly_top_editors(
-    year: int, month: int, top_n: int, save_dir: Path
-) -> list[tuple[int, int]]:
-    """Return a sorted list of the top monthly editors: [(user_id, edit_count),..]."""
-    edits: list[UserEdit] = get_edits_by_month(year, month, save_dir=save_dir)
-
-    edit_counts_by_editor_id: dict[int, int] = {}
-    for edit in edits:
-        editor_id: int = edit.user_id
-        if editor_id in edit_counts_by_editor_id:
-            edit_counts_by_editor_id[editor_id] += 1
-        else:
-            edit_counts_by_editor_id[editor_id] = 1
-
-    return sorted(edit_counts_by_editor_id.items(), key=lambda x: x[1], reverse=True)[
-        :top_n
-    ]
-
-
-def get_top_editors_by_field(
-    field: str, year: int, month: int, top_n: int, save_dir: Path
-) -> list[tuple[int, int]]:
-    """Return a sorted list of the top monthly editors based on an edit field: [(user_id, edit_count),..]."""
-    edits: list[UserEdit] = get_edits_by_month(year, month, save_dir=save_dir)
-
-    edit_counts_by_editor_id: dict[int, int] = {}
-    for edit in edits:
-        editor_id: int = edit.user_id
-        if field in edit.changed_fields:
-            if editor_id in edit_counts_by_editor_id:
-                edit_counts_by_editor_id[editor_id] += 1
-            else:
-                edit_counts_by_editor_id[editor_id] = 1
-
-    return sorted(edit_counts_by_editor_id.items(), key=lambda x: x[1], reverse=True)[
-        :top_n
-    ]
-
-
 # --------------------------------------- #
 
 

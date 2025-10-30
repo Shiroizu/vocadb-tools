@@ -148,6 +148,7 @@ def find_user_by_username_and_mode(username: str, mode: str) -> tuple[str, int]:
     return ("", 0)
 
 
+# TODO permanent cache ver
 @cache_with_expiration(days=7)
 def find_user_by_username(username: str) -> tuple[str, int]:
     # Available values : Auto, Partial, StartsWith, Exact, Words
