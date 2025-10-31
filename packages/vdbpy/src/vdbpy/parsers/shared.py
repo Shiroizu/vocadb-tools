@@ -58,7 +58,7 @@ def parse_pvs(data) -> list[PV]:
                 author=pv["author"],
                 disabled=pv["disabled"],
                 length=pv["length"],
-                name=pv["name"],
+                name=pv.get("name", ""),
                 pv_id=pv["pvId"],
                 pv_service=pv["service"],
                 pv_type=pv["pvType"],
