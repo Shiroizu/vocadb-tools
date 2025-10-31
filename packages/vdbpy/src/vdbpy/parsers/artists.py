@@ -1,7 +1,9 @@
-from vdbpy.api.entries import logger
 from vdbpy.parsers.shared import parse_base_entry_version, parse_pictures
 from vdbpy.types.entry_versions import ArtistVersion
 from vdbpy.utils.date import parse_date
+from vdbpy.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def parse_artist_version(data: dict) -> ArtistVersion:

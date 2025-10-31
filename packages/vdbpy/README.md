@@ -46,5 +46,9 @@ def get_cached_username_by_id(user_id: int, include_usergroup=False) -> str:
 - [x] Consistent cache usage
 - [x] Consolidate API URLS to `config.py`
 - [ ] Full types
-- [ ] Unit tests & coverage badge
+    - [ ] Simple entry data
+    - [ ] Simple entry data cached by version id
+    - [ ] Full entry data (fields=All)
+    - [ ] Entry details
+- [ ] Comprehensive unit tests & coverage badge
 - [ ] Remove redundant fetch_json calls

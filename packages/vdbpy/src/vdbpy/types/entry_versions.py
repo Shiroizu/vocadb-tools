@@ -156,7 +156,6 @@ class SongVersion(BaseEntryVersion):
     # https://vocadb.net/api/songs/versions/x -> versions -> firstData
     # Missing/unsupported fields:
     # - language_codes
-    albums: list[AlbumParticipation]
     artists: list[ArtistParticipation]
     length: int
     lyrics: list[Lyrics]

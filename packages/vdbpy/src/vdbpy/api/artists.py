@@ -1,15 +1,11 @@
 from vdbpy.config import ARTIST_API_URL, SONG_API_URL, USER_API_URL
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
-from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
     fetch_totalcount,
 )
-
-logger = get_logger()
-
 
 type Artist = dict  # TODO
 
@@ -71,10 +67,8 @@ def get_cached_base_voicebank_by_artist_id(artist_id: int, recursive=True) -> Ar
 
 @cache_with_expiration(days=7)
 def get_followed_artists_by_user_id_7d(user_id: int, extra_params=None) -> list[Artist]:
-    logger.info(f"Fetching followed artists for user id {user_id}")
     api_url = f"{USER_API_URL}/{user_id}/followedArtists"
     followed_artists = fetch_json_items(api_url, extra_params)
     if followed_artists:
         followed_artists = [ar["artist"] for ar in followed_artists]
-    logger.info(f"Found total of {len(followed_artists)} followed artists")
     return followed_artists

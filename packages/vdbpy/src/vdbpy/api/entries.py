@@ -3,6 +3,8 @@ from typing import (
     get_args,
 )
 
+import requests
+
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE
 from vdbpy.parsers.albums import parse_album_version
@@ -87,8 +89,14 @@ def get_cached_entry_version(  # noqa: PLR0911
     | ReleaseEventVersion
     | ReleaseEventSeriesVersion
     | VenueVersion
+    | None
 ):
-    data = get_cached_raw_entry_version(entry_type, version_id)
+    try:
+        data = get_cached_raw_entry_version(entry_type, version_id)
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            logger.warning(f"Version data not available for v{version_id}")
+        return None
     match entry_type:
         case "Album":
             return parse_album_version(data)
@@ -109,18 +117,18 @@ def get_cached_entry_version(  # noqa: PLR0911
     return data["versions"]["firstData"]
 
 
-def get_cached_entry_count_by_entry_type(entry_type: str) -> int:
-    url = f"{WEBSITE}/api/{add_s(entry_type)}?getTotalCount=True&maxResults=1"
+def get_cached_entry_count_by_entry_type(entry_type: EntryType) -> int:
+    url = f"{WEBSITE}/api/{add_s(entry_type)}"
     return fetch_cached_totalcount(url)
 
 
-def get_random_entry() -> dict:  # TODO
-    entry_type = random.choice(get_args(EntryType))
-    logger.info(f"Chose entry type '{entry_type}'")
-    entry_type = add_s(entry_type)
-    total = get_cached_entry_count_by_entry_type(entry_type)
+def get_random_entry(entry_type: EntryType | None = None) -> dict:  # TODO
+    selected_entry_type: EntryType = (
+        entry_type if entry_type else random.choice(get_args(EntryType))  # type: ignore
+    )
+    total = get_cached_entry_count_by_entry_type(selected_entry_type)
     random_index = random.randint(1, total)
-    url = f"{WEBSITE}/api/{entry_type}"
+    url = f"{WEBSITE}/api/{add_s(entry_type)}"
     params = {"getTotalCount": True, "maxResults": 1, "start": random_index}
     return fetch_json(url, params=params)["items"][0]
 

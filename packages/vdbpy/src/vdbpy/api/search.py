@@ -35,7 +35,7 @@ def search_entry(name: str, entry_type: EntryType, max_results=3) -> str:
     params["sort"] = sort_rule
     results, total_count = search_function(params, max_results=max_results)
     if not results or total_count > 1:
-        params["nameMatchMode"] = "Partial"
+        params["nameMatchMode"] = "Auto"
         results, total_count = search_function(params, max_results=max_results)
     if not results:
         return f"No results found for '{name}'"

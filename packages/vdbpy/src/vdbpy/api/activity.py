@@ -23,7 +23,9 @@ logger = get_logger()
 PARTIAL_SLUG = "-partial"
 
 
-def get_edits_by_day(year: int, month: int, day: int, save_dir: Path) -> list[UserEdit]:
+def get_edits_by_day(
+    year: int, month: int, day: int, save_dir: Path | None = None
+) -> list[UserEdit]:
     date = datetime(year, month, day, tzinfo=UTC)
     date_str = date.strftime("%Y-%m-%d")
 
@@ -41,26 +43,29 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir: Path) -> list[Us
     day_after = date + timedelta(days=1)
     partial_save = False
     previous_edits: list[UserEdit] = []
-    filename = save_dir / date_str / f"{PARTIAL_SLUG}.json"
-    if os.path.isfile(filename):
-        logger.debug("Partial save file found.")
-        partial_save = True
-    else:
-        filename = save_dir / f"{date_str}.json"
-    if data := get_text(filename):
-        logger.debug(f"Loading edits from '{filename}'...")
-        previous_edits.extend([user_edit_from_dict(item) for item in json.loads(data)])
-
-        if not partial_save and date.date() < today.date():
-            return previous_edits
-
-        if previous_edits:
-            date = previous_edits[0].edit_date
-            logger.debug(
-                f"The most recent saved edit from this date is '{previous_edits[0].edit_date}'"
-            )
+    if save_dir:
+        filename = save_dir / date_str / f"{PARTIAL_SLUG}.json"
+        if os.path.isfile(filename):
+            logger.debug("Partial save file found.")
+            partial_save = True
         else:
-            logger.debug("No edits found for this date.")
+            filename = save_dir / f"{date_str}.json"
+        if data := get_text(filename):
+            logger.debug(f"Loading edits from '{filename}'...")
+            previous_edits.extend(
+                [user_edit_from_dict(item) for item in json.loads(data)]
+            )
+
+            if not partial_save and date.date() < today.date():
+                return previous_edits
+
+            if previous_edits:
+                date = previous_edits[0].edit_date
+                logger.debug(
+                    f"The most recent saved edit from this date is '{previous_edits[0].edit_date}'"
+                )
+            else:
+                logger.debug("No edits found for this date.")
 
     params = {"fields": "Entry,ArchivedVersion"}
 
@@ -84,28 +89,30 @@ def get_edits_by_day(year: int, month: int, day: int, save_dir: Path) -> list[Us
 
     new_edits = len(parsed_edits) - prev_length
     logger.debug(f"Found total of {new_edits} new edits for date {date_str}")
-    if not edits_from_today_requested:
-        save_file(
-            f"{save_dir}/{date_str}.json",
-            json.dumps(
-                parsed_edits,
-                cls=UserEditJSONEncoder,
-                indent=4,
-                separators=(",", ":"),
-            ),
-        )
-        if partial_save:
-            os.remove(f"{save_dir}/{date_str}{PARTIAL_SLUG}.json")
-    else:
-        save_file(
-            f"{save_dir}/{date_str}{PARTIAL_SLUG}.json",
-            json.dumps(
-                parsed_edits,
-                cls=UserEditJSONEncoder,
-                indent=4,
-                separators=(",", ":"),
-            ),
-        )
+
+    if save_dir:
+        if not edits_from_today_requested:
+            save_file(
+                f"{save_dir}/{date_str}.json",
+                json.dumps(
+                    parsed_edits,
+                    cls=UserEditJSONEncoder,
+                    indent=4,
+                    separators=(",", ":"),
+                ),
+            )
+            if partial_save:
+                os.remove(f"{save_dir}/{date_str}{PARTIAL_SLUG}.json")
+        else:
+            save_file(
+                f"{save_dir}/{date_str}{PARTIAL_SLUG}.json",
+                json.dumps(
+                    parsed_edits,
+                    cls=UserEditJSONEncoder,
+                    indent=4,
+                    separators=(",", ":"),
+                ),
+            )
 
     return parsed_edits
 

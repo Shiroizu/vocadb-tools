@@ -5,7 +5,6 @@ from vdbpy.parsers.shared import (
     parse_pvs,
 )
 from vdbpy.types.entry_versions import (
-    AlbumParticipation,
     Lyrics,
     SongVersion,
 )
@@ -14,21 +13,6 @@ from vdbpy.utils.date import parse_date
 
 def parse_song_version(data: dict) -> SongVersion:
     data, base_entry_version = parse_base_entry_version(data)
-
-    def parse_album_participation(data) -> list[AlbumParticipation]:
-        if "albums" not in data or not data["albums"]:
-            return []
-        album_participations = []
-        for album_participation in data["albums"]:
-            album_participations.append(
-                AlbumParticipation(
-                    disc_number=album_participation["discNumber"],
-                    track_number=album_participation["trackNumber"],
-                    album_id=album_participation["id"],
-                    name_hint=album_participation["nameHint"],
-                )
-            )
-        return album_participations
 
     def parse_lyrics(data) -> list[Lyrics]:
         if "lyrics" not in data or not data["lyrics"]:
@@ -48,7 +32,6 @@ def parse_song_version(data: dict) -> SongVersion:
         return lyrics
 
     return SongVersion(
-        albums=parse_album_participation(data),
         artists=parse_artist_participation(data),
         length=data.get("lengthSeconds", 0),
         lyrics=parse_lyrics(data),

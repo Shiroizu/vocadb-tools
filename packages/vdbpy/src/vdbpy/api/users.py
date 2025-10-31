@@ -143,7 +143,7 @@ def find_user_by_username_and_mode_1d(username: str, mode: str) -> tuple[str, in
         user_id = data["items"][0]["id"]
         return (username, user_id)
 
-    print(f"User id not found with username '{username}' and mode '{mode}'")
+    logger.info(f"User id not found with username '{username}' and mode '{mode}'")
     return ("", 0)
 
 
@@ -163,12 +163,8 @@ def find_cached_user_by_username(username: str) -> tuple[str, int]:
     return find_user_by_username_1d(username)
 
 
-# ------------------------------------------- #
-
-
 @cache_with_expiration(days=1)
 def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
-    # TODO move elsewhere
     # 1) Check the total counts of the most common entryType/editEvent combinations:
     # 2) Stop when total count reached to reduce the number of API calls
     #
@@ -193,7 +189,7 @@ def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
         params["before"] = before
 
     total_count = fetch_json(ACTIVITY_API_URL, params=params)["totalCount"]
-    print(f"Total edits: {total_count}")
+    logger.info(f"Total edits: {total_count}")
 
     combinations = [  # Sorted by how common they are
         ("Updated", "Song"),
@@ -224,15 +220,15 @@ def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
         count = fetch_json(ACTIVITY_API_URL, params=params)["totalCount"]
         if count > 0:
             entry_matrix[entry_type][edit_type] = count
-            print(
+            logger.info(
                 f"{entry_type}, {edit_type}: Total count is now {total_count} - {count} = {total_count - count}"
             )
             total_count -= count
-        print((edit_type, entry_type, count))
+        logger.info((edit_type, entry_type, count))
 
-    print(entry_matrix)
+    logger.info(entry_matrix)
     if total_count != 0:
-        print(f"Count mismatch {total_count}, possible new activity after")
+        logger.info(f"Count mismatch {total_count}, possible new activity after")
     return entry_matrix
 
 
