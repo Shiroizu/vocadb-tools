@@ -128,18 +128,21 @@ def get_random_related_song_by_song_id(song_id: int) -> int:
     return selected_entry["id"]
 
 
-def get_random_song_id() -> int:
+def get_random_song_id(extra_filters: dict | None = None) -> int:
     params = {
         "getTotalCount": True,
         "onlyWithPVs": True,
         "maxResults": 1,
     }
-    total = fetch_cached_totalcount(SONG_API_URL, params=params)
+    if extra_filters:
+        for key in extra_filters:
+            params[key] = extra_filters[key]
 
+    total = fetch_cached_totalcount(SONG_API_URL, params=params)
     random_start = random.randint(0, total - 1)
     logger.debug(f"Selecting random_start {random_start}")
     params["start"] = random_start
-    return get_songs(params)[0]["id"]
+    return get_song(params)["id"]
 
 
 def get_song_rater_ids_by_song_id(song_id: int, session=None) -> list[int]:
