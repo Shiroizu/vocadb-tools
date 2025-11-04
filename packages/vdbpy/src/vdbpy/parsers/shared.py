@@ -1,3 +1,5 @@
+from typing import Any
+
 from vdbpy.types.entry_versions import (
     PV,
     ArtistParticipation,
@@ -9,7 +11,7 @@ from vdbpy.types.entry_versions import (
 from vdbpy.utils.date import parse_date
 
 
-def parse_names(data: dict) -> tuple[str, str, str, list[str]]:
+def parse_names(data: dict[Any, Any]) -> tuple[str, str, str, list[str]]:
     name_non_english = ""
     name_romaji = ""
     name_english = ""
@@ -28,67 +30,62 @@ def parse_names(data: dict) -> tuple[str, str, str, list[str]]:
                     name_english = value
                 case "Unspecified":
                     aliases.append(value)
+                case _:
+                    msg = f"Unexpected language {language}"
+                    raise ValueError(msg)
 
     return name_non_english, name_romaji, name_english, aliases
 
 
-def parse_artist_participation(data) -> list[ArtistParticipation]:
+def parse_artist_participation(data: dict[Any, Any]) -> list[ArtistParticipation]:
     if "artists" not in data or not data["artists"]:
         return []
-    artist_participations = []
-    for artist_participation in data["artists"]:
-        artist_participations.append(
-            ArtistParticipation(
-                is_supporting=artist_participation["isSupport"],
-                artist_id=artist_participation["id"],
-                roles=artist_participation["roles"].split(", "),
-                name_hint=artist_participation["nameHint"],
-            )
+    return [
+        ArtistParticipation(
+            is_supporting=artist_participation["isSupport"],
+            artist_id=artist_participation["id"],
+            roles=artist_participation["roles"].split(", "),
+            name_hint=artist_participation["nameHint"],
         )
-    return artist_participations
+        for artist_participation in data["artists"]
+    ]
 
 
-def parse_pvs(data) -> list[PV]:
+def parse_pvs(data: dict[Any, Any]) -> list[PV]:
     if "pvs" not in data or not data["pvs"]:
         return []
-    pvs: list[PV] = []
-    for pv in data["pvs"]:
-        pvs.append(
-            PV(
-                author=pv["author"],
-                disabled=pv["disabled"],
-                length=pv["length"],
-                name=pv.get("name", ""),
-                pv_id=pv["pvId"],
-                pv_service=pv["service"],
-                pv_type=pv["pvType"],
-                publish_date=parse_date(pv["publishDate"])
-                if "publishDate" in pv
-                else None,
-            )
+    return [
+        PV(
+            author=pv["author"],
+            disabled=pv["disabled"],
+            length=pv["length"],
+            name=pv.get("name", ""),
+            pv_id=pv["pvId"],
+            pv_service=pv["service"],
+            pv_type=pv["pvType"],
+            publish_date=parse_date(pv["publishDate"]) if "publishDate" in pv else None,
         )
-    return pvs
+        for pv in data["pvs"]
+    ]
 
 
-def parse_event_participations(data) -> list[EventParticipation]:
+def parse_event_participations(data: dict[Any, Any]) -> list[EventParticipation]:
     if "originalRelease" not in data:
         return []
     data = data["originalRelease"]
     if "releaseEvents" not in data or not data["releaseEvents"]:
         return []
-    event_participations = []
-    for event_participation in data["releaseEvents"]:
-        event_participations.append(
-            EventParticipation(
-                event_id=event_participation["id"],
-                name_hint=event_participation["nameHint"],
-            )
+    return [
+        EventParticipation(
+            event_id=event_participation["id"],
+            name_hint=event_participation["nameHint"],
         )
-    return event_participations
+        for event_participation in data["releaseEvents"]
+    ]
 
 
-def parse_links(data) -> list[ExternalLink]:
-    raw_links = []
+def parse_links(data: dict[Any, Any]) -> list[ExternalLink]:
+    raw_links: list[Any] = []
     if "externalLinks" in data:
         raw_links = data["externalLinks"]
     elif "webLinks" in data:  # inconsistent naming
@@ -97,35 +94,33 @@ def parse_links(data) -> list[ExternalLink]:
     if not raw_links:
         return []
 
-    links = []
-    for link in raw_links:
-        links.append(
-            ExternalLink(
-                category=link["category"],
-                description=link["description"],
-                disabled=link["disabled"],
-                url=link["url"],
-            )
+    return [
+        ExternalLink(
+            category=link["category"],
+            description=link["description"],
+            disabled=link["disabled"],
+            url=link["url"],
         )
-    return links
+        for link in raw_links
+    ]
 
 
-def parse_pictures(data) -> list[Picture]:
+def parse_pictures(data: dict[Any, Any]) -> list[Picture]:
     if "pictures" not in data or not data["pictures"]:
         return []
-    pictures = []
-    for picture in data["pictures"]:
-        pictures.append(
-            Picture(
-                picture_id=picture["id"],
-                mime=picture["mime"],
-                name=picture["name"],
-            )
+    return [
+        Picture(
+            picture_id=picture["id"],
+            mime=picture["mime"],
+            name=picture["name"],
         )
-    return pictures
+        for picture in data["pictures"]
+    ]
 
 
-def parse_base_entry_version(data: dict) -> tuple[dict, BaseEntryVersion]:
+def parse_base_entry_version(
+    data: dict[Any, Any],
+) -> tuple[dict[Any, Any], BaseEntryVersion]:
     entry_status = data["archivedVersion"]["status"]
     data = data["versions"]["firstData"]
 

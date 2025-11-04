@@ -1,7 +1,5 @@
 import random
-from typing import (
-    get_args,
-)
+from typing import Any, get_args
 
 import requests
 
@@ -53,7 +51,7 @@ entry_type_to_url: dict[EntryType, str] = {
 }
 
 entry_url_to_type: dict[str, EntryType] = {v: k for k, v in entry_type_to_url.items()}
-type EntryDetails = dict  # TODO
+type EntryDetails = dict[Any, Any]  # TODO implement
 
 
 def get_entry_details(entry_type: EntryType, entry_id: int) -> EntryDetails:
@@ -74,7 +72,9 @@ def cached_is_entry_deleted(entry_type: EntryType, entry_id: int) -> bool:
 
 
 @cache_without_expiration()
-def get_cached_raw_entry_version(entry_type: EntryType, version_id: int) -> dict:
+def get_cached_raw_entry_version(
+    entry_type: EntryType, version_id: int
+) -> dict[Any, Any]:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/versions/{version_id}"
     return fetch_json(url)
 
@@ -94,7 +94,7 @@ def get_cached_entry_version(  # noqa: PLR0911
     try:
         data = get_cached_raw_entry_version(entry_type, version_id)
     except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 403:
+        if e.response.status_code == 403:  # noqa: PLR2004
             logger.warning(f"Version data not available for v{version_id}")
         return None
     match entry_type:
@@ -113,7 +113,8 @@ def get_cached_entry_version(  # noqa: PLR0911
         case "Venue":
             return parse_venue_version(data)
         case _:
-            raise Exception(f"Unknown entry type {entry_type}")
+            msg = f"Unknown entry type {entry_type}"
+            raise ValueError(msg)
     return data["versions"]["firstData"]
 
 
@@ -122,24 +123,26 @@ def get_cached_entry_count_by_entry_type(entry_type: EntryType) -> int:
     return fetch_cached_totalcount(url)
 
 
-def get_random_entry(entry_type: EntryType | None = None) -> dict:  # TODO
+def get_random_entry(
+    entry_type: EntryType | None = None,
+) -> dict[Any, Any]:  # TODO type
     selected_entry_type: EntryType = (
-        entry_type if entry_type else random.choice(get_args(EntryType))  # type: ignore
+        entry_type if entry_type else random.choice(get_args(EntryType))
     )
     total = get_cached_entry_count_by_entry_type(selected_entry_type)
     random_index = random.randint(1, total)
-    url = f"{WEBSITE}/api/{add_s(entry_type)}"
+    url = f"{WEBSITE}/api/{add_s(str(entry_type))}"
     params = {"getTotalCount": True, "maxResults": 1, "start": random_index}
     return fetch_json(url, params=params)["items"][0]
 
 
 def delete_entry(
-    session,
+    session: requests.Session,
     entry_type: EntryType,
     entry_id: int,
-    force=False,
-    deletion_msg="",
-    prompt=True,
+    force: bool = False,
+    deletion_msg: str = "",
+    prompt: bool = True,
 ) -> bool:
     if is_entry_deleted(entry_type, entry_id):
         logger.warning(f"Entry {entry_id} has already been deleted.")

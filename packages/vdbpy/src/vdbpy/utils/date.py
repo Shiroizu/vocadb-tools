@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from vdbpy.utils.logger import get_logger
@@ -8,8 +8,8 @@ logger = get_logger()
 
 def parse_date(
     date_to_parse: str,
-    date_format="%Y-%m-%dT%H:%M:%S.%fZ",
-    short_date_format="%Y-%m-%d",
+    date_format: str = "%Y-%m-%dT%H:%M:%S.%fZ",
+    short_date_format: str = "%Y-%m-%d",
 ) -> datetime:
     """Parse various date formats and return datetime with UTC timezone.
 
@@ -28,9 +28,9 @@ def parse_date(
     >>> parse_date("2025-07-21")
     datetime.datetime(2025, 7, 21, 0, 0, tzinfo=datetime.timezone.utc)
     """
-    if len(date_to_parse) == 10:  # 2024-06-01
-        parsed = datetime.strptime(date_to_parse, short_date_format)
-        return parsed.replace(tzinfo=timezone.utc)
+    if len(date_to_parse) == 10:  # noqa: PLR2004
+        # 2024-06-02
+        return datetime.strptime(date_to_parse, short_date_format).astimezone(UTC)
 
     date_to_parse = date_to_parse.strip()
     date_to_parse = date_to_parse.replace(" ", "T")
@@ -43,7 +43,7 @@ def parse_date(
         # Positive offset: 2025-07-21T02:00:00+02:00
         date_to_parse, offset = date_to_parse.split("+")
         offset_sign = -1  # Subtract to convert to UTC
-    elif date_to_parse.count("-") > 2:
+    elif date_to_parse.count("-") > 2:  # noqa: PLR2004
         # Negative offset: 2025-07-21T02:00:00-05:00
         parts = date_to_parse.rsplit("-", 1)
         if ":" in parts[1]:  # Confirm it's a timezone offset
@@ -54,20 +54,17 @@ def parse_date(
         date_to_parse += "Z"
 
     if date_to_parse.count("T") > 1:
-        raise ValueError(
-            f"Invalid date format: multiple 'T' separators in {date_to_parse}"
-        )
+        msg = f"Invalid date format: multiple 'T' separators in {date_to_parse}"
+        raise ValueError(msg)
     if date_to_parse.count("Z") > 1:
-        raise ValueError(
-            f"Invalid date format: multiple 'Z' characters in {date_to_parse}"
-        )
+        msg = f"Invalid date format: multiple 'Z' characters in {date_to_parse}"
+        raise ValueError(msg)
 
     # Add microseconds field if missing
     if "." not in date_to_parse and date_to_parse.endswith("Z"):
         date_to_parse = date_to_parse.replace("Z", ".0Z")
 
-    parsed = datetime.strptime(date_to_parse, date_format)
-    parsed = parsed.replace(tzinfo=timezone.utc)
+    parsed = datetime.strptime(date_to_parse, date_format).astimezone(UTC)
 
     if offset:
         hours = int(offset.split(":")[0])
@@ -104,13 +101,14 @@ def get_month_strings(year: int, month: int) -> tuple[str, str]:
     ValueError: Month 12.3024 is ongoing or in the future!
     """
     if not month_is_over(year, month):
-        raise ValueError(f"Month {month}.{year} is ongoing or in the future!")
+        msg = f"Month {month}.{year} is ongoing or in the future!"
+        raise ValueError(msg)
 
     first_day_of_this_month = f"{year}-{str(month).zfill(2)}-01"
-    if month == 12:
-        first_day_of_next_month = f"{year+1}-01-01"
+    if month == 12:  # noqa: PLR2004
+        first_day_of_next_month = f"{year + 1}-01-01"
     else:
-        first_day_of_next_month = f"{year}-{str(month+1).zfill(2)}-01"
+        first_day_of_next_month = f"{year}-{str(month + 1).zfill(2)}-01"
     return first_day_of_this_month, first_day_of_next_month
 
 
@@ -132,32 +130,28 @@ def get_last_month_strings(year: int = 0, month: int = 0) -> tuple[str, str]:
         month = now.month
     first_day_of_this_month = f"{year}-{str(month).zfill(2)}-01"
     if month == 1:
-        first_day_of_last_month = f"{year-1}-12-01"
+        first_day_of_last_month = f"{year - 1}-12-01"
     else:
-        first_day_of_last_month = f"{year}-{str(month-1).zfill(2)}-01"
+        first_day_of_last_month = f"{year}-{str(month - 1).zfill(2)}-01"
     return first_day_of_last_month, first_day_of_this_month
 
 
 def get_all_month_strings_since(start_year: int) -> list[tuple[str, str]]:
-    """Get list of date string tuples since the start of the input year. Stops before the current month.
-
-    OUTPUT: get_all_month_strings_since(2025)
-    [('2025-01-01', '2025-02-01'), ('2025-02-01', '2025-03-01'), ('2025-03-01', '2025-04-01'), ('2025-04-01', '2025-05-01'), ('2025-05-01', '2025-06-01'), ('2025-06-01', '2025-07-01'), ('2025-07-01', '2025-08-01')]
-    """
+    """Get date strings since the start of the year. Stops before the current month."""
     now = datetime.now(tz=UTC)
     end_month = now.month - 1 if now.month > 1 else 12
     end_year = now.year if now.month > 1 else now.year - 1
 
     current_month_year = start_year
     current_month = 1
-    date_strings = []
+    date_strings: list[tuple[str, str]] = []
     while True:
         if current_month_year >= end_year and current_month >= end_month:
             break
 
-        next_month = current_month + 1 if current_month < 12 else 1
+        next_month = current_month + 1 if current_month < 12 else 1  # noqa: PLR2004
         next_month_year = (
-            current_month_year + 1 if current_month == 12 else current_month_year
+            current_month_year + 1 if current_month == 12 else current_month_year  # noqa: PLR2004
         )
 
         a_string = f"{current_month_year}-{str(current_month).zfill(2)}-01"
@@ -173,9 +167,9 @@ def get_all_month_strings_since(start_year: int) -> list[tuple[str, str]]:
 def read_timestamp_file(filename: Path) -> datetime | None:
     """Read a timestamp from a file, or None if not found."""
     try:
-        with open(filename, encoding="utf-8") as file:
+        with Path.open(filename, encoding="utf-8") as file:
             return datetime.fromisoformat(file.read().strip())
     except FileNotFoundError:
-        with open(filename, "w", encoding="utf-8") as file:
+        with Path.open(filename, "w", encoding="utf-8") as file:
             file.write(str(datetime.now(tz=UTC)))
         return None

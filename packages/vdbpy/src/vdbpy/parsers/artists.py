@@ -1,3 +1,5 @@
+from typing import Any
+
 from vdbpy.parsers.shared import parse_base_entry_version, parse_pictures
 from vdbpy.types.entry_versions import ArtistVersion
 from vdbpy.utils.date import parse_date
@@ -6,10 +8,10 @@ from vdbpy.utils.logger import get_logger
 logger = get_logger()
 
 
-def parse_artist_version(data: dict) -> ArtistVersion:
+def parse_artist_version(data: dict[Any, Any]) -> ArtistVersion:
     data, base_entry_version = parse_base_entry_version(data)
 
-    def parse_groups(data) -> dict[str, list[int]]:
+    def parse_groups(data: dict[Any, Any]) -> dict[str, list[int]]:
         group_link_types = [
             "CharacterDesigner",
             "Group",
@@ -17,15 +19,15 @@ def parse_artist_version(data: dict) -> ArtistVersion:
             "Manager",
             "VoiceProvider",
         ]
-        groups_by_link_type = {
+        group_ids_by_link_type: dict[str, list[int]] = {
             group_link_type: [] for group_link_type in group_link_types
         }
         for group in data["groups"]:
             link_type = group["linkType"]
             if link_type not in group_link_types:
                 logger.warning(f"Unknown link type '{link_type} for Ar/{data['id']}")
-            groups_by_link_type[link_type].append(group["id"])
-        return groups_by_link_type
+            group_ids_by_link_type[link_type].append(group["id"])
+        return group_ids_by_link_type
 
     groups_by_link_type = parse_groups(data)
     return ArtistVersion(

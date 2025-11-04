@@ -1,4 +1,9 @@
-from typing import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+from typing import Any
 
 from vdbpy.api.albums import get_albums_with_total_count
 from vdbpy.api.artists import get_artists_with_total_count
@@ -13,8 +18,10 @@ from vdbpy.api.venues import get_venues_with_total_count
 from vdbpy.types.core import EntryType
 
 
-def search_entry(name: str, entry_type: EntryType, max_results=3) -> str:
-    search_functions: dict[EntryType, tuple[Callable[..., tuple[list, int]], str]] = {
+def search_entry(name: str, entry_type: EntryType, max_results: int = 3) -> str:
+    search_functions: dict[
+        EntryType, tuple[Callable[..., tuple[list[Any], int]], str]
+    ] = {
         "Song": (get_songs_with_total_count, "RatingScore"),
         "Album": (get_albums_with_total_count, "CollectionCount"),
         "Artist": (get_artists_with_total_count, "FollowerCount"),
@@ -40,10 +47,7 @@ def search_entry(name: str, entry_type: EntryType, max_results=3) -> str:
     if not results:
         return f"No results found for '{name}'"
 
-    links = [
-        get_entry_link(entry_type, entry["id"])  # type: ignore
-        for entry in results[:max_results]  # type: ignore
-    ]
+    links = [get_entry_link(entry_type, entry["id"]) for entry in results[:max_results]]
 
     if len(links) == 1:
         return links[0]

@@ -1,3 +1,5 @@
+from typing import Any
+
 import requests
 
 from vdbpy.config import USER_API_URL
@@ -8,17 +10,23 @@ from vdbpy.utils.network import fetch_json, fetch_json_items
 
 logger = get_logger()
 
-type Notification = dict  # TODO
+type Notification = dict[Any, Any]  # TODO implement
 
 
 @cache_without_expiration()
-def get_cached_notification_by_id(session, notification_id: int) -> Notification:
+def get_cached_notification_by_id(
+    session: requests.Session, notification_id: int
+) -> Notification:
     notif_url = f"{USER_API_URL}/messages/{notification_id}"
     return fetch_json(notif_url, session=session)
 
 
 def get_messages_by_user_id(
-    session, user_id: int, include_sent=True, include_received=True, max_results=50
+    session: requests.Session,
+    user_id: int,
+    include_sent: bool = True,
+    include_received: bool = True,
+    max_results: int = 50,
 ) -> list[Notification]:
     notif_url = f"{USER_API_URL}/{user_id}/messages"
 
@@ -47,7 +55,10 @@ def get_messages_by_user_id(
 
 
 def get_notifications_by_user_id(
-    user_id: int, session, include_read=False, max_notifs=400
+    user_id: int,
+    session: requests.Session,
+    include_read: bool = False,
+    max_notifs: int = 400,
 ) -> list[Notification]:
     notif_url = f"{USER_API_URL}/{user_id}/messages"
     params = {

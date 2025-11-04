@@ -1,3 +1,5 @@
+from typing import Any
+
 from vdbpy.parsers.shared import (
     parse_artist_participation,
     parse_base_entry_version,
@@ -11,25 +13,23 @@ from vdbpy.types.entry_versions import (
 from vdbpy.utils.date import parse_date
 
 
-def parse_song_version(data: dict) -> SongVersion:
+def parse_song_version(data: dict[Any, Any]) -> SongVersion:
     data, base_entry_version = parse_base_entry_version(data)
 
-    def parse_lyrics(data) -> list[Lyrics]:
+    def parse_lyrics(data: dict[Any, Any]) -> list[Lyrics]:
         if "lyrics" not in data or not data["lyrics"]:
             return []
-        lyrics = []
-        for lyric in data["lyrics"]:
-            lyrics.append(
-                Lyrics(
-                    language_codes=lyric.get("cultureCodes", []),
-                    lyrics_id=lyric["id"],
-                    source=lyric.get("source", ""),
-                    translation_type=lyric["translationType"],
-                    url=lyric.get("url", ""),
-                    value=lyric.get("value", ""),
-                )
+        return [
+            Lyrics(
+                language_codes=lyric.get("cultureCodes", []),
+                lyrics_id=lyric["id"],
+                source=lyric.get("source", ""),
+                translation_type=lyric["translationType"],
+                url=lyric.get("url", ""),
+                value=lyric.get("value", ""),
             )
-        return lyrics
+            for lyric in data["lyrics"]
+        ]
 
     return SongVersion(
         artists=parse_artist_participation(data),

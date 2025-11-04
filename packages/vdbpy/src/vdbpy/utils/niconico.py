@@ -1,3 +1,4 @@
+from typing import Any
 from urllib import parse
 
 from vdbpy.utils.cache import cache_with_expiration
@@ -7,14 +8,16 @@ from vdbpy.utils.network import fetch_json, fetch_text
 logger = get_logger()
 
 
-def get_nico_videos_by_tag(tag: str, page=0, limit=0, min_views=0) -> list:
+def get_nico_videos_by_tag(
+    tag: str, page: int = 0, limit: int = 0, min_views: int = 0
+) -> list[Any]:
     nico_api = (
         "https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search"
     )
     page_size = 50
     fields = "title,contentId,viewCounter,tags"
 
-    all_videos = []
+    all_videos: list[Any] = []
 
     # docs https://site.nicovideo.jp/search-api-docs/snapshot
     while True:
@@ -46,7 +49,7 @@ def get_nico_videos_by_tag(tag: str, page=0, limit=0, min_views=0) -> list:
 
 
 @cache_with_expiration(days=1)
-def get_viewcount_1d(video_id: str, api_key="") -> int:  # noqa: ARG001
+def get_viewcount_1d(video_id: str, api_key: str = "") -> int:  # noqa: ARG001
     nicourl = "http://ext.nicovideo.jp/api/getthumbinfo/" + video_id
     data = fetch_text(nicourl)
 

@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Any
 
 from vdbpy.types.core import UserEdit
 from vdbpy.utils.date import get_last_month_strings, month_is_over
@@ -9,22 +10,24 @@ from vdbpy.utils.network import fetch_cached_totalcount
 logger = get_logger()
 
 
-def split_list(lst, max_length=50):
+def split_list[T](lst: list[T], max_length: int = 50) -> list[list[T]]:
     return [lst[i : i + max_length] for i in range(0, len(lst), max_length)]
 
 
-def truncate_string_with_ellipsis(s, max_length, ending="..."):
+def truncate_string_with_ellipsis(s: str, max_length: int, ending: str = "...") -> str:
     if len(s) > max_length:
         return s[:max_length] + ending
 
     return s
 
 
-def add_s(word):
+def add_s(word: str) -> str:
     return word if word.lower().endswith("s") else word + "s"
 
 
-def get_monthly_count(year: int, month: int, api_url: str, param_name="before") -> int:
+def get_monthly_count(
+    year: int, month: int, api_url: str, param_name: str = "before"
+) -> int:
     def get_edit_count_before(before_date: str) -> int:
         params = {param_name: before_date}
         return fetch_cached_totalcount(api_url, params=params)
@@ -35,7 +38,8 @@ def get_monthly_count(year: int, month: int, api_url: str, param_name="before") 
     logger.debug(f"Corresponding date strings: {a} - {b}")
 
     if not month_is_over(year, month):
-        raise ValueError(f"Month {month}.{year} is ongoing or in the future!")
+        msg = f"Month {month}.{year} is ongoing or in the future!"
+        raise ValueError(msg)
 
     return get_edit_count_before(b) - get_edit_count_before(a)
 
@@ -43,24 +47,24 @@ def get_monthly_count(year: int, month: int, api_url: str, param_name="before") 
 class UserEditJSONEncoder(json.JSONEncoder):
     """Custom JSON encoder for UserEdit objects."""
 
-    def default(self, obj):  # noqa: D102
-        if isinstance(obj, UserEdit):
+    def default(self, o: object):  # noqa: ANN201
+        if isinstance(o, UserEdit):
             return {
-                "user_id": obj.user_id,
-                "edit_date": obj.edit_date.isoformat(),
-                "entry_type": obj.entry_type,
-                "entry_id": obj.entry_id,
-                "version_id": obj.version_id,
-                "edit_event": obj.edit_event,
-                "changed_fields": obj.changed_fields,
-                "update_notes": obj.update_notes,
+                "user_id": o.user_id,
+                "edit_date": o.edit_date.isoformat(),
+                "entry_type": o.entry_type,
+                "entry_id": o.entry_id,
+                "version_id": o.version_id,
+                "edit_event": o.edit_event,
+                "changed_fields": o.changed_fields,
+                "update_notes": o.update_notes,
             }
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return super().default(o)
 
 
-def user_edit_from_dict(data: dict) -> UserEdit:
+def user_edit_from_dict(data: dict[Any, Any]) -> UserEdit:
     return UserEdit(
         user_id=data["user_id"],
         edit_date=datetime.fromisoformat(data["edit_date"]),

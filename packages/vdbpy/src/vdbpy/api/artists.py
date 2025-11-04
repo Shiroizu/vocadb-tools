@@ -1,3 +1,5 @@
+from typing import Any
+
 from vdbpy.config import ARTIST_API_URL, SONG_API_URL, USER_API_URL
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.network import (
@@ -7,25 +9,27 @@ from vdbpy.utils.network import (
     fetch_totalcount,
 )
 
-type Artist = dict  # TODO
+type Artist = dict[Any, Any]  # TODO implement
 
 
-def get_artists(params) -> list[Artist]:
+def get_artists(params: dict[Any, Any] | None) -> list[Artist]:
     return fetch_json_items(ARTIST_API_URL, params=params)
 
 
-def get_artist(params) -> Artist:
+def get_artist(params: dict[Any, Any] | None) -> Artist:
     result = fetch_json(ARTIST_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
 
 
-def get_artists_with_total_count(params, max_results=10**9) -> tuple[list[Artist], int]:
+def get_artists_with_total_count(
+    params: dict[Any, Any] | None, max_results: int = 10**9
+) -> tuple[list[Artist], int]:
     return fetch_json_items_with_total_count(
         ARTIST_API_URL, params=params, max_results=max_results
     )
 
 
-def get_artist_by_id(artist_id, fields="") -> Artist:
+def get_artist_by_id(artist_id: int, fields: str = "") -> Artist:
     params = {"fields": fields} if fields else {}
     url = f"{ARTIST_API_URL}/{artist_id}"
     return fetch_json(url, params=params)
@@ -38,22 +42,24 @@ def get_artists_by_tag_id(tag_id: int) -> list[Artist]:
 
 @cache_with_expiration(days=1)
 def get_song_count_by_artist_id_1d(
-    artist_id: int, only_main_songs=False, extra_params=None
+    artist_id: int,
+    only_main_songs: bool = False,
+    extra_params: dict[Any, Any] | None = None,
 ) -> int:
     params = extra_params if extra_params else {}
     params["artistId[]"] = artist_id
     if only_main_songs:
-        params["artistParticipationStatus"] = "OnlyMainAlbums"  # type: ignore
+        params["artistParticipationStatus"] = "OnlyMainAlbums"
     return fetch_totalcount(SONG_API_URL, params)
 
 
-def get_base_voicebank_by_artist_id(artist_id: int, recursive=True) -> Artist:
+def get_base_voicebank_by_artist_id(artist_id: int, recursive: bool = True) -> Artist:
     """Get base voicebank id if it exists. Return current id otherwise."""
     params = {"fields": "baseVoiceBank"}
     next_base_vb_id = artist_id
     while True:
         url = f"{ARTIST_API_URL}/{next_base_vb_id}"
-        next_base_vb = fetch_json(url, params=params)  # FIX
+        next_base_vb = fetch_json(url, params=params)  # TODO FIX
         if "baseVoicebank" in next_base_vb and recursive:
             next_base_vb_id = next_base_vb["baseVoicebank"]["id"]
             continue
@@ -61,12 +67,16 @@ def get_base_voicebank_by_artist_id(artist_id: int, recursive=True) -> Artist:
 
 
 @cache_without_expiration()
-def get_cached_base_voicebank_by_artist_id(artist_id: int, recursive=True) -> Artist:
+def get_cached_base_voicebank_by_artist_id(
+    artist_id: int, recursive: bool = True
+) -> Artist:
     return get_base_voicebank_by_artist_id(artist_id, recursive)
 
 
 @cache_with_expiration(days=7)
-def get_followed_artists_by_user_id_7d(user_id: int, extra_params=None) -> list[Artist]:
+def get_followed_artists_by_user_id_7d(
+    user_id: int, extra_params: dict[Any, Any] | None = None
+) -> list[Artist]:
     api_url = f"{USER_API_URL}/{user_id}/followedArtists"
     followed_artists = fetch_json_items(api_url, extra_params)
     if followed_artists:

@@ -1,3 +1,5 @@
+from typing import Any
+
 from vdbpy.api.entries import edit_event_map
 from vdbpy.types.core import EntryType, UserEdit
 from vdbpy.utils.date import parse_date
@@ -7,20 +9,17 @@ logger = get_logger()
 
 
 def parse_edits_from_archived_versions(
-    data: list[dict], entry_type: EntryType, entry_id: int
+    data: list[dict[Any, Any]], entry_type: EntryType, entry_id: int
 ) -> list[UserEdit]:
     parsed_edits: list[UserEdit] = []
     for edit_object in data:
         edit_type = edit_object["reason"]
+        debug_line = f" {entry_type} {entry_id} v{edit_object['id']}"
         if edit_type == "Merged":
-            logger.debug(
-                f"Merge detected while parsing data for {entry_type} {entry_id} v{edit_object['id']}"
-            )
+            logger.debug(f"Merge detected while parsing data for {debug_line}")
             edit_type = "Updated"
         elif edit_type not in edit_event_map:
-            logger.debug(
-                f"Unknown edit type '{edit_type}' for {entry_type} {entry_id} v{edit_object['id']}"
-            )
+            logger.debug(f"Unknown edit type '{edit_type}' for {debug_line}")
             edit_type = "Updated"
         else:
             edit_type = edit_event_map[edit_type]
@@ -39,11 +38,10 @@ def parse_edits_from_archived_versions(
     return parsed_edits
 
 
-def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:
+def parse_edits(edit_objects: list[dict[Any, Any]]) -> list[UserEdit]:
     logger.debug(f"Got {len(edit_objects)} edits to parse.")
     parsed_edits: list[UserEdit] = []
     for edit_object in edit_objects:
-        # logger.debug(f"Parsing edit object {edit_object}")
         entry_type = edit_object["entry"]["entryType"]
         entry_id = edit_object["entry"]["id"]
         if edit_object["editEvent"] == "Deleted":
@@ -77,6 +75,5 @@ def parse_edits(edit_objects: list[dict]) -> list[UserEdit]:
             changed_fields=edit_object["archivedVersion"]["changedFields"],
             update_notes=edit_object["archivedVersion"]["notes"],
         )
-        # logger.debug(f"Edit: {user_edit}")
         parsed_edits.append(user_edit)
     return parsed_edits

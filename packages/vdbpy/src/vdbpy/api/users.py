@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import get_args
+from typing import Any, get_args
 
 from vdbpy.config import ACTIVITY_API_URL, USER_API_URL, WEBSITE
 from vdbpy.types.core import EditType, EntryType, UserGroup
@@ -16,20 +16,22 @@ from vdbpy.utils.network import (
 
 logger = get_logger()
 
-type User = dict  # TODO
+type User = dict[Any, Any]  # TODO implement
 
 
-def get_users(params) -> list[User]:
+def get_users(params: dict[Any, Any] | None) -> list[User]:
     return fetch_json_items(USER_API_URL, params=params)
 
 
-def get_users_with_total_count(params, max_results=10**9) -> tuple[list[User], int]:
+def get_users_with_total_count(
+    params: dict[Any, Any] | None, max_results: int = 10**9
+) -> tuple[list[User], int]:
     return fetch_json_items_with_total_count(
         USER_API_URL, params=params, max_results=max_results
     )
 
 
-def get_user(params) -> User:
+def get_user(params: dict[Any, Any] | None) -> User:
     result = fetch_json(USER_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
 
@@ -38,7 +40,7 @@ def get_50_most_recent_users() -> list[User]:
     # Inverse sorting not supported for RegisterDate
     # 1) Get total count
     # 2) Query with start = total count - 50
-    params: dict = {"includeDisabled": True}
+    params: dict[Any, Any] = {"includeDisabled": True}
     total_count = fetch_totalcount(USER_API_URL, params=params)
     params["start"] = total_count - 50
     params["sort"] = "RegisterDate"
@@ -46,7 +48,7 @@ def get_50_most_recent_users() -> list[User]:
     return fetch_json(USER_API_URL, params=params)["items"][::-1]
 
 
-def get_username_by_id(user_id: int, include_usergroup=False) -> str:
+def get_username_by_id(user_id: int, include_usergroup: bool = False) -> str:
     user_api_url = f"{USER_API_URL}/{user_id}"
     data = fetch_json(user_api_url)
     if include_usergroup:
@@ -55,12 +57,12 @@ def get_username_by_id(user_id: int, include_usergroup=False) -> str:
 
 
 @cache_without_expiration()
-def get_cached_username_by_id(user_id: int, include_usergroup=False) -> str:
+def get_cached_username_by_id(user_id: int, include_usergroup: bool = False) -> str:
     return get_username_by_id(user_id, include_usergroup)
 
 
 @cache_with_expiration(days=1)
-def get_user_profile_by_username_1d(username: str) -> dict:  # TODO
+def get_user_profile_by_username_1d(username: str) -> dict[Any, Any]:  # TODO type
     """Get user profile data.
 
     # -- Mod cred data --
@@ -114,7 +116,7 @@ def get_user_profile_by_username_1d(username: str) -> dict:  # TODO
     return fetch_json(api_url)
 
 
-def get_user_profile_by_id(user_id: int) -> dict:  # TODO
+def get_user_profile_by_id(user_id: int) -> dict[Any, Any]:  # TODO type
     username = get_username_by_id(user_id)
     return get_user_profile_by_username_1d(username)
 
@@ -164,7 +166,9 @@ def find_cached_user_by_username(username: str) -> tuple[str, int]:
 
 
 @cache_with_expiration(days=1)
-def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
+def get_entry_matrix_by_user_id_1d(
+    user_id: int, since: str = "", before: str = ""
+) -> dict[EntryType, dict[EditType, int]]:
     # 1) Check the total counts of the most common entryType/editEvent combinations:
     # 2) Stop when total count reached to reduce the number of API calls
     #
@@ -174,13 +178,12 @@ def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
     # The API docs include three additional entryTypes: PV, DiscussionTopic, User
     # but these do not return anything
 
-    entry_matrix = {
-        entry_type: {edit_type: 0 for edit_type in get_args(EditType)}
+    entry_matrix: dict[EntryType, dict[EditType, int]] = {
+        entry_type: dict.fromkeys(get_args(EditType), 0)
         for entry_type in get_args(EntryType)
     }
-    # {'Song': {'Created': 0, 'Updated': 0, 'Deleted': 0}, ... 'ReleaseEventSeries': {'Created': 0, 'Updated': 0, 'Deleted': 0}}
 
-    params = {"maxResults": 1, "getTotalCount": True, "userId": user_id}
+    params: dict[Any, Any] = {"maxResults": 1, "getTotalCount": True, "userId": user_id}
 
     if since:
         params["since"] = since
@@ -191,7 +194,7 @@ def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
     total_count = fetch_json(ACTIVITY_API_URL, params=params)["totalCount"]
     logger.info(f"Total edits: {total_count}")
 
-    combinations = [  # Sorted by how common they are
+    combinations: list[tuple[EditType, EntryType]] = [  # Sorted by how common they are
         ("Updated", "Song"),
         ("Created", "Song"),
         ("Updated", "Artist"),
@@ -220,9 +223,9 @@ def get_entry_matrix_by_user_id_1d(user_id: int, since="", before=""):
         count = fetch_json(ACTIVITY_API_URL, params=params)["totalCount"]
         if count > 0:
             entry_matrix[entry_type][edit_type] = count
-            logger.info(
-                f"{entry_type}, {edit_type}: Total count is now {total_count} - {count} = {total_count - count}"
-            )
+            log_line = f"{entry_type}, {edit_type}: Total count is now "
+            log_line += f"{total_count} - {count} = {total_count - count}"
+            logger.info(log_line)
             total_count -= count
         logger.info((edit_type, entry_type, count))
 

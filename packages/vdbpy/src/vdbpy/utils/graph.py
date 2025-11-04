@@ -1,19 +1,20 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 import plotly.graph_objects as go
 
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("monthly_graph")
+logger = get_logger()
 
 
 def generate_date_graph(
     data: list[tuple[str, int]],
-    title="Graph",
-    x="Month",
-    y="Count",
-    date_format="%Y-%m",
-):
+    title: str = "Graph",
+    x: str = "Month",
+    y: str = "Count",
+    date_format: str = "%Y-%m",
+) -> None:
     dates, values = zip(*data)
 
     dates = [datetime.strptime(date, date_format) for date in dates]
@@ -36,10 +37,12 @@ def generate_date_graph(
     fig.show()
 
 
-def get_monthly_graph(count_function, title="Graph"):
+def get_monthly_graph(
+    count_function: Callable[[int, int], int], title: str = "Graph"
+) -> None:
     """Generate a monthly graph by a given count function."""
     current_date = datetime.now(UTC)
-    counts_by_month = []
+    counts_by_month: list[tuple[str, int]] = []
     current_year = current_date.year
     current_month = current_date.month
 

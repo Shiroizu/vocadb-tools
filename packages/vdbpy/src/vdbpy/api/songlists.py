@@ -1,4 +1,7 @@
 import time
+from typing import Any
+
+import requests
 
 from vdbpy.config import SONGLIST_API_URL, WEBSITE
 from vdbpy.types.core import SonglistCategory
@@ -10,22 +13,22 @@ from vdbpy.utils.network import (
     fetch_text,
 )
 
-type Songlist = dict  # TODO
+type Songlist = dict[Any, Any]  # TODO implement
 
 logger = get_logger()
 
 
-def get_featured_songlists(params) -> list[Songlist]:
+def get_featured_songlists(params: dict[Any, Any] | None) -> list[Songlist]:
     return fetch_json_items(SONGLIST_API_URL + "/featured", params=params)
 
 
-def get_featured_songlist(params) -> Songlist:
+def get_featured_songlist(params: dict[Any, Any] | None) -> Songlist:
     result = fetch_json(SONGLIST_API_URL + "/featured", params=params)
     return result["items"][0] if result["items"] else {}
 
 
 def get_featured_songlists_with_total_count(
-    params, max_results=10**9
+    params: dict[Any, Any] | None, max_results: int = 10**9
 ) -> tuple[list[Songlist], int]:
     return fetch_json_items_with_total_count(
         SONGLIST_API_URL + "/featured", params=params, max_results=max_results
@@ -33,13 +36,13 @@ def get_featured_songlists_with_total_count(
 
 
 def create_or_update_songlist(
-    session,
+    session: requests.Session,
     song_ids: list[int],
     author_id: int,
     notes: list[str] | None = None,
-    songlist_id=0,
-    title="",
-    description="",
+    songlist_id: int = 0,
+    title: str = "",
+    description: str = "",
     category: SonglistCategory = "Nothing",
 ) -> None:
     """Create or update a songlist.
@@ -47,7 +50,7 @@ def create_or_update_songlist(
     Specfify songlist_id for updating a list.
     Omit songlist_id to create a new list.
     """
-    data = {
+    data: dict[Any, Any] = {
         "songLinks": [],
         "author": {"id": author_id},
         "name": title,
@@ -63,7 +66,7 @@ def create_or_update_songlist(
     order = 1
     if notes is None:
         notes = [""] * len(song_ids)
-    for song_id, note in zip(song_ids, notes):
+    for song_id, note in zip(song_ids, notes, strict=True):
         songlist_line = {
             "order": order,
             "song": {"id": song_id},
@@ -84,9 +87,13 @@ def create_or_update_songlist(
 
 
 def create_songlists_with_size_limit(
-    session, song_ids: list[int], author_id, title="", max_length=200
+    session: requests.Session,
+    song_ids: list[int],
+    author_id: int,
+    title: str = "",
+    max_length: int = 200,
 ) -> None:
-    """Create songlists with a maximum size limit, splitting the songlist into sublists."""
+    """Create songlists by splitting the songlist into sublists."""
     if not title.strip():
         title = "Songlist"
     counter = 1
@@ -112,25 +119,23 @@ def create_songlists_with_size_limit(
 
 def export_songlist(songlist_id: int) -> list[str]:
     text = fetch_text(f"{WEBSITE}/SongList/Export/{songlist_id}").splitlines()
-    # notes;publishdate;title;url;pv.original.niconicodouga;pv.original.!niconicodouga;pv.reprint
+    # notes;publishdate;title;url;pv.original.niconicodouga;
+    # pv.original.!niconicodouga;pv.reprint
     table_without_header = text[1:]
     new_header = "songlist_notes;published;title;url;nico_pv;original_pv;reprint_pv"
     return [new_header, *table_without_header]
 
 
-def parse_csv_songlist(csv: list[str], delimiter=";") -> list[list[str]]:
+def parse_csv_songlist(csv: list[str], delimiter: str = ";") -> list[list[str]]:
     lines = [line.split(delimiter) for line in csv if line.strip()]
     logger.debug(f"Parsing csv of length {len(csv)}. First lines: {csv[:2]}")
     for line in lines[1:]:
         extra_length = len(line) - 7
         if extra_length:
-            # Title contains delimiter chars
-            # ['127 537 views', '1/26/2023', '"PLS (-__-', ')"', 'https://vocadb.net/S/471057', '', 'https://youtu.be/CMPfzVbEX4E', '']
             logger.debug("Exported CSV contains title with delimiter chars:")
             logger.debug(line)
             # Merge items starting from index 2:
             fixed_line = line[:2] + line[2 : 2 + extra_length] + line[-4:]
             logger.debug(f"Fixed line (len={len(fixed_line)}) is:")
-            assert len(fixed_line) == 7  # noqa: S101
             lines[lines.index(line)] = fixed_line
     return lines

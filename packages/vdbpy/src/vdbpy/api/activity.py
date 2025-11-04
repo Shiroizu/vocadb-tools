@@ -1,7 +1,7 @@
 import json
-import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from vdbpy.api.entries import get_versions_url, is_entry_deleted
 from vdbpy.api.users import find_user_by_username_1d
@@ -45,7 +45,7 @@ def get_edits_by_day(
     previous_edits: list[UserEdit] = []
     if save_dir:
         filename = save_dir / date_str / f"{PARTIAL_SLUG}.json"
-        if os.path.isfile(filename):
+        if Path.is_file(filename):
             logger.debug("Partial save file found.")
             partial_save = True
         else:
@@ -61,8 +61,9 @@ def get_edits_by_day(
 
             if previous_edits:
                 date = previous_edits[0].edit_date
+                prev_edit_date = f"{previous_edits[0].edit_date}"
                 logger.debug(
-                    f"The most recent saved edit from this date is '{previous_edits[0].edit_date}'"
+                    f"The most recent saved edit from this date is '{prev_edit_date}'"
                 )
             else:
                 logger.debug("No edits found for this date.")
@@ -102,7 +103,7 @@ def get_edits_by_day(
                 ),
             )
             if partial_save:
-                os.remove(f"{save_dir}/{date_str}{PARTIAL_SLUG}.json")
+                Path.unlink(save_dir / "date_str" / PARTIAL_SLUG / ".json")
         else:
             save_file(
                 f"{save_dir}/{date_str}{PARTIAL_SLUG}.json",
@@ -124,7 +125,7 @@ def get_edits_by_month(year: int, month: int, save_dir: Path) -> list[UserEdit]:
         year = today.year
         month = today.month
 
-    all_edits = []
+    all_edits: list[Any] = []
 
     date_counter = datetime(year, month, 1, tzinfo=UTC)
     while True:
@@ -178,22 +179,15 @@ def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit:
 
 
 def get_edits_by_entry(
-    entry_type: EntryType, entry_id: int, include_deleted=False
+    entry_type: EntryType, entry_id: int, include_deleted: bool = False
 ) -> list[UserEdit]:
     data = fetch_json(get_versions_url(entry_type, entry_id))
     if not include_deleted:
-        # print("Album", get_entry_versions("Album", 49682))
-        # print("Tag", get_entry_versions("Tag", 9363))
-        # print("ReleaseEvent", get_entry_versions("ReleaseEvent", 9785))
-        # print("ReleaseEventSeries", get_entry_versions("ReleaseEventSeries", 997))
         if entry_type in ["Album", "Tag", "ReleaseEvent", "ReleaseEventSeries"]:
             if is_entry_deleted(entry_type, entry_id):
                 logger.debug(f"{entry_type} {entry_id} has been deleted.")
                 return []
 
-        # print("Artist", get_entry_versions("Artist", 81663)) # works
-        # print("Song", get_entry_versions("Song", 1)) # works
-        # print("Venue", get_entry_versions("Venue", 418)) # works
         elif "deleted" in data["entry"] and data["entry"]["deleted"]:
             logger.debug(f"{entry_type} {entry_id} has been deleted.")
             return []
@@ -205,7 +199,7 @@ def get_edits_by_entry(
 
 @cache_without_expiration()
 def get_cached_edits_by_entry_before_version_id(
-    entry_type: EntryType, entry_id: int, version_id: int, include_deleted=False
+    entry_type: EntryType, entry_id: int, version_id: int, include_deleted: bool = False
 ) -> list[UserEdit]:
     edits = get_edits_by_entry(entry_type, entry_id, include_deleted)
     return [edit for edit in edits if edit.version_id <= version_id]

@@ -1,11 +1,13 @@
+from typing import Any
+
 from vdbpy.parsers.shared import parse_base_entry_version
 from vdbpy.types.entry_versions import TagRelation, TagVersion
 
 
-def parse_tag_version(data: dict) -> TagVersion:
+def parse_tag_version(data: dict[Any, Any]) -> TagVersion:
     data, base_entry_version = parse_base_entry_version(data)
 
-    def parse_tag_relation(data) -> TagRelation:
+    def parse_tag_relation(data: dict[Any, Any]) -> TagRelation:
         return TagRelation(
             tag_id=data["id"],
             name_hint=data["nameHint"],

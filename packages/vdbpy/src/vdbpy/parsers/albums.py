@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from vdbpy.parsers.shared import (
     parse_artist_participation,
@@ -10,40 +11,38 @@ from vdbpy.parsers.shared import (
 from vdbpy.types.entry_versions import AlbumTrack, AlbumVersion, Disc
 
 
-def parse_album_version(data: dict) -> AlbumVersion:
+def parse_album_version(data: dict[Any, Any]) -> AlbumVersion:
     data, base_entry_version = parse_base_entry_version(data)
 
-    def parse_discs(data) -> list[Disc]:
+    def parse_discs(data: dict[Any, Any]) -> list[Disc]:
         if "discs" not in data or not data["discs"]:
             return []
-        discs = []
-        for disc in data["discs"]:
-            discs.append(
-                Disc(
-                    disc_number=disc["discNumber"],
-                    disc_id=disc["id"],
-                    media_type=disc["mediaType"],
-                    name=disc["name"],
-                )
+        return [
+            Disc(
+                disc_number=disc["discNumber"],
+                disc_id=disc["id"],
+                media_type=disc["mediaType"],
+                name=disc["name"],
             )
-        return discs
+            for disc in data["discs"]
+        ]
 
-    def parse_album_tracks(data) -> list[AlbumTrack]:
+    def parse_album_tracks(data: dict[Any, Any]) -> list[AlbumTrack]:
         if "songs" not in data or not data["songs"]:
             return []
-        album_tracks = []
-        for album_track in data["songs"]:
-            album_tracks.append(
-                AlbumTrack(
-                    disc_number=album_track["discNumber"],
-                    track_number=album_track["trackNumber"],
-                    song_id=album_track["id"],
-                    name_hint=album_track["nameHint"],
-                )
+        return [
+            AlbumTrack(
+                disc_number=album_track["discNumber"],
+                track_number=album_track["trackNumber"],
+                song_id=album_track["id"],
+                name_hint=album_track["nameHint"],
             )
-        return album_tracks
+            for album_track in data["songs"]
+        ]
 
-    def parse_album_publish_date(data) -> tuple[datetime | None, int, int, int]:
+    def parse_album_publish_date(
+        data: dict[Any, Any],
+    ) -> tuple[datetime | None, int, int, int]:
         if (
             "originalRelease" not in data
             or "releaseDate" not in data["originalRelease"]

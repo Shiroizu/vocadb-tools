@@ -99,7 +99,7 @@ class PV:
     pv_service: Service
     pv_type: PvType
     publish_date: datetime | None
-    # thumbUrl: str
+    # skipped thumbUrl: str
 
 
 @dataclass

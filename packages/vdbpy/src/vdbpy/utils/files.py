@@ -1,6 +1,6 @@
-import os
 import sys
 from pathlib import Path
+from typing import Any
 
 from vdbpy.utils.console import get_credentials_from_console, prompt_choice
 from vdbpy.utils.logger import get_logger
@@ -8,37 +8,34 @@ from vdbpy.utils.logger import get_logger
 logger = get_logger()
 
 
-def verify_file(filename: str | Path) -> None:
+def verify_file(filename: str | Path) -> Path:
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)
-
-    if not os.path.isfile(filename):
-        logger.debug(f"File '{filename}' not found. Creating an empty file.")
-        with open(filename, "w") as f:
-            f.write("")
+    with Path.open(path, "w") as f:
+        f.write("")
+    return path
 
 
 def get_text(filename: str | Path) -> str:
-    """Safely read lines from a file. Create file and return an empty list if necessary."""
-    verify_file(filename)
-
+    """Safely read lines from a file. Create the missing path if necessary."""
     logger.debug(f"Fetching lines from file '{filename}'")
-    with open(filename, encoding="utf8") as f:
+    path = verify_file(filename)
+    with Path.open(path, encoding="utf8") as f:
         return f.read()
 
 
 def get_lines(filename: str | Path) -> list[str]:
-    """Safely read lines from a file. Create file and return an empty list if necessary."""
-    verify_file(filename)
+    """Safely read lines from a file. Create the missing path if necessary."""
+    path = verify_file(filename)
 
     logger.debug(f"Fetching lines from file '{filename}'")
-    with open(filename, encoding="utf8") as f:
+    with Path.open(path, encoding="utf8") as f:
         return f.read().splitlines()
 
 
 def get_credentials(
-    credentials_path: str | Path, account_name: str = "", get_all=False
-) -> dict | tuple[str, str]:
+    credentials_path: str | Path, account_name: str = "", get_all: bool = False
+) -> dict[str, str] | tuple[str, str]:
     """Load credentials from the credentials file.
 
     -------- file start
@@ -51,7 +48,7 @@ def get_credentials(
 
     Multiple credentials are separated by an empty line.
     """
-    credentials = {}
+    credentials: dict[str, str] = {}
 
     lines = get_lines(credentials_path)
     lines = [line.strip() for line in lines if line.strip()]
@@ -98,7 +95,7 @@ def get_credentials(
 
 def sanitize_filename(filename: str) -> str:
     chars_to_replace = '\\/:*?<>|"'
-    translation_table = str.maketrans({ch: "_" for ch in chars_to_replace})
+    translation_table = str.maketrans(dict.fromkeys(chars_to_replace, " "))
     sanitized = filename.translate(translation_table)
     if filename != sanitized:
         logger.info("Sanitized filename:")
@@ -107,7 +104,9 @@ def sanitize_filename(filename: str) -> str:
     return sanitized
 
 
-def save_file(filepath: str | Path, content: str | list, append=False) -> None:
+def save_file(
+    filepath: str | Path, content: str | list[Any], append: bool = False
+) -> None:
     """Safely writes content to a file, creating necessary directories."""
     path = Path(filepath)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,26 +125,32 @@ def save_file(filepath: str | Path, content: str | list, append=False) -> None:
     logger.debug(f"File saved: '{filepath}'")
 
 
-def clear_file(filepath: str | Path):
+def clear_file(filepath: str | Path) -> None:
     """Clear file if it exists."""
     save_file(filepath, "", append=False)
 
 
-def write_dict(filename: str | Path, data: dict, separator=":"):
+def write_dict(
+    filename: str | Path, data: dict[Any, Any], separator: str = ":"
+) -> None:
     """Write dict keys and values to a file."""
     lines = [f"{key}{separator}{value}" for key, value in data.items()]
     save_file(filename, lines)
 
 
 def replace_line_in_file(
-    filename: Path | str, old_line: str, new_line: str, count=1, startswith=False
-):
+    filename: Path | str,
+    old_line: str,
+    new_line: str,
+    count: int = 1,
+    startswith: bool = False,
+) -> None:
     logger.debug(f"Replacing line on file '{filename}'")
     logger.debug(f"Old line: {old_line}")
     logger.debug(f"New line: {new_line}")
     lines = get_lines(filename)
     counter = count
-    new_lines = []
+    new_lines: list[str] = []
     for line in lines:
         condition = line.startswith(old_line) if startswith else (line == old_line)
         if condition and counter > 0:
@@ -159,6 +164,6 @@ def replace_line_in_file(
 
 
 def remove_line_from_file(
-    filename: str | Path, line_to_remove: str, count=1, starswith=False
-):
+    filename: str | Path, line_to_remove: str, count: int = 1, starswith: bool = False
+) -> None:
     replace_line_in_file(filename, line_to_remove, "", count, starswith)

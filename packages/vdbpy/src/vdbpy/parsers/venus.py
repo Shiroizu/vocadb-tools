@@ -1,8 +1,10 @@
+from typing import Any
+
 from vdbpy.parsers.shared import parse_base_entry_version
 from vdbpy.types.entry_versions import VenueVersion
 
 
-def parse_venue_version(data: dict) -> VenueVersion:
+def parse_venue_version(data: dict[Any, Any]) -> VenueVersion:
     data, base_entry_version = parse_base_entry_version(data)
     autofilled_names = (
         data["translatedName"].values()
