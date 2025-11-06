@@ -11,7 +11,7 @@ from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 BASE_DELAY = 0.5
-BASE_TIMEOUT = 5
+BASE_TIMEOUT = 10
 
 
 def fetch_text(
