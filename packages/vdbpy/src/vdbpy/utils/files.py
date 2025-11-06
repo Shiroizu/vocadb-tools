@@ -11,8 +11,9 @@ logger = get_logger()
 def verify_file(filename: str | Path) -> Path:
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with Path.open(path, "w") as f:
-        f.write("")
+    if not path.exists():
+        with Path.open(path, "w") as f:
+            f.write("")
     return path
 
 
