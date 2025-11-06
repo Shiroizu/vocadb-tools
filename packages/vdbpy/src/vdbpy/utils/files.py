@@ -35,8 +35,8 @@ def get_lines(filename: str | Path) -> list[str]:
 
 
 def get_credentials(
-    credentials_path: str | Path, account_name: str = "", get_all: bool = False
-) -> dict[str, str] | tuple[str, str]:
+    credentials_path: str | Path, account_name: str = ""
+) -> tuple[str, str]:
     """Load credentials from the credentials file.
 
     -------- file start
@@ -63,9 +63,6 @@ def get_credentials(
         password = lines[i + 1]
         credentials[account] = password
 
-    if get_all:
-        return credentials
-
     if not credentials:
         logger.warning("Credentials not found")
         logger.warning(
@@ -83,8 +80,8 @@ def get_credentials(
         if account_name in credentials:
             return (account_name, credentials[account_name])
 
-        logger.warning(f"Credentials for '{account_name}' not found")
-        sys.exit(0)
+        msg = f"Credentials for '{account_name}' not found"
+        raise ValueError(msg)
 
     if len(credentials) == 1:
         acc, pw = next(iter(credentials.items()))
