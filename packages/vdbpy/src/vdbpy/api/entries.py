@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 from typing import Any, get_args
 
 import requests
@@ -26,8 +27,13 @@ from vdbpy.types.entry_versions import (
 )
 from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.data import add_s
+from vdbpy.utils.files import get_lines, save_file
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_cached_totalcount, fetch_json
+from vdbpy.utils.network import (
+    fetch_cached_totalcount,
+    fetch_json,
+    fetch_json_items_with_total_count,
+)
 
 logger = get_logger()
 
@@ -57,6 +63,13 @@ type EntryDetails = dict[Any, Any]  # TODO implement
 def get_entry_details(entry_type: EntryType, entry_id: int) -> EntryDetails:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/details"
     return fetch_json(url)
+
+
+def get_entry_tag_ids(entry_type: EntryType, entry_id: int) -> list[int]:
+    url = f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/"
+    params = {"fields": "Tags"}
+    tags = fetch_json(url, params=params)["tags"]
+    return [int(tag["tag"]["id"]) for tag in tags]
 
 
 def is_entry_deleted(entry_type: EntryType, entry_id: int) -> bool:
@@ -115,7 +128,6 @@ def get_cached_entry_version(  # noqa: PLR0911
         case _:
             msg = f"Unknown entry type {entry_type}"
             raise ValueError(msg)
-    return data["versions"]["firstData"]
 
 
 def get_cached_entry_count_by_entry_type(entry_type: EntryType) -> int:
@@ -190,3 +202,68 @@ def get_entry_from_link(entry_link: str) -> Entry:
     entry_type_slug, entry_id_str, *_ = link.split("/")
     entry_type = entry_url_to_type[entry_type_slug]
     return (entry_type, int(entry_id_str))
+
+
+def is_entry_tagged(entry: Entry, tag_id: int) -> bool:
+    return tag_id in get_entry_tag_ids(*entry)
+
+
+def read_entries_from_file(file: Path) -> set[Entry]:
+    entries: set[Entry] = set()
+    for line in get_lines(file):
+        if not line.strip():
+            continue
+        entry_type, entry_id = line.split(",")
+        if entry_type not in get_args(EntryType):
+            msg = f"Malformatted entry type {entry_type} in {file}"
+            raise ValueError(msg)
+        entries.add((entry_type, int(entry_id)))  # type: ignore
+    return entries
+
+
+def write_entries_to_file(
+    file: Path, entries: set[Entry], delimiter: str = ","
+) -> None:
+    # TODO convert exising files to this
+    lines_to_write = [
+        delimiter.join((entry_type, str(entry_id))) for entry_type, entry_id in entries
+    ]
+    save_file(file, lines_to_write)
+
+
+def get_saved_entry_search(
+    file: Path,
+    entry_type: EntryType,
+    search_url: str,
+    params: dict[Any, Any] | None = None,
+    recheck_mode: int = 2,
+) -> set[Entry]:
+    # Possible modes
+    # 1) if count changed, recheck and stop when already seen entry found
+    # 2) if count changed, recheck all (current)
+    # 3) always recheck even if previous count hasn't changed
+    # TODO implement 1 & 3
+
+    if recheck_mode != 2:  # noqa: PLR2004
+        raise NotImplementedError
+
+    previous_entries = read_entries_from_file(file)
+    _, total_count = fetch_json_items_with_total_count(
+        search_url, params=params, max_results=1
+    )
+    if len(previous_entries) == total_count:
+        logger.debug(
+            f"The number of entries to check has not changed ({len(previous_entries)})."
+        )
+        return previous_entries
+
+    logger.info("The number of entries to check has changed: ")
+    logger.info(f"({len(previous_entries)} -> {total_count}")
+
+    entries, _ = fetch_json_items_with_total_count(search_url, params=params)
+
+    # TODO detect entry type instead of passing it
+    entry_set: set[Entry] = {(entry_type, int(entry["id"])) for entry in entries}
+    write_entries_to_file(file, entry_set)
+
+    return entry_set

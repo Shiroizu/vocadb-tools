@@ -1,6 +1,6 @@
 [project]
 name = "vdbpy"
-version = "11.2.0"
+version = "11.3.0"
 description = "Base library for working with https://github.com/VocaDB/vocadb"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -17,7 +17,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D101", "D102", "D103", "COM812", "G004", "C901", "PLR0912", "PLR0913", "FBT001", "FBT002", "TRY003", "TD002", "TD003", "TD004", "FIX002", "S311", "ERA001"]
+ignore = ["D100", "D101", "D102", "D103", "COM812", "G004", "C901", "PLR0912", "PLR0913", "FBT001", "FBT002", "TRY003", "TD002", "TD003", "TD004", "FIX002", "S311", "ERA001", "PGH003"]
 
 [tool.pyright]
 typeCheckingMode = "strict"

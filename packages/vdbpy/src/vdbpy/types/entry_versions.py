@@ -213,7 +213,6 @@ class AlbumVersion(BaseEntryVersion):
     # Missing/unsupported fields:
     # - mainPicture
     # Skipped fields:
-    # - mainPictureMime
     # - releaseEvent (legacy), e.g. https://vocadb.net/api/albums/versions/204261
     album_type: AlbumType
     artists: list[ArtistParticipation]
@@ -221,6 +220,7 @@ class AlbumVersion(BaseEntryVersion):
     catalog_number: str  # part of originalRelease
     discs: list[Disc]
     additional_pictures: list[Picture]
+    picture_mime: str
     publish_date: datetime | None  # part of originalRelease
     publish_day: int
     publish_month: int
