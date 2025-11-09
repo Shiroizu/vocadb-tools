@@ -15,16 +15,18 @@ from vdbpy.parsers.series import (
 from vdbpy.parsers.songs import parse_song_version
 from vdbpy.parsers.tags import parse_tag_version
 from vdbpy.parsers.venus import parse_venue_version
-from vdbpy.types.core import EditType, Entry, EntryType
-from vdbpy.types.entry_versions import (
-    AlbumVersion,
-    ArtistVersion,
-    ReleaseEventSeriesVersion,
-    ReleaseEventVersion,
-    SongVersion,
-    TagVersion,
-    VenueVersion,
+from vdbpy.types.albums import AlbumVersion
+from vdbpy.types.artists import ArtistVersion
+from vdbpy.types.events import ReleaseEventVersion
+from vdbpy.types.series import ReleaseEventSeriesVersion
+from vdbpy.types.shared import (
+    EditType,
+    EntryTuple,
+    EntryType,
 )
+from vdbpy.types.songs import SongVersion
+from vdbpy.types.tags import TagVersion
+from vdbpy.types.venues import VenueVersion
 from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.data import add_s
 from vdbpy.utils.files import get_lines, save_file
@@ -130,6 +132,9 @@ def get_cached_entry_version(  # noqa: PLR0911
             raise ValueError(msg)
 
 
+# TODO get entry
+
+
 def get_cached_entry_count_by_entry_type(entry_type: EntryType) -> int:
     url = f"{WEBSITE}/api/{add_s(entry_type)}"
     return fetch_cached_totalcount(url)
@@ -191,7 +196,7 @@ def get_entry_link(entry_type: EntryType, entry_id: int) -> str:
     return f"{WEBSITE}/{entry_type_to_url[entry_type]}/{entry_id}"
 
 
-def get_entry_from_link(entry_link: str) -> Entry:
+def get_entry_from_link(entry_link: str) -> EntryTuple:
     # https://vocadb.net/S/83619
     # --> ("Song", 83619)
     link = entry_link.split(WEBSITE + "/")[1]
@@ -204,12 +209,12 @@ def get_entry_from_link(entry_link: str) -> Entry:
     return (entry_type, int(entry_id_str))
 
 
-def is_entry_tagged(entry: Entry, tag_id: int) -> bool:
+def is_entry_tagged(entry: EntryTuple, tag_id: int) -> bool:
     return tag_id in get_entry_tag_ids(*entry)
 
 
-def read_entries_from_file(file: Path) -> set[Entry]:
-    entries: set[Entry] = set()
+def read_entries_from_file(file: Path) -> set[EntryTuple]:
+    entries: set[EntryTuple] = set()
     for line in get_lines(file):
         if not line.strip():
             continue
@@ -222,7 +227,7 @@ def read_entries_from_file(file: Path) -> set[Entry]:
 
 
 def write_entries_to_file(
-    file: Path, entries: set[Entry], delimiter: str = ","
+    file: Path, entries: set[EntryTuple], delimiter: str = ","
 ) -> None:
     # TODO convert exising files to this
     lines_to_write = [
@@ -237,7 +242,7 @@ def get_saved_entry_search(
     search_url: str,
     params: dict[Any, Any] | None = None,
     recheck_mode: int = 2,
-) -> set[Entry]:
+) -> set[EntryTuple]:
     # Possible modes
     # 1) if count changed, recheck and stop when already seen entry found
     # 2) if count changed, recheck all (current)
@@ -263,7 +268,31 @@ def get_saved_entry_search(
     entries, _ = fetch_json_items_with_total_count(search_url, params=params)
 
     # TODO detect entry type instead of passing it
-    entry_set: set[Entry] = {(entry_type, int(entry["id"])) for entry in entries}
+    entry_set: set[EntryTuple] = {(entry_type, int(entry["id"])) for entry in entries}
     write_entries_to_file(file, entry_set)
 
     return entry_set
+
+
+"""
+@dataclass
+class BaseEntry:
+    id: int
+    name: str
+    create_date: datetime
+    default_name: str
+    default_name_language: DefaultLanguages
+    version: int
+    status: EntryStatus
+
+
+@dataclass
+class Song(BaseEntry):
+    artist_string: str
+    favorite_count: int
+    length_seconds: int
+    original_version_id: int
+    publish_date: datetime
+    pv_services: list[Service]
+    rating_score: int
+    song_type: SongType"""

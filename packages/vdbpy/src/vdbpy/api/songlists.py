@@ -4,7 +4,7 @@ from typing import Any
 import requests
 
 from vdbpy.config import SONGLIST_API_URL, WEBSITE
-from vdbpy.types.core import SonglistCategory
+from vdbpy.types.songlists import Songlist, SonglistCategory
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_json,
@@ -12,8 +12,6 @@ from vdbpy.utils.network import (
     fetch_json_items_with_total_count,
     fetch_text,
 )
-
-type Songlist = dict[Any, Any]  # TODO implement
 
 logger = get_logger()
 

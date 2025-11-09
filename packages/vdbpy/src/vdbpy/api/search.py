@@ -15,7 +15,7 @@ from vdbpy.api.songs import get_songs_with_total_count
 from vdbpy.api.tags import get_tags_with_total_count
 from vdbpy.api.users import get_users_with_total_count
 from vdbpy.api.venues import get_venues_with_total_count
-from vdbpy.types.core import EntryType
+from vdbpy.types.shared import EntryType
 
 
 def search_entry(name: str, entry_type: EntryType, max_results: int = 3) -> str:

@@ -1,6 +1,8 @@
+![Coverage](coverage-badge.svg)
+
 ## About
 
-Python library for working with https://github.com/VocaDB/vocadb
+Opinionated & type-safe Python wrapper library for working with https://github.com/VocaDB/vocadb API
 
 Used for:
 - https://github.com/Shiroizu/VocaDB-scripts
@@ -16,17 +18,11 @@ Upgrade to the most recent version with:
 
 - `uv add --upgrade git+https://github.com/Shiroizu/VDBpy`
 
-## Code
+## Conventions
 
 ### File structure
 
-Functions are separated by return type instead of the API endpoint:
-
-```py
-# api/songs
-def get_song_entries_by_songlist_id(songlist_id: int, params=None) -> list[Song]:
-    url = f"{SONGLIST_API_URL}/{songlist_id}/songs"
-```
+- Function file locations are determined based on the return type instead of the API endpoint
 
 ### Cache
 
@@ -43,12 +39,25 @@ def get_cached_username_by_id(user_id: int, include_usergroup=False) -> str:
 
 ## TODO
 
-- [x] Consistent cache usage
-- [x] Consolidate API URLS to `config.py`
-- [ ] Full types
-    - [ ] Simple entry data
-    - [ ] Simple entry data cached by version id
-    - [ ] Full entry data (fields=All)
-    - [ ] Entry details
-- [ ] Comprehensive unit tests & coverage badge
-- [ ] Remove redundant fetch_json calls
+TODO-count: 43
+
+- [ ] Type-safe entry versions
+    - [x] AlbumVersion
+    - [x] ArtistVersion
+    - [x] SongVersion
+    - [x] TagVersion
+    - [x] ReleaseEventVersion
+    - [x] ReleaseEventSeriesVersion
+    - [x] VenueVersion
+    - [ ] Full tests
+- [ ] Type safe entries
+    - [x] SongEntry (test progress 11/28)
+    - [ ] AlbumEntry
+    - [ ] ArtistEntry
+    - [ ] TagEntry
+    - [ ] ReleaseEventEntry
+    - [ ] ReleaseEventSeriesEntry
+    - [ ] VenueEntry
+    - [ ] UserEntry
+    - [ ] SongListEntry
+    - [ ] Full tests

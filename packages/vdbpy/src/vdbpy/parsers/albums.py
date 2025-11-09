@@ -2,17 +2,18 @@ from datetime import UTC, datetime
 from typing import Any
 
 from vdbpy.parsers.shared import (
-    parse_artist_participation,
     parse_base_entry_version,
-    parse_event_participations,
+    parse_event_ids,
     parse_pictures,
     parse_pvs,
+    parse_version_artist_participation,
 )
-from vdbpy.types.entry_versions import AlbumTrack, AlbumVersion, Disc
+from vdbpy.types.albums import Album, AlbumTrack, AlbumVersion, Disc
+from vdbpy.utils.date import parse_date
 
 
 def parse_album_version(data: dict[Any, Any]) -> AlbumVersion:
-    data, base_entry_version = parse_base_entry_version(data)
+    base_entry_version = parse_base_entry_version(data)
 
     def parse_discs(data: dict[Any, Any]) -> list[Disc]:
         if "discs" not in data or not data["discs"]:
@@ -62,7 +63,7 @@ def parse_album_version(data: dict[Any, Any]) -> AlbumVersion:
 
     return AlbumVersion(
         album_type=data["discType"],
-        artists=parse_artist_participation(data),
+        artists=parse_version_artist_participation(data),
         barcodes=[code["value"] for code in data["identifiers"]]
         if "identifiers" in data
         else [],
@@ -76,7 +77,31 @@ def parse_album_version(data: dict[Any, Any]) -> AlbumVersion:
         publish_month=month,
         publish_year=year,
         pvs=parse_pvs(data),  # 'publish_date': None, 'length': 0,
-        release_events=parse_event_participations(data),
+        release_event_ids=parse_event_ids(data),
         songs=parse_album_tracks(data),
         **base_entry_version.__dict__,
     )
+
+
+def parse_song_albums(data: dict[Any, Any]) -> list[Album]:
+    return [
+        Album(
+            additional_names=album.get("additionalNames", ""),
+            artist_string=album["artistString"],
+            cover_picture_mime=album.get("coverPictureMime", ""),
+            creation_date=parse_date(album["createDate"]),
+            deleted=album["deleted"],
+            album_type=album["discType"],
+            album_id=album["id"],
+            name=album["name"],
+            rating_average=album["ratingAverage"],
+            rating_count=album["ratingCount"],
+            release_year=album["releaseDate"].get("year", 0),
+            release_month=album["releaseDate"].get("month", 0),
+            release_day=album["releaseDate"].get("day", 0),
+            release_event_ids=parse_event_ids(album),
+            version_count=album["version"],
+            status=album["status"],
+        )
+        for album in data
+    ]

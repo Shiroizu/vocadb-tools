@@ -1,6 +1,6 @@
 import logging
-import os
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 
 def get_logger(
@@ -16,11 +16,9 @@ def get_logger(
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
-    logs_dir = "logs"
-    if not os.path.exists(logs_dir):
-        os.makedirs(logs_dir)
-
-    log_path = os.path.join(logs_dir, log_filename)
+    logs_dir = Path("logs")
+    log_path = logs_dir / log_filename
+    log_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Avoid duplicate handlers
     if not logger.handlers:

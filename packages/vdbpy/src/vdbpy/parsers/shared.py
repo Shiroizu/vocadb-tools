@@ -1,17 +1,18 @@
 from typing import Any
 
-from vdbpy.types.entry_versions import (
+from vdbpy.types.shared import (
     PV,
-    ArtistParticipation,
+    BaseEntry,
     BaseEntryVersion,
-    EventParticipation,
+    DefaultLanguage,
     ExternalLink,
     Picture,
+    VersionArtistParticipation,
 )
 from vdbpy.utils.date import parse_date
 
 
-def parse_names(data: dict[Any, Any]) -> tuple[str, str, str, list[str]]:
+def parse_version_names(data: dict[Any, Any]) -> tuple[str, str, str, list[str]]:
     name_non_english = ""
     name_romaji = ""
     name_english = ""
@@ -37,23 +38,44 @@ def parse_names(data: dict[Any, Any]) -> tuple[str, str, str, list[str]]:
     return name_non_english, name_romaji, name_english, aliases
 
 
-def parse_artist_participation(data: dict[Any, Any]) -> list[ArtistParticipation]:
-    if "artists" not in data or not data["artists"]:
-        return []
+def parse_names(data: dict[Any, Any]) -> tuple[dict[DefaultLanguage, str], list[str]]:
+    names: dict[DefaultLanguage, str] = {}
+    aliases: list[str] = []
+
+    for entry in data:
+        language = entry["language"]
+        value = entry["value"]
+        match language:
+            case "Japanese":
+                names["Non-English"] = value
+            case "Romaji":
+                names["Romaji"] = value
+            case "English":
+                names["English"] = value
+            case "Unspecified":
+                aliases.append(value)
+            case _:
+                msg = f"Unexpected language {language}"
+                raise ValueError(msg)
+
+    return names, aliases
+
+
+def parse_version_artist_participation(
+    data: dict[Any, Any],
+) -> list[VersionArtistParticipation]:
     return [
-        ArtistParticipation(
+        VersionArtistParticipation(
             is_supporting=artist_participation["isSupport"],
             artist_id=artist_participation["id"],
             roles=artist_participation["roles"].split(", "),
             name_hint=artist_participation["nameHint"],
         )
-        for artist_participation in data["artists"]
+        for artist_participation in data
     ]
 
 
 def parse_pvs(data: dict[Any, Any]) -> list[PV]:
-    if "pvs" not in data or not data["pvs"]:
-        return []
     return [
         PV(
             author=pv["author"],
@@ -65,22 +87,7 @@ def parse_pvs(data: dict[Any, Any]) -> list[PV]:
             pv_type=pv["pvType"],
             publish_date=parse_date(pv["publishDate"]) if "publishDate" in pv else None,
         )
-        for pv in data["pvs"]
-    ]
-
-
-def parse_event_participations(data: dict[Any, Any]) -> list[EventParticipation]:
-    if "originalRelease" not in data:
-        return []
-    data = data["originalRelease"]
-    if "releaseEvents" not in data or not data["releaseEvents"]:
-        return []
-    return [
-        EventParticipation(
-            event_id=event_participation["id"],
-            name_hint=event_participation["nameHint"],
-        )
-        for event_participation in data["releaseEvents"]
+        for pv in data
     ]
 
 
@@ -120,11 +127,11 @@ def parse_pictures(data: dict[Any, Any]) -> list[Picture]:
 
 def parse_base_entry_version(
     data: dict[Any, Any],
-) -> tuple[dict[Any, Any], BaseEntryVersion]:
+) -> BaseEntryVersion:
     entry_status = data["archivedVersion"]["status"]
     data = data["versions"]["firstData"]
 
-    name_non_english, name_romaji, name_english, aliases = parse_names(data)
+    name_non_english, name_romaji, name_english, aliases = parse_version_names(data)
     raw_dnm = (
         data["translatedName"]["defaultLanguage"]
         if "translatedName" in data
@@ -136,7 +143,7 @@ def parse_base_entry_version(
         data.get("notesEng", "") if "notes" in data else data.get("descriptionEng", "")
     )
 
-    return data, BaseEntryVersion(
+    return BaseEntryVersion(
         aliases=aliases,
         default_name_language=default_name_language,
         description=desc,
@@ -148,3 +155,32 @@ def parse_base_entry_version(
         name_romaji=name_romaji,
         status=entry_status,
     )
+
+
+def parse_base_entry(data: dict[Any, Any]) -> BaseEntry:
+    return BaseEntry(
+        id=data["id"],
+        create_date=parse_date(data["createDate"]),
+        default_name=data["defaultName"],
+        default_name_language="Non-English"
+        if data["defaultNameLanguage"] == "Japanese"
+        else data["defaultNameLanguage"],
+        version_count=data["version"],
+        status=data["status"],
+    )
+
+
+def parse_event_ids(data: dict[Any, Any]) -> list[int]:
+    event_ids: set[int] = set()
+    # https://vocadb.net/api/albums/versions/256441
+    # https://vocadb.net/api/albums/versions/158700
+
+    original_release = data.get("originalRelease", data)
+    release_event = original_release.get("releaseEvent", {})
+    if release_event:
+        event_ids.add(release_event["id"])
+    release_events = original_release.get("releaseEvents", [])
+    if release_events:
+        for event in release_events:
+            event_ids.add(event["id"])
+    return list(event_ids)

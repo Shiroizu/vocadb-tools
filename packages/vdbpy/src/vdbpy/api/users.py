@@ -2,7 +2,8 @@ from datetime import UTC, datetime
 from typing import Any, get_args
 
 from vdbpy.config import ACTIVITY_API_URL, USER_API_URL, WEBSITE
-from vdbpy.types.core import EditType, EntryType, UserGroup
+from vdbpy.types.shared import EditType, EntryType
+from vdbpy.types.users import User, UserGroup
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
@@ -15,8 +16,6 @@ from vdbpy.utils.network import (
 )
 
 logger = get_logger()
-
-type User = dict[Any, Any]  # TODO implement
 
 
 def get_users(params: dict[Any, Any] | None) -> list[User]:

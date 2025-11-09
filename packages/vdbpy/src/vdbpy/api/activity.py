@@ -7,7 +7,7 @@ from vdbpy.api.entries import get_versions_url, is_entry_deleted
 from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.parsers.edits import parse_edits, parse_edits_from_archived_versions
-from vdbpy.types.core import EntryType, UserEdit
+from vdbpy.types.shared import EntryType, UserEdit
 from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.data import (
     UserEditJSONEncoder,

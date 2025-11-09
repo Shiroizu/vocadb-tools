@@ -34,8 +34,7 @@ def get_messages_by_user_id(
         fetch_json_items(
             notif_url,
             session=session,
-            params={"inbox": "Received"},
-            max_results=max_results,
+            params={"inbox": "Received", "maxResults": max_results},
         )
         if include_received
         else []
@@ -44,8 +43,7 @@ def get_messages_by_user_id(
         fetch_json_items(
             notif_url,
             session=session,
-            params={"inbox": "Sent"},
-            max_results=max_results,
+            params={"inbox": "Sent", "maxResults": max_results},
         )
         if include_sent
         else []
@@ -64,10 +62,9 @@ def get_notifications_by_user_id(
     params = {
         "inbox": "Notifications",
         "unread": not include_read,
+        "maxResults": max_notifs,
     }
-    return fetch_json_items(
-        notif_url, session=session, params=params, max_results=max_notifs
-    )
+    return fetch_json_items(notif_url, session=session, params=params)
 
 
 def delete_notifications(

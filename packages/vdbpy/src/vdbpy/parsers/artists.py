@@ -1,7 +1,7 @@
 from typing import Any
 
 from vdbpy.parsers.shared import parse_base_entry_version, parse_pictures
-from vdbpy.types.entry_versions import ArtistVersion
+from vdbpy.types.artists import Artist, ArtistParticipation, ArtistVersion
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 
@@ -9,7 +9,7 @@ logger = get_logger()
 
 
 def parse_artist_version(data: dict[Any, Any]) -> ArtistVersion:
-    data, base_entry_version = parse_base_entry_version(data)
+    base_entry_version = parse_base_entry_version(data)
 
     def parse_groups(data: dict[Any, Any]) -> dict[str, list[int]]:
         group_link_types = [
@@ -44,3 +44,35 @@ def parse_artist_version(data: dict[Any, Any]) -> ArtistVersion:
         else None,
         **base_entry_version.__dict__,
     )
+
+
+def parse_artist(data: dict[Any, Any]) -> Artist:
+    return Artist(
+        additional_names=data.get("additionalNames", ""),
+        artist_type=data["artistType"],
+        deleted=data["deleted"],
+        artist_id=data["id"],
+        name=data["name"],
+        picture_mime=data.get("pictureMime", ""),
+        release_date=parse_date(data["releaseDate"]) if "releaseDate" in data else None,
+        version_count=data["version"],
+        status=data["status"],
+    )
+
+
+def parse_artist_participation(data: dict[Any, Any]) -> list[ArtistParticipation]:
+    # api/songs?fields=Artists
+    # TODO verify same structure for other entry types
+
+    return [
+        ArtistParticipation(
+            artist=parse_artist(artist["artist"]),
+            categories=artist["categories"].split(", "),
+            effective_roles=artist["effectiveRoles"],
+            participation_id=artist["id"],
+            name=artist["name"],
+            is_support=artist["isSupport"],
+            specified_roles=artist["roles"],
+        )
+        for artist in data
+    ]

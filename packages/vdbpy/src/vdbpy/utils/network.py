@@ -12,6 +12,11 @@ from vdbpy.utils.logger import get_logger
 logger = get_logger()
 BASE_DELAY = 0.5
 BASE_TIMEOUT = 10
+PAGE_SIZE = 50
+
+# TODO user agent
+# TODO max result warning
+# TODO Remove redundant fetch_json calls
 
 
 def fetch_text(
@@ -26,7 +31,7 @@ def fetch_text(
         else requests.get(url, params=params, timeout=BASE_TIMEOUT)
     )
     if params:
-        logger.debug(f"Parsed URL: '{r.url}'")
+        logger.debug(f"Parsed URL: {r.url}")
     r.raise_for_status()
     time.sleep(BASE_DELAY)
     if r.encoding == "ISO-8859-1":
@@ -38,9 +43,9 @@ def fetch_text(
 def fetch_json(
     url: str,
     session: requests.Session | None = None,
-    params: dict[Any, Any] | None = None,
+    params: dict[Any, Any] | tuple[Any, Any] | None = None,
 ) -> dict[Any, Any]:
-    logger.debug(f"Fetching JSON from url '{url}' with params {params}")
+    logger.debug(f"Fetching JSON from url {url} with params {params}")
 
     r = (
         session.get(url, params=params)
@@ -49,7 +54,7 @@ def fetch_json(
     )
 
     if params:
-        logger.debug(f"Parsed URL: '{r.url}'")
+        logger.info(f"Parsed URL: {r.url}")
     r.raise_for_status()
     time.sleep(BASE_DELAY)
     return r.json()
@@ -68,30 +73,28 @@ def fetch_json_items(
     url: str,
     params: dict[Any, Any] | None = None,
     session: requests.Session | None = None,
-    max_results: int = 10**9,
-    page_size: int = 50,
 ) -> list[Any]:
     params = params if params is not None else {}
-    logger.debug(f"Fetching all JSON items for url '{url}'")
+    logger.debug(f"Fetching all JSON items for url {url}")
     logger.debug(f"Params: {params}")
     if url == ACTIVITY_API_URL:
         logger.warning(f"Start param not supported for '{ACTIVITY_API_URL}'!")
         logger.warning("Use fetch_all_items_between_dates instead.")
     all_items: list[Any] = []
     page = 1
-    if "maxResults" in params and max_results == 10**9:
-        max_results = params["maxResults"]
 
-    params["maxResults"] = page_size
+    max_results = params.get("maxResults", 10**9)
+    params["maxResults"] = PAGE_SIZE
     params["getTotalCount"] = True
+
     while True:
-        params["start"] = str(page_size * (page - 1))
+        params["start"] = str(PAGE_SIZE * (page - 1))
         json = fetch_json(url, session=session, params=params)
         items = json["items"]
         totalcount = json["totalCount"]
         if not items:
             return all_items
-        logger.debug(f"Page {page}/{1 + (totalcount // page_size)}")
+        logger.debug(f"Page {page}/{1 + (totalcount // PAGE_SIZE)}")
         all_items.extend(items)
         if len(all_items) >= max_results:
             return all_items[:max_results]
@@ -100,13 +103,13 @@ def fetch_json_items(
 
 def fetch_json_items_with_total_count(
     url: str,
-    params: dict[Any, Any] | None = None,
+    params: dict[Any, Any] | None = None,  # TODO BaseSearchParams type
     session: requests.Session | None = None,
     max_results: int = 10**9,
     page_size: int = 50,
 ) -> tuple[list[Any], int]:
     params = params if params is not None else {}
-    logger.debug(f"Fetching all JSON items with total count for url '{url}'")
+    logger.debug(f"Fetching all items from url '{url}'")
     logger.debug(f"Params: {params}")
     if url == ACTIVITY_API_URL:
         logger.warning(f"Start param not supported for '{ACTIVITY_API_URL}'!")
@@ -123,7 +126,7 @@ def fetch_json_items_with_total_count(
 
         if not items:
             return all_items, totalcount
-        logger.info(f"Page {page}/{1 + (totalcount // page_size)}")
+        logger.info(f"  Page {page}/{1 + (totalcount // page_size)}")
         all_items.extend(items)
 
         if len(all_items) >= max_results:

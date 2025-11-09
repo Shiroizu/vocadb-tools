@@ -1,9 +1,9 @@
-from typing import Any, Literal
+from typing import Literal
 
 import requests
 
 from vdbpy.config import COMMENT_API_URL, WEBSITE
-from vdbpy.types.core import EntryType
+from vdbpy.types.shared import Comment, EntryType
 from vdbpy.utils.data import add_s, get_monthly_count
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
@@ -13,8 +13,6 @@ from vdbpy.utils.network import (
 )
 
 logger = get_logger()
-
-type Comment = dict[Any, Any]  # TODO implement
 
 
 def get_comments_by_user_id(user_id: int) -> list[Comment]:

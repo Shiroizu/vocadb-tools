@@ -2,12 +2,17 @@ import json
 from datetime import datetime
 from typing import Any
 
-from vdbpy.types.core import UserEdit
+from vdbpy.types.shared import UserEdit
 from vdbpy.utils.date import get_last_month_strings, month_is_over
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_cached_totalcount
 
 logger = get_logger()
+
+
+def to_camel_case(field: str) -> str:
+    parts = field.split("_")
+    return parts[0] + "".join(word.capitalize() for word in parts[1:])
 
 
 def split_list[T](lst: list[T], max_length: int = 50) -> list[list[T]]:

@@ -1,17 +1,15 @@
 from typing import Any
 
 from vdbpy.config import ALBUM_API_URL, USER_API_URL
+from vdbpy.types.albums import Album
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
-    fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
 )
 
 logger = get_logger()
-
-type Album = dict[Any, Any]  # TODO implement
 
 
 def get_albums(params: dict[Any, Any] | None) -> list[Album]:
@@ -24,17 +22,6 @@ def get_albums_with_total_count(
     return fetch_json_items_with_total_count(
         ALBUM_API_URL, params=params, max_results=max_results
     )
-
-
-def get_album(params: dict[Any, Any] | None) -> Album:
-    result = fetch_json(ALBUM_API_URL, params=params)
-    return result["items"][0] if result["items"] else {}
-
-
-def get_album_by_id(album_id: int, fields: str = "") -> Album:
-    params = {"fields": fields} if fields else {}
-    url = f"{ALBUM_API_URL}/{album_id}"
-    return fetch_json(url, params=params)
 
 
 def get_albums_by_tag_id(tag_id: int) -> list[Album]:

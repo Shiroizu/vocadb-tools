@@ -1,13 +1,12 @@
 from typing import Any
 
 from vdbpy.config import SERIES_API_URL
+from vdbpy.types.series import ReleaseEventSeriesEntry
 from vdbpy.utils.network import (
     fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
 )
-
-type ReleaseEventSeriesEntry = dict[Any, Any]  # TODO implement
 
 
 def get_many_series(params: dict[Any, Any] | None) -> list[ReleaseEventSeriesEntry]:
