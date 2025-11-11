@@ -35,6 +35,7 @@ from vdbpy.utils.network import (
     fetch_cached_total_count,
     fetch_json,
     fetch_json_items_with_total_count,
+    fetch_total_count,
 )
 
 logger = get_logger()
@@ -46,7 +47,7 @@ edit_event_map: dict[str, EditType] = {
     "Reverted": "Reverted",
     "Deleted": "Deleted",
     "Merged": "Updated",
-    "Restored": "Restored"
+    "Restored": "Restored",
 }
 
 entry_type_to_url: dict[EntryType, str] = {
@@ -251,13 +252,14 @@ def get_saved_entry_search(
     # 3) always recheck even if previous count hasn't changed
     # TODO implement 1 & 3
 
+    logger.debug(f"Fetching saved entry search with file '{file}',")
+    logger.debug(f"url {search_url} and params {params}")
+
     if recheck_mode != 2:  # noqa: PLR2004
         raise NotImplementedError
 
     previous_entries = read_entries_from_file(file)
-    _, total_count = fetch_json_items_with_total_count(
-        search_url, params=params, max_results=1
-    )
+    total_count = fetch_total_count(search_url, params=params)
     if len(previous_entries) == total_count:
         logger.debug(
             f"The number of entries to check has not changed ({len(previous_entries)})."

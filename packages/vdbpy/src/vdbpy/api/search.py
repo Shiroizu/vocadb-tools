@@ -17,6 +17,8 @@ from vdbpy.api.users import get_users_with_total_count
 from vdbpy.api.venues import get_venues_with_total_count
 from vdbpy.types.shared import EntryType
 
+# TODO save results by copypasting browser url
+
 
 def search_entry(name: str, entry_type: EntryType, max_results: int = 3) -> str:
     search_functions: dict[

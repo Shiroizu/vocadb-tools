@@ -39,7 +39,6 @@ def fetch_text(
     return r.text
 
 
-@cache_without_expiration() # cache for tests.py
 def fetch_json(
     url: str,
     session: requests.Session | None = None,
@@ -68,6 +67,7 @@ def fetch_cached_json(
 ) -> dict[Any, Any]:
     return fetch_json(url, session=session, params=params)
 
+
 def fetch_json_items_with_total_count(
     url: str,
     params: dict[Any, Any] | None = None,  # TODO BaseSearchParams type
@@ -75,9 +75,12 @@ def fetch_json_items_with_total_count(
     max_results: int = 10**9,
 ) -> tuple[list[Any], int]:
     page_size: int = 50
-    params = params if params is not None else {}
+    params = params.copy() if params is not None else {}
     logger.info(f"Fetching all items based on '{url}' with params {params}")
     if "maxResults" in params:
+        if max_results != 10**9:
+            logger.warning("Duplicate max result argument provided!")
+            logger.warning(f"({params['maxResults'] and max_results})")
         max_results = params["maxResults"]
         logger.info(f"  Stopping after {max_results} results")
     if url == ACTIVITY_API_URL:
@@ -86,7 +89,7 @@ def fetch_json_items_with_total_count(
         raise NotImplementedError
     all_items: list[Any] = []
     page = 1
-    params["maxResults"] = page_size
+    params["maxResults"] = min(page_size, max_results)
     params["getTotalCount"] = True
     warned = False
     while True:
@@ -122,7 +125,8 @@ def fetch_json_items(
 
 
 def fetch_total_count(api_url: str, params: dict[Any, Any] | None = None) -> int:
-    params = params if params is not None else {}
+    logger.debug(f"Fetching total count for '{api_url} with params {params}'")
+    params = params.copy() if params is not None else {}
     params["maxResults"] = 1
     params["getTotalCount"] = True
     total_count = fetch_json(api_url, params=params)["totalCount"]
@@ -137,7 +141,7 @@ def fetch_total_count_30d(api_url: str, params: dict[Any, Any] | None = None) ->
 
 
 def fetch_cached_total_count(api_url: str, params: dict[Any, Any] | None = None) -> int:
-    params = params if params is not None else {}
+    params = params.copy() if params is not None else {}
     params["maxResults"] = 1
     params["getTotalCount"] = True
     total_count = fetch_cached_json(api_url, params=params)["totalCount"]
@@ -153,7 +157,7 @@ def fetch_all_items_between_dates(
     page_size: int = 50,
 ) -> list[Any]:
     """Get all items by decreasing 'before' parameter incrementally."""
-    params = params if params is not None else {}
+    params = params.copy() if params is not None else {}
     params["maxResults"] = page_size
     params["before"] = before
     params["since"] = since

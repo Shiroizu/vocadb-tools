@@ -31,7 +31,7 @@ def cache_with_expiration(days: int = 1) -> Any:
                     return cache[key]  # type: ignore
             except (AttributeError, ModuleNotFoundError):
                 logger.warning(
-                    "Couldn't get 'key' from cache due to mismatching types."
+                    f"Couldn't get '{key}' from cache due to mismatching types."
                 )
 
             # Use original args/kwargs to call the function
@@ -59,7 +59,7 @@ def cache_without_expiration() -> Any:
                     return cache[key]  # type: ignore
             except (AttributeError, ModuleNotFoundError):
                 logger.warning(
-                    "Couldn't get 'key' from cache due to mismatching types."
+                    f"Couldn't get '{key}' from cache due to mismatching types."
                 )
 
             # Use original args/kwargs to call the function
@@ -87,17 +87,19 @@ def cache_conditionally(days: int = 1) -> Any:
                     return cache[key]  # type: ignore
             except (AttributeError, ModuleNotFoundError):
                 logger.warning(
-                    "Couldn't get 'key' from cache due to mismatching types."
+                    f"Couldn't get '{key}' from cache due to mismatching types."
                 )
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
 
             if not result:
+                logger.debug(f"Caching result '{result}' for {days} days")
                 expire_time = timedelta(days=days).total_seconds()
                 cache.set(key, result, expire=expire_time)  # type: ignore
             else:
                 # No expiration if result found
+                logger.debug(f"Caching result '{result}' indefinitely")
                 cache.set(key, result, expire=None)  # type: ignore
 
             return result

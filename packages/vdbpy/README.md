@@ -61,4 +61,5 @@ TODO-count: 44
     - [ ] VenueEntry
     - [ ] UserEntry
     - [ ] SongListEntry
+    - [ ] Add advanced search filters
     - [ ] Full tests
