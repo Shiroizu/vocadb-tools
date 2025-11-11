@@ -15,7 +15,7 @@ from vdbpy.parsers.shared import (
 from vdbpy.parsers.tags import parse_tag
 from vdbpy.types.songs import (
     Lyrics,
-    OptionalSongFieldNames,
+    OptionalSongFieldName,
     OptionalSongFields,
     SongEntry,
     SongVersion,
@@ -50,7 +50,7 @@ def parse_languages(data: dict[Any, Any]) -> list[str]:
 
 
 def parse_optional_song_fields(
-    data: dict[Any, Any], fields: set[OptionalSongFieldNames] | None = None
+    data: dict[Any, Any], fields: set[OptionalSongFieldName] | None = None
 ) -> OptionalSongFields:
     names = "Unknown"
     aliases = "Unknown"
@@ -93,7 +93,7 @@ def parse_optional_song_fields(
 
 
 def parse_song(
-    data: dict[Any, Any], fields: set[OptionalSongFieldNames] | None = None
+    data: dict[Any, Any], fields: set[OptionalSongFieldName] | None = None
 ) -> SongEntry:
     logger.debug(f"Parsing song: {data}")
     base_entry = parse_base_entry(data)

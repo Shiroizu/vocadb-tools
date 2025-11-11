@@ -48,7 +48,7 @@ type SongSortOption = Literal[
     "SongType",
 ]
 
-type OptionalSongFieldNames = Literal[
+type OptionalSongFieldName = Literal[
     "albums",
     "artists",
     "lyrics",

@@ -11,7 +11,7 @@ from vdbpy.types.shared import (
     Service,
 )
 from vdbpy.types.songs import (
-    OptionalSongFieldNames,
+    OptionalSongFieldName,
     SongEntry,
     SongSearchParams,
 )
@@ -29,7 +29,7 @@ logger = get_logger()
 
 
 def get_songs_with_total_count(
-    fields: set[OptionalSongFieldNames] | None = None,
+    fields: set[OptionalSongFieldName] | None = None,
     song_search_params: SongSearchParams | None = None,
 ) -> tuple[list[SongEntry], int]:
     params: dict[str, str | int | list[str]] = {}
@@ -87,14 +87,14 @@ def get_songs_with_total_count(
 
 
 def get_songs(
-    fields: set[OptionalSongFieldNames] | None = None,
+    fields: set[OptionalSongFieldName] | None = None,
     song_search_params: SongSearchParams | None = None,
 ) -> list[SongEntry]:
     return get_songs_with_total_count(fields, song_search_params)[0]
 
 
 def get_song_by_id(
-    song_id: int, fields: set[OptionalSongFieldNames] | None = None
+    song_id: int, fields: set[OptionalSongFieldName] | None = None
 ) -> SongEntry:
     url = f"{SONG_API_URL}/{song_id}"
     params = {"fields": ",".join(fields)} if fields else {}
@@ -103,18 +103,30 @@ def get_song_by_id(
 
 @cache_without_expiration()
 def get_cached_song_by_entry_id_and_version_id(
-    song_id: int, version_id: int, fields: set[OptionalSongFieldNames] | None = None
+    song_id: int, version_id: int, fields: set[OptionalSongFieldName] | None = None
 ) -> SongEntry:
     logger.debug(
         f"Fetching cached song by entry id {song_id} and version id {version_id}..."
     )
-    uncacheable_fields: set[OptionalSongFieldNames] = {"albums", "tags"}
+    uncacheable_fields: set[OptionalSongFieldName] = {"albums", "tags"}
     if fields:
         field_intersection = fields & uncacheable_fields
         if field_intersection:
             msg = f"Cannot fetch cached song including field {field_intersection}"
             raise ValueError(msg)
     return get_song_by_id(song_id, fields=fields)
+
+
+def get_song_by_pv(
+    pv_service: Service, pv_id: str, fields: set[OptionalSongFieldName] | None = None
+) -> SongEntry:
+    params = {
+        "pvService": pv_service,
+        "pvId": pv_id,
+    }
+    if fields:
+        params["fields"] = ",".join(fields)
+    return parse_song(fetch_json(f"{SONG_API_URL}/byPv", params=params), fields=fields)
 
 
 def get_tag_voters_by_song_id_and_tag_ids(
@@ -343,7 +355,7 @@ def get_song_entries_by_songlist_id(
 
 @cache_with_expiration(days=7)
 def get_rated_songs_by_user_id_7d(
-    user_id: int, fields: set[OptionalSongFieldNames] | None = None
+    user_id: int, fields: set[OptionalSongFieldName] | None = None
 ) -> list[SongEntry]:
     logger.info(f"Fetching rated songs for user id {user_id}")
     rated_songs = get_songs(

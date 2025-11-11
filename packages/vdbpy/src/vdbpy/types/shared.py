@@ -133,6 +133,7 @@ class BaseEntryVersion:
 @dataclass
 class BaseEntry:
     id: int
+    deleted: bool
     create_date: datetime
     default_name: str
     default_name_language: DefaultLanguage

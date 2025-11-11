@@ -160,6 +160,7 @@ def parse_base_entry_version(
 def parse_base_entry(data: dict[Any, Any]) -> BaseEntry:
     return BaseEntry(
         id=data["id"],
+        deleted=data.get("deleted", False),
         create_date=parse_date(data["createDate"]),
         default_name=data["defaultName"],
         default_name_language="Non-English"
