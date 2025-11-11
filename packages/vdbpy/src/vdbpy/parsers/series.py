@@ -7,15 +7,15 @@ from vdbpy.types.series import ReleaseEventSeriesVersion
 def parse_release_event_series_version(
     data: dict[Any, Any],
 ) -> ReleaseEventSeriesVersion:
-    base_entry_version = parse_base_entry_version(data)
+    version_data = data["versions"]["firstData"]
     autofilled_names = (
-        data["translatedName"].values()
-        if "names" not in data and "translatedName" in data
+        version_data["translatedName"].values()
+        if "names" not in version_data and "translatedName" in version_data
         else None
     )
 
     return ReleaseEventSeriesVersion(
         autofilled_names=autofilled_names,
-        event_category=data["category"],
-        **base_entry_version.__dict__,
+        event_category=version_data["category"],
+        **parse_base_entry_version(data).__dict__,
     )

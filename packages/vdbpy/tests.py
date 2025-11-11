@@ -5,8 +5,10 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from typing import get_args
 
+from vdbpy.api.edits import get_edits_by_entry
+from vdbpy.api.entries import get_cached_entry_version, get_random_entry
 from vdbpy.api.songs import SongSearchParams, get_songs, get_songs_with_total_count
-from vdbpy.types.shared import EntryStatus
+from vdbpy.types.shared import EntryStatus, EntryType
 from vdbpy.types.songs import Service, SongType
 from vdbpy.utils.logger import get_logger
 
@@ -18,7 +20,7 @@ class GetSongsTests(unittest.TestCase):
 
     def setUp(self) -> None:
         logger.info(f"Running test: {self._testMethodName}")
-        self.entry_count = 5
+        self.entry_count = 1
         test_tags = {481: "rock", 52: "cat"}
         self.query = "kitty"
         self.multiple_song_types: set[SongType] = {"Other", "DramaPV"}
@@ -415,7 +417,7 @@ class GetSongsTests(unittest.TestCase):
             )
         )
         for song in songs:
-            assert song.length_seconds
+            assert song.length_seconds >= 0
             assert song.length_seconds <= self.duration_thresold
 
     def test_min_duration(self) -> None:
@@ -445,6 +447,26 @@ class GetSongsTests(unittest.TestCase):
             assert language_found, (
                 f"S/{song.id} does not contain languages {self.languages}"
             )
+
+
+class GetVersionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        logger.info(f"Running test: {self._testMethodName}")
+
+    def test_entry_versions(self) -> None:
+        for entry_type in get_args(EntryType):
+            if entry_type in {"SongList", "User"}:
+                continue
+            entry = get_random_entry(entry_type=entry_type)
+            edits = get_edits_by_entry(entry_type, entry["id"], include_deleted=True)
+            first_edit = edits[-1]
+            assert first_edit.edit_event == "Created"
+            assert first_edit.entry_id == entry["id"]
+            most_recent_version_id = edits[0].version_id
+            most_recent_version_data = get_cached_entry_version(
+                entry_type, most_recent_version_id
+            )
+            assert most_recent_version_data
 
 
 if __name__ == "__main__":

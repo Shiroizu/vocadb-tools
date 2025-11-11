@@ -39,6 +39,7 @@ def fetch_text(
     return r.text
 
 
+@cache_without_expiration() # cache for tests.py
 def fetch_json(
     url: str,
     session: requests.Session | None = None,
@@ -66,7 +67,6 @@ def fetch_cached_json(
     params: dict[Any, Any] | None = None,
 ) -> dict[Any, Any]:
     return fetch_json(url, session=session, params=params)
-
 
 def fetch_json_items_with_total_count(
     url: str,

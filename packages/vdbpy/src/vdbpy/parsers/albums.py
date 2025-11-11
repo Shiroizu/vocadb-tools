@@ -12,74 +12,74 @@ from vdbpy.types.albums import Album, AlbumTrack, AlbumVersion, Disc
 from vdbpy.utils.date import parse_date
 
 
-def parse_album_version(data: dict[Any, Any]) -> AlbumVersion:
-    base_entry_version = parse_base_entry_version(data)
-
-    def parse_discs(data: dict[Any, Any]) -> list[Disc]:
-        if "discs" not in data or not data["discs"]:
-            return []
-        return [
-            Disc(
-                disc_number=disc["discNumber"],
-                disc_id=disc["id"],
-                media_type=disc["mediaType"],
-                name=disc["name"],
-            )
-            for disc in data["discs"]
-        ]
-
-    def parse_album_tracks(data: dict[Any, Any]) -> list[AlbumTrack]:
-        if "songs" not in data or not data["songs"]:
-            return []
-        return [
-            AlbumTrack(
-                disc_number=album_track["discNumber"],
-                track_number=album_track["trackNumber"],
-                song_id=album_track["id"],
-                name_hint=album_track["nameHint"],
-            )
-            for album_track in data["songs"]
-        ]
-
-    def parse_album_publish_date(
-        data: dict[Any, Any],
-    ) -> tuple[datetime | None, int, int, int]:
-        if (
-            "originalRelease" not in data
-            or "releaseDate" not in data["originalRelease"]
-        ):
-            return None, 0, 0, 0
-
-        data = data["originalRelease"]["releaseDate"]
-        year = data.get("year", 0)
-        month = data.get("month", 0)
-        day = data.get("day", 0)
-        publish_date = (
-            datetime(year, month, day, tzinfo=UTC) if year and month and day else None
+def parse_discs(data: dict[Any, Any]) -> list[Disc]:
+    return [
+        Disc(
+            disc_number=disc["discNumber"],
+            disc_id=disc["id"],
+            media_type=disc["mediaType"],
+            name=disc["name"],
         )
-        return publish_date, year, month, day
+        for disc in data
+    ]
 
-    publish_date, year, month, day = parse_album_publish_date(data)
 
+def parse_album_tracks(data: dict[Any, Any]) -> list[AlbumTrack]:
+    if "songs" not in data or not data["songs"]:
+        return []
+    return [
+        AlbumTrack(
+            disc_number=album_track["discNumber"],
+            track_number=album_track["trackNumber"],
+            song_id=album_track["id"],
+            name_hint=album_track["nameHint"],
+        )
+        for album_track in data["songs"]
+    ]
+
+
+def parse_album_publish_date(
+    data: dict[Any, Any],
+) -> tuple[datetime | None, int, int, int]:
+    if "originalRelease" not in data or "releaseDate" not in data["originalRelease"]:
+        return None, 0, 0, 0
+
+    data = data["originalRelease"]["releaseDate"]
+    year = data.get("year", 0)
+    month = data.get("month", 0)
+    day = data.get("day", 0)
+    publish_date = (
+        datetime(year, month, day, tzinfo=UTC) if year and month and day else None
+    )
+    return publish_date, year, month, day
+
+
+def parse_album_version(data: dict[Any, Any]) -> AlbumVersion:
+    # TODO key --> func mapping for version parsers
+    version_data = data["versions"]["firstData"]
+    publish_date, year, month, day = parse_album_publish_date(version_data)
     return AlbumVersion(
-        album_type=data["discType"],
-        artists=parse_version_artist_participation(data),
-        barcodes=[code["value"] for code in data["identifiers"]]
-        if "identifiers" in data
+        album_type=version_data["discType"],
+        artists=parse_version_artist_participation(version_data["artists"]),
+        barcodes=[code["value"] for code in version_data["identifiers"]]
+        if "identifiers" in version_data
         else [],
-        catalog_number=data["originalRelease"].get("catNum", "")
-        if "originalRelease" in data
+        catalog_number=version_data["originalRelease"].get("catNum", "")
+        if "originalRelease" in version_data
         else "",
-        discs=parse_discs(data),
-        additional_pictures=parse_pictures(data),
+        discs=parse_discs(version_data["discs"]) if "discs" in version_data else [],
+        additional_pictures=parse_pictures(version_data["pictures"])
+        if "pictures" in version_data
+        else [],
+        picture_mime=version_data.get("mainPictureMime", ""),
         publish_date=publish_date,
         publish_day=day,
         publish_month=month,
         publish_year=year,
-        pvs=parse_pvs(data),  # 'publish_date': None, 'length': 0,
-        release_event_ids=parse_event_ids(data),
-        songs=parse_album_tracks(data),
-        **base_entry_version.__dict__,
+        pvs=parse_pvs(version_data["pvs"]),  # 'publish_date': None, 'length': 0,
+        release_event_ids=parse_event_ids(version_data),
+        songs=parse_album_tracks(version_data),
+        **parse_base_entry_version(data).__dict__,
     )
 
 

@@ -39,7 +39,7 @@ def get_cached_username_by_id(user_id: int, include_usergroup=False) -> str:
 
 ## TODO
 
-TODO-count: 43
+TODO-count: 44
 
 - [ ] Type-safe entry versions
     - [x] AlbumVersion
@@ -49,6 +49,7 @@ TODO-count: 43
     - [x] ReleaseEventVersion
     - [x] ReleaseEventSeriesVersion
     - [x] VenueVersion
+    - [x] Simple tests
     - [ ] Full tests
 - [ ] Type safe entries
     - [x] SongEntry (test progress 27/27)

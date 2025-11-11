@@ -113,15 +113,13 @@ def parse_links(data: dict[Any, Any]) -> list[ExternalLink]:
 
 
 def parse_pictures(data: dict[Any, Any]) -> list[Picture]:
-    if "pictures" not in data or not data["pictures"]:
-        return []
     return [
         Picture(
             picture_id=picture["id"],
             mime=picture["mime"],
             name=picture["name"],
         )
-        for picture in data["pictures"]
+        for picture in data
     ]
 
 

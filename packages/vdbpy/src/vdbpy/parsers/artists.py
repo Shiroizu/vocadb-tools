@@ -8,41 +8,43 @@ from vdbpy.utils.logger import get_logger
 logger = get_logger()
 
 
+def parse_groups(data: dict[Any, Any]) -> dict[str, list[int]]:
+    group_link_types = [
+        "CharacterDesigner",
+        "Group",
+        "Illustrator",
+        "Manager",
+        "VoiceProvider",
+    ]
+    group_ids_by_link_type: dict[str, list[int]] = {
+        group_link_type: [] for group_link_type in group_link_types
+    }
+    for group in data["groups"]:
+        link_type = group["linkType"]
+        if link_type not in group_link_types:
+            logger.warning(f"Unknown link type '{link_type} for Ar/{data['id']}")
+        group_ids_by_link_type[link_type].append(group["id"])
+    return group_ids_by_link_type
+
+
 def parse_artist_version(data: dict[Any, Any]) -> ArtistVersion:
-    base_entry_version = parse_base_entry_version(data)
-
-    def parse_groups(data: dict[Any, Any]) -> dict[str, list[int]]:
-        group_link_types = [
-            "CharacterDesigner",
-            "Group",
-            "Illustrator",
-            "Manager",
-            "VoiceProvider",
-        ]
-        group_ids_by_link_type: dict[str, list[int]] = {
-            group_link_type: [] for group_link_type in group_link_types
-        }
-        for group in data["groups"]:
-            link_type = group["linkType"]
-            if link_type not in group_link_types:
-                logger.warning(f"Unknown link type '{link_type} for Ar/{data['id']}")
-            group_ids_by_link_type[link_type].append(group["id"])
-        return group_ids_by_link_type
-
-    groups_by_link_type = parse_groups(data)
+    version_data = data["versions"]["firstData"]
+    groups_by_link_type = parse_groups(version_data)
     return ArtistVersion(
-        additional_pictures=parse_pictures(data),
-        artist_type=data["artistType"],
+        additional_pictures=parse_pictures(version_data["pictures"]),
+        artist_type=version_data["artistType"],
         group_ids=groups_by_link_type["Group"],
-        vb_base_id=data["baseVoicebank"]["id"] if "baseVoicebank" in data else 0,
+        vb_base_id=version_data["baseVoicebank"]["id"]
+        if "baseVoicebank" in version_data
+        else 0,
         vb_chara_designer_ids=groups_by_link_type["CharacterDesigner"],
         vb_illustrator_ids=groups_by_link_type["Illustrator"],
         vb_manager_ids=groups_by_link_type["Manager"],
         vb_voice_provider_ids=groups_by_link_type["VoiceProvider"],
-        vb_release_date=parse_date(data["releaseDate"])
-        if "releaseDate" in data
+        vb_release_date=parse_date(version_data["releaseDate"])
+        if "releaseDate" in version_data
         else None,
-        **base_entry_version.__dict__,
+        **parse_base_entry_version(data).__dict__,
     )
 
 
