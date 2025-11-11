@@ -42,6 +42,7 @@ logger = get_logger()
 edit_event_map: dict[str, EditType] = {
     "PropertiesUpdated": "Updated",
     "Updated": "Updated",
+    "Reverted": "Reverted",
     "Merged": "Updated",
     "Deleted": "Deleted",
     "Created": "Created",

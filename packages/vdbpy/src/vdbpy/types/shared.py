@@ -30,7 +30,9 @@ EntryType = Literal[
 type EntryId = int
 type VersionId = int
 type EntryTuple = tuple[EntryType, EntryId]
-type EditType = Literal["Created", "Updated", "Deleted"]
+type EditType = Literal[
+    "Created", "Updated", "Deleted", "Reverted"
+]  # MergedTo, MergedFrom
 type EntryStatus = Literal["Draft", "Finished", "Approved", "Locked"]
 
 type ExternalLinkCategory = Literal["Official", "Commercial", "Reference", "Other"]
