@@ -84,8 +84,8 @@ class SongVersion(BaseEntryVersion):
     artists: list[VersionArtistParticipation]
     length_seconds: int
     lyrics: list[Lyrics]
-    max_milli_bpm: int
-    min_milli_bpm: int
+    max_milli_bpm: int | None
+    min_milli_bpm: int | None
     original_version_id: int
     publish_date: datetime | None
     pvs: list[PV]

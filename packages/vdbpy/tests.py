@@ -7,9 +7,14 @@ from typing import get_args
 
 from vdbpy.api.edits import get_edits_by_entry
 from vdbpy.api.entries import get_cached_entry_version, get_random_entry
-from vdbpy.api.songs import SongSearchParams, get_songs, get_songs_with_total_count
+from vdbpy.api.songs import (
+    SongSearchParams,
+    get_song_by_id,
+    get_songs,
+    get_songs_with_total_count,
+)
 from vdbpy.types.shared import EntryStatus, EntryType
-from vdbpy.types.songs import Service, SongType
+from vdbpy.types.songs import Service, SongType, SongVersion
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger("test-logger")
@@ -452,6 +457,7 @@ class GetSongsTests(unittest.TestCase):
 class GetVersionTests(unittest.TestCase):
     def setUp(self) -> None:
         logger.info(f"Running test: {self._testMethodName}")
+        self.song_id = 1501
 
     def test_entry_versions(self) -> None:
         for entry_type in get_args(EntryType):
@@ -468,6 +474,44 @@ class GetVersionTests(unittest.TestCase):
             )
             assert most_recent_version_data
 
+    def test_matching_entry_and_version(self) -> None:
+        edits = get_edits_by_entry("Song", self.song_id, include_deleted=True)
+        version_data = get_cached_entry_version("Song", edits[0].version_id)
+        assert isinstance(version_data, SongVersion)
+        entry_data = get_song_by_id(
+            self.song_id, fields={"pvs", "artists", "bpm", "lyrics"}
+        )
+
+        assert entry_data.length_seconds == version_data.length_seconds
+        assert entry_data.original_version_id == version_data.original_version_id
+        assert entry_data.publish_date == version_data.publish_date
+        assert entry_data.song_type == version_data.song_type
+
+        assert entry_data.pvs
+        assert entry_data.pvs != "Unknown"
+        assert {pv.pv_id for pv in entry_data.pvs} == {
+            pv.pv_id for pv in version_data.pvs
+        }
+
+        version_artist_ids = {artist.artist_id for artist in version_data.artists}
+        assert entry_data.artists != "Unknown"
+        entry_artist_ids = {
+            artist.entry.artist_id
+            for artist in entry_data.artists
+            if artist.entry != "Custom artist"
+        }
+        assert version_artist_ids == entry_artist_ids
+
+        assert entry_data.lyrics
+        assert entry_data.lyrics != "Unknown"
+        assert len(entry_data.lyrics) == len(version_data.lyrics)
+
+        assert entry_data.max_milli_bpm != "Unknown"
+        assert entry_data.min_milli_bpm != "Unknown"
+
+        assert version_data.max_milli_bpm == entry_data.max_milli_bpm
+        assert version_data.min_milli_bpm == entry_data.min_milli_bpm
+
 
 if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
@@ -475,3 +519,7 @@ if __name__ == "__main__":
         handler.setLevel(logging.DEBUG)
 
     unittest.main(failfast=True)
+
+    # Limit to certain tests only
+    # suite = unittest.TestLoader().loadTestsFromTestCase(GetVersionTests)
+    # unittest.TextTestRunner(verbosity=2, failfast=True).run(suite)

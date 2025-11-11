@@ -31,7 +31,9 @@ def parse_artist_version(data: dict[Any, Any]) -> ArtistVersion:
     version_data = data["versions"]["firstData"]
     groups_by_link_type = parse_groups(version_data)
     return ArtistVersion(
-        additional_pictures=parse_pictures(version_data["pictures"]),
+        additional_pictures=parse_pictures(version_data["pictures"])
+        if "pictures" in version_data
+        else [],
         artist_type=version_data["artistType"],
         group_ids=groups_by_link_type["Group"],
         vb_base_id=version_data["baseVoicebank"]["id"]

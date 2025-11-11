@@ -174,8 +174,8 @@ def parse_song_version(data: dict[Any, Any]) -> SongVersion:
         artists=parse_version_artist_participation(version_data["artists"]),
         length_seconds=version_data.get("lengthSeconds", 0),
         lyrics=parse_lyrics(version_data["lyrics"]),
-        max_milli_bpm=version_data.get("maxMilliBpm", 0),
-        min_milli_bpm=version_data.get("minMilliBpm", 0),
+        max_milli_bpm=version_data.get("maxMilliBpm", None),
+        min_milli_bpm=version_data.get("minMilliBpm", None),
         original_version_id=version_data["originalVersion"]["id"]
         if "originalVersion" in version_data
         else 0,

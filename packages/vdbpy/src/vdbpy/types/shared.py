@@ -31,7 +31,7 @@ type EntryId = int
 type VersionId = int
 type EntryTuple = tuple[EntryType, EntryId]
 type EditType = Literal[
-    "Created", "Updated", "Deleted", "Reverted"
+    "Created", "Updated", "Deleted", "Reverted", "Restored"
 ]  # MergedTo, MergedFrom
 type EntryStatus = Literal["Draft", "Finished", "Approved", "Locked"]
 
@@ -112,7 +112,7 @@ class PV:
     length: int
     name: str
     pv_id: str
-    pv_service: Service
+    pv_service: Service # TODO rename
     pv_type: PvType
     publish_date: datetime | None
     # skipped thumbUrl: str

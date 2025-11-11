@@ -50,7 +50,7 @@ TODO-count: 44
     - [x] ReleaseEventSeriesVersion
     - [x] VenueVersion
     - [x] Simple tests
-    - [ ] Full tests
+    - [x] Tests for matching entry & version data
 - [ ] Type safe entries
     - [x] SongEntry (test progress 27/27)
     - [ ] AlbumEntry

@@ -14,7 +14,7 @@ def parse_edits_from_archived_versions(
     parsed_edits: list[UserEdit] = []
     for edit_object in data:
         edit_type = edit_object["reason"]
-        debug_line = f" {entry_type} {entry_id} v{edit_object['id']}"
+        debug_line = f"{entry_type} {entry_id} v{edit_object['id']}"
         if edit_type == "Merged":
             logger.debug(f"Merge detected while parsing data for {debug_line}")
             edit_type = "Updated"

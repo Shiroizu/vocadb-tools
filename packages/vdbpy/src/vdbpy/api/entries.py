@@ -40,12 +40,13 @@ from vdbpy.utils.network import (
 logger = get_logger()
 
 edit_event_map: dict[str, EditType] = {
-    "PropertiesUpdated": "Updated",
-    "Updated": "Updated",
-    "Reverted": "Reverted",
-    "Merged": "Updated",
-    "Deleted": "Deleted",
     "Created": "Created",
+    "Updated": "Updated",
+    "PropertiesUpdated": "Updated",
+    "Reverted": "Reverted",
+    "Deleted": "Deleted",
+    "Merged": "Updated",
+    "Restored": "Restored"
 }
 
 entry_type_to_url: dict[EntryType, str] = {

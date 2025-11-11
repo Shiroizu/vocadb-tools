@@ -98,7 +98,7 @@ def get_song_by_id(
 ) -> SongEntry:
     url = f"{SONG_API_URL}/{song_id}"
     params = {"fields": ",".join(fields)} if fields else {}
-    return parse_song(fetch_json(url, params=params))
+    return parse_song(fetch_json(url, params=params), fields=fields)
 
 
 @cache_without_expiration()
