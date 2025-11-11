@@ -5,7 +5,7 @@ from typing import Any
 from vdbpy.types.shared import UserEdit
 from vdbpy.utils.date import get_last_month_strings, month_is_over
 from vdbpy.utils.logger import get_logger
-from vdbpy.utils.network import fetch_cached_totalcount
+from vdbpy.utils.network import fetch_cached_total_count
 
 logger = get_logger()
 
@@ -35,7 +35,7 @@ def get_monthly_count(
 ) -> int:
     def get_edit_count_before(before_date: str) -> int:
         params = {param_name: before_date}
-        return fetch_cached_totalcount(api_url, params=params)
+        return fetch_cached_total_count(api_url, params=params)
 
     logger.debug(f"Calculating monthly count for: {year}-{month}")
 

@@ -95,6 +95,7 @@ def parse_optional_song_fields(
 def parse_song(
     data: dict[Any, Any], fields: set[OptionalSongFieldNames] | None = None
 ) -> SongEntry:
+    logger.debug(f"Parsing song: {data}")
     base_entry = parse_base_entry(data)
     optional_song_fields = parse_optional_song_fields(data, fields)
     return SongEntry(

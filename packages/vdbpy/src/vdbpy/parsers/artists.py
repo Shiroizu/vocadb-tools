@@ -66,7 +66,9 @@ def parse_artist_participation(data: dict[Any, Any]) -> list[ArtistParticipation
 
     return [
         ArtistParticipation(
-            artist=parse_artist(artist["artist"]),
+            entry=parse_artist(artist["artist"])
+            if "artist" in artist
+            else "Custom artist",
             categories=artist["categories"].split(", "),
             effective_roles=artist["effectiveRoles"],
             participation_id=artist["id"],

@@ -32,7 +32,7 @@ from vdbpy.utils.data import add_s
 from vdbpy.utils.files import get_lines, save_file
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
-    fetch_cached_totalcount,
+    fetch_cached_total_count,
     fetch_json,
     fetch_json_items_with_total_count,
 )
@@ -137,7 +137,7 @@ def get_cached_entry_version(  # noqa: PLR0911
 
 def get_cached_entry_count_by_entry_type(entry_type: EntryType) -> int:
     url = f"{WEBSITE}/api/{add_s(entry_type)}"
-    return fetch_cached_totalcount(url)
+    return fetch_cached_total_count(url)
 
 
 def get_random_entry(

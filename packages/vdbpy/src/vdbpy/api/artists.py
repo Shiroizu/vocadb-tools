@@ -6,7 +6,7 @@ from vdbpy.utils.cache import cache_with_expiration  # , cache_without_expiratio
 from vdbpy.utils.network import (
     fetch_json_items,
     fetch_json_items_with_total_count,
-    fetch_totalcount,
+    fetch_total_count,
 )
 
 
@@ -37,7 +37,7 @@ def get_song_count_by_artist_id_1d(
     params["artistId[]"] = artist_id
     if only_main_songs:
         params["artistParticipationStatus"] = "OnlyMainAlbums"
-    return fetch_totalcount(SONG_API_URL, params)
+    return fetch_total_count(SONG_API_URL, params)
 
 
 # def get_base_voicebank_id_by_artist_id(artist_id: int, recursive: bool = True) ->

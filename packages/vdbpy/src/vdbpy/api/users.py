@@ -12,7 +12,7 @@ from vdbpy.utils.network import (
     fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
-    fetch_totalcount,
+    fetch_total_count,
 )
 
 logger = get_logger()
@@ -40,7 +40,7 @@ def get_50_most_recent_users() -> list[User]:
     # 1) Get total count
     # 2) Query with start = total count - 50
     params: dict[Any, Any] = {"includeDisabled": True}
-    total_count = fetch_totalcount(USER_API_URL, params=params)
+    total_count = fetch_total_count(USER_API_URL, params=params)
     params["start"] = total_count - 50
     params["sort"] = "RegisterDate"
     params["maxResults"] = 50

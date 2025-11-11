@@ -51,7 +51,7 @@ TODO-count: 43
     - [x] VenueVersion
     - [ ] Full tests
 - [ ] Type safe entries
-    - [x] SongEntry (test progress 11/28)
+    - [x] SongEntry (test progress 27/27)
     - [ ] AlbumEntry
     - [ ] ArtistEntry
     - [ ] TagEntry

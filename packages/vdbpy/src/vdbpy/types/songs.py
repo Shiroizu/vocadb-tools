@@ -183,9 +183,7 @@ class SongSearchParams:
             )
 
             if isinstance(value, set):
-                logger.info(f"Parsing set field values {value}")
                 value_str_list: list[str] = list(map(str, value))  # type: ignore
-                logger.info(f"Set string {value_str_list}")
                 if renamed_field_name.endswith("[]"):
                     if len(value_str_list) == 1:
                         params[renamed_field_name] = value_str_list[0]

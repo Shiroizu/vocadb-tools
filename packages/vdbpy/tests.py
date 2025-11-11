@@ -1,25 +1,42 @@
-# ruff: noqa: S101
+# ruff: noqa: S101, PLR2004
 
+import logging
 import unittest
 from datetime import UTC, datetime, timedelta
 from typing import get_args
 
-from vdbpy.api.songs import SongSearchParams, get_songs
+from vdbpy.api.songs import SongSearchParams, get_songs, get_songs_with_total_count
 from vdbpy.types.shared import EntryStatus
-from vdbpy.types.songs import SongType
+from vdbpy.types.songs import Service, SongType
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger("test-logger")
 
 
 class GetSongsTests(unittest.TestCase):
+    # TODO rewrite possibly drifting tests
+
     def setUp(self) -> None:
-        self.entry_count = 1
+        logger.info(f"Running test: {self._testMethodName}")
+        self.entry_count = 5
         test_tags = {481: "rock", 52: "cat"}
         self.query = "kitty"
+        self.multiple_song_types: set[SongType] = {"Other", "DramaPV"}
         self.cutoff = datetime(2025, 1, 1, tzinfo=UTC)
         self.tag_ids = set(test_tags.keys())
         self.tag_names = set(test_tags.values())
+        self.hours_more_recent_than = 24
+        self.parent_tag_id = 10311
+        self.child_tag_id = 11310
+        self.artist_ids = {1, 14}
+        self.artist_participation_id = 20
+        self.parent_vb_id = 1746
+        self.child_vb_id = 98816
+        self.group_id = 133928
+        self.original_version_id = 314061
+        self.milli_bpm_thresold = 50000
+        self.duration_thresold = 300
+        self.languages = {"fi", "es"}
 
     def test_name_query_search(self) -> None:
         songs = get_songs(
@@ -62,17 +79,16 @@ class GetSongsTests(unittest.TestCase):
                 )
 
     def test_multiple_song_types(self) -> None:
-        song_types: set[SongType] = {"Other", "DramaPV"}
         songs = get_songs(
             song_search_params=SongSearchParams(
-                song_types=song_types, max_results=self.entry_count
+                song_types=self.multiple_song_types, max_results=self.entry_count
             ),
         )
 
         for song in songs:
-            assert song.song_type in song_types, (
-                f"S/{song.id} has type {song.song_type} instead of {song_types}"
-            )
+            msg = f"S/{song.id} has type {song.song_type}"
+            msg += f" instead of any of {self.multiple_song_types}"
+            assert song.song_type in self.multiple_song_types, msg
 
     def test_published_after_date(self) -> None:
         songs = get_songs(
@@ -103,7 +119,8 @@ class GetSongsTests(unittest.TestCase):
         cutoff = today - timedelta(days=1)
         songs = get_songs(
             song_search_params=SongSearchParams(
-                hours_more_recent_than=24, max_results=self.entry_count
+                hours_more_recent_than=self.hours_more_recent_than,
+                max_results=self.entry_count,
             ),
         )
         for song in songs:
@@ -198,33 +215,241 @@ class GetSongsTests(unittest.TestCase):
             assert not tag_found, f"S/{song.id} contains excluded tags {self.tag_ids}"
 
     def test_include_child_tags(self) -> None:
-        # TODO implement
-        # for tag_id in self.tag_ids:
-        #     child_tags = get_child_tags(tag_id)
-        #     assert child_tags
-        pass
+        # can drift in the future
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                query="教えてメロディー",
+                tag_ids={self.parent_tag_id},
+                max_results=self.entry_count,
+                include_child_tags=True,
+            ),
+            fields={"tags"},
+        )
+        for song in songs:
+            assert song.tags != "Unknown"
+            tag_found = False
+            for tag in song.tags:
+                if tag.tag_id == self.child_tag_id:
+                    tag_found = True
+                    break
+            assert tag_found, (
+                f"S/{song.id} does not contain child tag id {self.child_tag_id}"
+            )
 
-    """
-    11 / 28
-    include_child_tags: bool = False  # ! childTags
-    unify_types_and_tags: bool = False
-    artist_ids: set[int] | None = None  # ! artistId[]
-    artist_participation_status: ArtistParticipationStatus | None = None
-    include_child_voicebanks: bool = False  # ! childVoicebanks
-    include_group_members: bool = False  # ! includeMembers
-    only_with_pvs: bool = False
-    pv_service: Service | None = None  # ! pvServices
-    min_score: int = 0
-    user_collection_id: int = 0
-    release_event_id: int = 0
-    original_version_id: int = 0  # ! parentSongId
-    min_bpm: int = 0  # ! minMilliBpm
-    max_bpm: int = 0  # ! maxMilliBpm
-    min_length: int = 0
-    max_length: int = 0
-    languages: set[str] | None = None  # ! language --> languages[]
-    """
+    def test_unify_song_types_and_tags(self) -> None:
+        # can drift in the future
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                query="Three-Eyed Cider",
+                song_types={"Cover"},
+                tag_ids={2997},
+                max_results=self.entry_count,
+                unify_types_and_tags=True,
+            ),
+            fields={"tags"},
+        )
+        for song in songs:
+            assert song.song_type != "Cover", (
+                f"S/{song.id} has type {song.song_type} instead of something else"
+            )
+
+    def test_artist_ids(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                artist_ids=self.artist_ids,
+                max_results=self.entry_count,
+            ),
+            fields={"artists"},
+        )
+        for song in songs:
+            assert song.artists != "Unknown"
+            found_artist_ids = {
+                artist.entry.artist_id
+                for artist in song.artists
+                if artist.entry != "Custom artist"
+            }
+            assert self.artist_ids.issubset(found_artist_ids)
+
+    def test_artist_participation_status(self) -> None:
+        # can drift in the future
+        _, all_songs_count = get_songs_with_total_count(
+            song_search_params=SongSearchParams(
+                artist_ids={self.artist_participation_id},
+                max_results=1,
+                artist_participation_status="Everything",
+            ),
+        )
+        _, collaboration_songs_count = get_songs_with_total_count(
+            song_search_params=SongSearchParams(
+                artist_ids={self.artist_participation_id},
+                max_results=1,
+                artist_participation_status="OnlyCollaborations",
+            ),
+        )
+        assert all_songs_count > collaboration_songs_count
+
+    def test_include_child_voicebanks(self) -> None:
+        # can drift in the future
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                query="あなたの墓場に恋をした",
+                artist_ids={self.parent_vb_id},
+                max_results=1,
+                include_child_voicebanks=True,
+            ),
+            fields={"artists"},
+        )
+        assert len(songs) == 1
+        assert songs[0].artists != "Unknown"
+        artist_ids = [
+            artist.entry.artist_id
+            for artist in songs[0].artists
+            if artist.entry != "Custom artist"
+        ]
+        assert self.child_vb_id in artist_ids
+
+    def test_include_group_members(self) -> None:
+        # can drift in the future
+        _, group_song_count = get_songs_with_total_count(
+            song_search_params=SongSearchParams(
+                artist_ids={self.group_id}, max_results=1
+            ),
+        )
+        _, group_member_song_count = get_songs_with_total_count(
+            song_search_params=SongSearchParams(
+                artist_ids={self.group_id}, max_results=1, include_group_members=True
+            ),
+        )
+        assert group_member_song_count > group_song_count
+
+    def test_only_with_pvs(self) -> None:
+        # can drift in the future
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                query="Shoveling", only_with_pvs=True, max_results=5
+            ),
+        )
+        assert len(songs) == 1
+
+    def test_pv_service(self) -> None:
+        for service in get_args(Service):
+            songs = get_songs(
+                song_search_params=SongSearchParams(
+                    pv_service=service, max_results=self.entry_count
+                ),
+                fields={"pvs"},
+            )
+            for song in songs:
+                service_pv_found = False
+                assert song.pvs != "Unknown"
+                for pv in song.pvs:
+                    if pv.pv_service == service:
+                        service_pv_found = True
+                assert service_pv_found, f"S/{song.id} does not contain {service}"
+
+    def test_min_score(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                min_score=100, max_results=self.entry_count
+            ),
+        )
+        for song in songs:
+            assert song.rating_score >= 100
+
+    def test_user_collection_id(self) -> None:
+        # can drift in the future
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                query="hello world", user_collection_id=329, max_results=5
+            ),
+        )
+        assert len(songs) == 4, "Expected 4 rated songs for user 329 with 'hello world'"
+
+    def test_release_event_id(self) -> None:
+        # can drift in the future
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                release_event_id=8281, query="midnight", max_results=5
+            ),
+        )
+        assert len(songs) == 1, "Expected 1 song for release event 8281 with 'midnight'"
+
+    def test_original_version_id(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                original_version_id=self.original_version_id,
+                max_results=self.entry_count,
+            ),
+        )
+        for song in songs:
+            assert song.original_version_id == self.original_version_id
+
+    def test_max_bpm(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                max_milli_bpm=self.milli_bpm_thresold, max_results=self.entry_count
+            ),
+            fields={"bpm"},
+        )
+        for song in songs:
+            assert song.max_milli_bpm != "Unknown"
+            assert song.max_milli_bpm
+            assert song.max_milli_bpm <= self.milli_bpm_thresold
+
+    def test_min_bpm(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                min_milli_bpm=self.milli_bpm_thresold, max_results=self.entry_count
+            ),
+            fields={"bpm"},
+        )
+        for song in songs:
+            assert song.min_milli_bpm != "Unknown"
+            assert song.min_milli_bpm
+            assert song.min_milli_bpm >= self.milli_bpm_thresold
+
+    def test_max_duration(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                max_length=self.duration_thresold, max_results=self.entry_count
+            )
+        )
+        for song in songs:
+            assert song.length_seconds
+            assert song.length_seconds <= self.duration_thresold
+
+    def test_min_duration(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                min_length=self.duration_thresold, max_results=self.entry_count
+            )
+        )
+        for song in songs:
+            assert song.length_seconds
+            assert song.length_seconds >= self.duration_thresold
+
+    def test_languages(self) -> None:
+        songs = get_songs(
+            song_search_params=SongSearchParams(
+                languages=self.languages, max_results=self.entry_count
+            ),
+            fields={"cultureCodes"},
+        )
+        for song in songs:
+            assert song.languages != "Unknown"
+            language_found = False
+            for language in song.languages:
+                if language in self.languages:
+                    language_found = True
+                    break
+            assert language_found, (
+                f"S/{song.id} does not contain languages {self.languages}"
+            )
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logger.setLevel(logging.DEBUG)
+    for handler in logger.handlers:
+        handler.setLevel(logging.DEBUG)
+
+    unittest.main(failfast=True)

@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 
-from vdbpy.config import SONG_API_URL, SONGLIST_API_URL, USER_API_URL
+from vdbpy.config import SONG_API_URL, SONGLIST_API_URL
 from vdbpy.parsers.songs import parse_song
 from vdbpy.types.shared import (
     Service,
@@ -19,33 +19,78 @@ from vdbpy.types.users import User
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
-    fetch_cached_totalcount,
     fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
+    fetch_total_count_30d,
 )
 
 logger = get_logger()
+
+
+def get_songs_with_total_count(
+    fields: set[OptionalSongFieldNames] | None = None,
+    song_search_params: SongSearchParams | None = None,
+) -> tuple[list[SongEntry], int]:
+    params: dict[str, str | int | list[str]] = {}
+
+    logger.debug("Fetching songs with total count:")
+    logger.debug(f"Got song search params {song_search_params}")
+    logger.debug(f"Got fields {fields}")
+
+    if fields:
+        params["fields"] = ",".join(fields)
+
+    if song_search_params:
+        # Verify search param usage
+        # TODO dry
+        if song_search_params.unify_types_and_tags and not song_search_params.tag_ids:
+            msg = "Search filter 'unify_types_and_tags'"
+            msg += " requires song type tags to be present."
+            raise ValueError(msg)
+        if (
+            song_search_params.artist_participation_status
+            and not song_search_params.artist_ids
+        ):
+            msg = "Search filter 'artist_participation_status'"
+            msg += " requires artist ids to be present."
+            raise ValueError(msg)
+        if (
+            song_search_params.include_child_voicebanks
+            and not song_search_params.artist_ids
+        ):
+            msg = "Search filter 'include_child_voicebanks'"
+            msg += " requires artist ids to be present."
+            raise ValueError(msg)
+        if song_search_params.include_child_tags and not song_search_params.tag_ids:
+            msg = "Search filter 'include_child_tags'"
+            msg += " requires tag ids to be present."
+            raise ValueError(msg)
+        if (
+            song_search_params.include_group_members
+            and not song_search_params.artist_ids
+        ):
+            msg = "Search filter 'include_group_members'"
+            msg += " requires artist ids to be present."
+            raise ValueError(msg)
+        params.update(song_search_params.to_url_params())
+
+    logger.debug(f"Query parameters: {params}")
+
+    songs_to_parse, total_count = fetch_json_items_with_total_count(
+        SONG_API_URL,
+        params=params,
+    )
+    logger.debug(f"Found {len(songs_to_parse)} songs to parse")
+
+    return [parse_song(song, fields) for song in songs_to_parse], total_count
 
 
 def get_songs(
     fields: set[OptionalSongFieldNames] | None = None,
     song_search_params: SongSearchParams | None = None,
 ) -> list[SongEntry]:
-    params: dict[str, str | int | list[str]] = {}
-
-    if fields:
-        params["fields"] = ",".join(fields)
-
-    if song_search_params and song_search_params.max_results == 0:
-        song_search_params.max_results = 1
-
-    if song_search_params:
-        params.update(song_search_params.to_url_params())
-
-    logger.info(f"Query parameters: {params}")
-    songs_to_parse = fetch_json_items(SONG_API_URL, params=params)
-    return [parse_song(song, fields) for song in songs_to_parse]
+    return get_songs_with_total_count(fields, song_search_params)[0]
 
 
 def get_song_by_id(
@@ -56,33 +101,26 @@ def get_song_by_id(
     return parse_song(fetch_json(url, params=params))
 
 
-def get_songs_with_total_count(
-    song_search_params: SongSearchParams | None = None,
-) -> tuple[list[SongEntry], int]:
-    songs, total_count = fetch_json_items_with_total_count(
-        SONG_API_URL,
-        params=song_search_params.to_url_params() if song_search_params else None,
+@cache_without_expiration()
+def get_cached_song_by_entry_id_and_version_id(
+    song_id: int, version_id: int, fields: set[OptionalSongFieldNames] | None = None
+) -> SongEntry:
+    logger.debug(
+        f"Fetching cached song by entry id {song_id} and version id {version_id}..."
     )
-    parsed_songs = [parse_song(song) for song in songs]
-    return parsed_songs, total_count
-
-
-def get_song_by_pv(pv_service: str, pv_id: str) -> dict[Any, Any]:
-    # switch to get_songs()
-    return fetch_json(
-        f"{SONG_API_URL}/byPv",
-        params={
-            "pvService": pv_service,
-            "fields": "ReleaseEvent",
-            "pvId": pv_id,
-        },
-    )
+    uncacheable_fields: set[OptionalSongFieldNames] = {"albums", "tags"}
+    if fields:
+        field_intersection = fields & uncacheable_fields
+        if field_intersection:
+            msg = f"Cannot fetch cached song including field {field_intersection}"
+            raise ValueError(msg)
+    return get_song_by_id(song_id, fields=fields)
 
 
 def get_tag_voters_by_song_id_and_tag_ids(
     song_id: int, tag_ids: list[int], session: requests.Session
 ) -> dict[int, list[User]]:
-    # TODO generic get tag voters
+    # TODO generic entry get tag voters
     url = f"{SONG_API_URL}/{song_id}/tagUsages"
     tag_votes: dict[int, list[Any]] = {}
     taggings = fetch_json(url, session=session)
@@ -93,15 +131,6 @@ def get_tag_voters_by_song_id_and_tag_ids(
         tag_id = tagging["tag"]["id"]
         if tag_id in tag_ids:
             tag_votes[tag_id] = tagging["votes"]
-        """{
-          "active": true,
-          "groupId": "Moderator",
-          "mainPicture": {...},
-          "memberSince": "2020-05-27T03:33:24.233",
-          "verifiedArtist": true,
-          "id": 14763,
-          "name": "Catgirl_Frostmoon"
-        }"""
     return tag_votes
 
 
@@ -112,7 +141,7 @@ def get_random_rated_song_id_by_user(user: tuple[str, int]) -> int:
         "onlyWithPVs": True,
         "maxResults": 1,
     }
-    total = fetch_cached_totalcount(SONG_API_URL, params=params)
+    total = fetch_total_count_30d(SONG_API_URL, params=params)
     if not total:
         logger.warning(f"No rated songs with PVs found for user {username} ({user_id})")
         return 0
@@ -122,13 +151,13 @@ def get_random_rated_song_id_by_user(user: tuple[str, int]) -> int:
     return fetch_json(SONG_API_URL, params=params)["items"][0]["id"]
 
 
-def get_related_songs_by_song_id(song_id: int) -> dict[Any, Any]:  # TODO type:
+def get_related_songs_by_song_id(song_id: int) -> dict[Any, Any]:
+    # TODO type:
     url = f"{SONG_API_URL}/{song_id}/related"
     return fetch_json(url)
 
 
-def get_random_related_song_by_song_id(song_id: int) -> int:
-    # switch to get_songs(), fix type (int -> SongEntry)
+def get_random_related_song_id_by_song_id(song_id: int) -> int:
     logger.debug(f"Fetching related songs for S/{song_id}")
     related_songs = get_related_songs_by_song_id(song_id)
     columns = ["artistMatches", "likeMatches", "tagMatches"]
@@ -144,7 +173,7 @@ def get_random_related_song_by_song_id(song_id: int) -> int:
 def get_random_song_id(song_search_params: SongSearchParams | None = None) -> int:
     params = song_search_params if song_search_params else SongSearchParams()
     params.max_results = 1
-    _, total = get_songs_with_total_count(params)
+    _, total = get_songs_with_total_count(song_search_params=params)
     random_start = random.randint(0, total - 1)
     logger.debug(f"Selecting random_start {random_start}")
     params.start = random_start
@@ -156,29 +185,13 @@ def get_song_rater_ids_by_song_id(
 ) -> list[int]:
     """Fetch the IDs of users who rated a song."""
     url = f"{SONG_API_URL}/{song_id}/ratings"
-    """
-    [
-    {
-        "date": "2015-07-09T14:07:23.91",
-        "user": {
-            "active": true,
-            "groupId": "Regular",
-            "memberSince": "2011-10-31T23:55:36",
-            "verifiedArtist": false,
-            "id": 45,
-            "name": "gaminat"
-        },
-        "rating": "Favorite"
-    }, ...
-    """
-
     raters = fetch_json(url, session=session) if session else fetch_json(url)
     rater_ids = [rater["user"]["id"] for rater in raters if "user" in rater]
     logger.debug(f"Found {len(rater_ids)} rater IDs for song {song_id}: {rater_ids}")
     return rater_ids
 
 
-# TODO fixd
+# TODO fix
 # def get_viewcounts_by_song_id_and_service(
 #     song_id: int,
 #     service: Service,
@@ -230,26 +243,22 @@ def get_relevant_user_ids_by_song_id(
 
 @cache_with_expiration(days=1)
 def get_most_rated_song_by_artist_id_1d(
-    artist_id: int, params: dict[Any, Any] | None = None
-) -> dict[Any, Any]:
-    # switch to get_songs()
-    params = {} if params is None else params
-    params["maxResults"] = 1
-    params["sort"] = "RatingScore"
-    params["artistId[]"] = artist_id
-    return fetch_json(SONG_API_URL, params=params)["items"][0]
+    artist_id: int,
+) -> SongEntry:
+    return get_songs(
+        song_search_params=SongSearchParams(
+            max_results=1, artist_ids={artist_id}, sort="RatingScore"
+        )
+    )[0]
 
 
 @cache_with_expiration(days=1)
-def get_most_recent_song_by_artist_id_1d(
-    artist_id: int, params: dict[Any, Any] | None = None
-) -> dict[Any, Any]:
-    # switch to get_songs()
-    params = {} if params is None else params
-    params["maxResults"] = 1
-    params["sort"] = "PublishDate"
-    params["artistId[]"] = artist_id
-    return fetch_json(SONG_API_URL, params=params)["items"][0]
+def get_most_recent_song_by_artist_id_1d(artist_id: int) -> SongEntry:
+    return get_songs(
+        song_search_params=SongSearchParams(
+            max_results=1, artist_ids={artist_id}, sort="PublishDate"
+        )
+    )[0]
 
 
 # ---------------------------------------------- #
@@ -326,7 +335,7 @@ def mark_pvs_unavailable_by_song_id(
 def get_song_entries_by_songlist_id(
     songlist_id: int, params: dict[Any, Any] | None = None
 ) -> list[dict[Any, Any]]:
-    # fix return type
+    # TODO fix return type
     params = {} if params is None else params
     url = f"{SONGLIST_API_URL}/{songlist_id}/songs"
     return fetch_json_items(url, params=params)
@@ -334,11 +343,14 @@ def get_song_entries_by_songlist_id(
 
 @cache_with_expiration(days=7)
 def get_rated_songs_by_user_id_7d(
-    user_id: int, extra_params: dict[Any, Any] | None = None
-) -> list[dict[Any, Any]]:
-    # TODO switch to get_songs
+    user_id: int, fields: set[OptionalSongFieldNames] | None = None
+) -> list[SongEntry]:
     logger.info(f"Fetching rated songs for user id {user_id}")
-    api_url = f"{USER_API_URL}/{user_id}/ratedSongs"
-    rated_songs = fetch_json_items(api_url, extra_params)
+    rated_songs = get_songs(
+        song_search_params=SongSearchParams(
+            user_collection_id=user_id,
+        ),
+        fields=fields,
+    )
     logger.info(f"Found total of {len(rated_songs)} rated songs.")
     return rated_songs

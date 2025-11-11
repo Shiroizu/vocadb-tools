@@ -5,18 +5,17 @@ from typing import Any
 import requests
 
 from vdbpy.config import ACTIVITY_API_URL
-from vdbpy.utils.cache import cache_without_expiration
+from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 BASE_DELAY = 0.5
-BASE_TIMEOUT = 10
+BASE_TIMEOUT = 20
 PAGE_SIZE = 50
+TOTAL_COUNT_WARNING = 5000
 
 # TODO user agent
-# TODO max result warning
-# TODO Remove redundant fetch_json calls
 
 
 def fetch_text(
@@ -35,7 +34,7 @@ def fetch_text(
     r.raise_for_status()
     time.sleep(BASE_DELAY)
     if r.encoding == "ISO-8859-1":
-        logger.info("Converting from ISO-8859-1 to UTF-8")
+        logger.debug("Converting from ISO-8859-1 to UTF-8")
         return r.text.encode("ISO-8859-1").decode("utf-8")
     return r.text
 
@@ -54,7 +53,7 @@ def fetch_json(
     )
 
     if params:
-        logger.info(f"Parsed URL: {r.url}")
+        logger.debug(f"Parsed URL: {r.url}")
     r.raise_for_status()
     time.sleep(BASE_DELAY)
     return r.json()
@@ -69,87 +68,80 @@ def fetch_cached_json(
     return fetch_json(url, session=session, params=params)
 
 
-def fetch_json_items(
-    url: str,
-    params: dict[Any, Any] | None = None,
-    session: requests.Session | None = None,
-) -> list[Any]:
-    params = params if params is not None else {}
-    logger.debug(f"Fetching all JSON items for url {url}")
-    logger.debug(f"Params: {params}")
-    if url == ACTIVITY_API_URL:
-        logger.warning(f"Start param not supported for '{ACTIVITY_API_URL}'!")
-        logger.warning("Use fetch_all_items_between_dates instead.")
-    all_items: list[Any] = []
-    page = 1
-
-    max_results = params.get("maxResults", 10**9)
-    params["maxResults"] = PAGE_SIZE
-    params["getTotalCount"] = True
-
-    while True:
-        params["start"] = str(PAGE_SIZE * (page - 1))
-        json = fetch_json(url, session=session, params=params)
-        items = json["items"]
-        totalcount = json["totalCount"]
-        if not items:
-            return all_items
-        logger.debug(f"Page {page}/{1 + (totalcount // PAGE_SIZE)}")
-        all_items.extend(items)
-        if len(all_items) >= max_results:
-            return all_items[:max_results]
-        page += 1
-
-
 def fetch_json_items_with_total_count(
     url: str,
     params: dict[Any, Any] | None = None,  # TODO BaseSearchParams type
     session: requests.Session | None = None,
     max_results: int = 10**9,
-    page_size: int = 50,
 ) -> tuple[list[Any], int]:
+    page_size: int = 50
     params = params if params is not None else {}
-    logger.debug(f"Fetching all items from url '{url}'")
-    logger.debug(f"Params: {params}")
+    logger.info(f"Fetching all items based on '{url}' with params {params}")
+    if "maxResults" in params:
+        max_results = params["maxResults"]
+        logger.info(f"  Stopping after {max_results} results")
     if url == ACTIVITY_API_URL:
         logger.warning(f"Start param not supported for '{ACTIVITY_API_URL}'!")
         logger.warning("Use fetch_all_items_between_dates instead.")
+        raise NotImplementedError
     all_items: list[Any] = []
     page = 1
     params["maxResults"] = page_size
     params["getTotalCount"] = True
+    warned = False
     while True:
         params["start"] = str(page_size * (page - 1))
         json = fetch_json(url, session=session, params=params)
         items = json["items"]
-        totalcount = json["totalCount"]
+        total_count = json["totalCount"]
 
-        if not items:
-            return all_items, totalcount
-        logger.info(f"  Page {page}/{1 + (totalcount // page_size)}")
+        if min(total_count, max_results) > TOTAL_COUNT_WARNING and not warned:
+            logger.warning(
+                f"Total count {total_count} is higher than {TOTAL_COUNT_WARNING}!"
+            )
+            _ = input("Press enter to continue...")
+            warned = True
+
         all_items.extend(items)
-
+        logger.info(f"  Page {page}/{1 + (total_count // page_size)}")
         if len(all_items) >= max_results:
-            return all_items[:max_results], totalcount
+            break
+        if len(items) < page_size:
+            break
         page += 1
+    return all_items[:max_results], total_count
 
 
-def fetch_totalcount(api_url: str, params: dict[Any, Any] | None = None) -> int:
+def fetch_json_items(
+    url: str,
+    params: dict[Any, Any] | None = None,
+    session: requests.Session | None = None,
+    max_results: int = 10**9,
+) -> list[Any]:
+    return fetch_json_items_with_total_count(url, params, session, max_results)[0]
+
+
+def fetch_total_count(api_url: str, params: dict[Any, Any] | None = None) -> int:
     params = params if params is not None else {}
     params["maxResults"] = 1
     params["getTotalCount"] = True
-    totalcount = fetch_json(api_url, params=params)["totalCount"]
-    if not totalcount:
+    total_count = fetch_json(api_url, params=params)["totalCount"]
+    if not total_count:
         return 0
-    return int(totalcount)
+    return int(total_count)
 
 
-def fetch_cached_totalcount(api_url: str, params: dict[Any, Any] | None = None) -> int:
+@cache_with_expiration(days=30)
+def fetch_total_count_30d(api_url: str, params: dict[Any, Any] | None = None) -> int:
+    return fetch_total_count(api_url, params=params)
+
+
+def fetch_cached_total_count(api_url: str, params: dict[Any, Any] | None = None) -> int:
     params = params if params is not None else {}
     params["maxResults"] = 1
     params["getTotalCount"] = True
-    totalcount = fetch_cached_json(api_url, params=params)["totalCount"]
-    return int(totalcount)
+    total_count = fetch_cached_json(api_url, params=params)["totalCount"]
+    return int(total_count)
 
 
 def fetch_all_items_between_dates(

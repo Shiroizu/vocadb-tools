@@ -128,7 +128,7 @@ class ArtistParticipation:
     "roles": "Default"
     """
 
-    artist: Artist
+    entry: Artist | Literal["Custom artist"]
     categories: list[ArtistRoleCategory]
     effective_roles: list[ArtistRole]
     participation_id: int
