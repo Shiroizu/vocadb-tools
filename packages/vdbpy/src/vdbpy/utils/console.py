@@ -4,6 +4,10 @@ from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
+TRUTHY_VALUES = ["true", "1", "t", "y", "yes"]
+FALSY_VALUES = ["false", "0", "f", "n", "no"]
+
+
 def get_credentials_from_console() -> tuple[str, str]:
     """Prompt the user for credentials."""
     logger.info("Please enter your credentials:")
@@ -15,6 +19,7 @@ def get_credentials_from_console() -> tuple[str, str]:
         return get_credentials_from_console()
 
     return account_name, password
+
 
 def prompt_choice(choices: list[str]) -> str:
     while True:
@@ -36,11 +41,27 @@ def prompt_choice(choices: list[str]) -> str:
 
 def get_boolean(prompt: str) -> bool:
     while True:
-        user_input = input(f"{prompt} (True/False): ").strip().lower()
+        user_input = input(f"{prompt} [y/n]: ").strip().lower()
 
-        if user_input in ["true", "1", "t", "y", "yes"]:
+        if user_input in TRUTHY_VALUES:
             return True
-        if user_input in ["false", "0", "f", "n", "no"]:
+        if user_input in FALSY_VALUES:
             return False
 
-        logger.info("Invalid input. Please enter a valid boolean value (True/False).")
+        logger.warning(f"Invalid input '{user_input}'.")
+        logger.warning("Please value from {truthy_values} / {falsy_values}.")
+
+
+def get_boolean_or_none(prompt: str) -> bool | None:
+    while True:
+        user_input = input(f"{prompt} [y/n]: ").strip().lower()
+
+        if user_input in TRUTHY_VALUES:
+            return True
+        if user_input in FALSY_VALUES:
+            return False
+        if user_input == "":
+            return None
+
+        logger.warning(f"Invalid input '{user_input}'.")
+        logger.warning("Please value from {truthy_values} / {falsy_values}.")
