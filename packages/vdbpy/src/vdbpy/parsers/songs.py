@@ -182,7 +182,7 @@ def parse_song_version(data: dict[Any, Any]) -> SongVersion:
         publish_date=parse_date(version_data["publishDate"])
         if "publishDate" in version_data
         else None,
-        pvs=parse_pvs(version_data["pvs"]),
+        pvs=parse_pvs(version_data["pvs"]) if "pvs" in version_data else [],
         release_event_ids=parse_event_ids(version_data),
         song_type=version_data["songType"],
         **parse_base_entry_version(data).__dict__,
