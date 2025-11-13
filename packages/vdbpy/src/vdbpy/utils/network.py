@@ -10,7 +10,7 @@ from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
-BASE_DELAY = 0.5
+BASE_DELAY = 1
 BASE_TIMEOUT = 20
 PAGE_SIZE = 50
 TOTAL_COUNT_WARNING = 5000
