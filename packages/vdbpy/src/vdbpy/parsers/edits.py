@@ -61,13 +61,11 @@ def parse_edits(edit_objects: list[dict[Any, Any]]) -> list[UserEdit]:
             continue
 
         utc_date = edit_object["createDate"]
-
-        edit_date = parse_date(utc_date)
         version_id = edit_object["archivedVersion"]["id"]
 
         user_edit = UserEdit(
             user_id=edit_object["archivedVersion"]["author"]["id"],
-            edit_date=edit_date,
+            edit_date=parse_date(utc_date),
             entry_type=edit_object["entry"]["entryType"],
             entry_id=edit_object["entry"]["id"],
             version_id=version_id,
@@ -75,5 +73,6 @@ def parse_edits(edit_objects: list[dict[Any, Any]]) -> list[UserEdit]:
             changed_fields=edit_object["archivedVersion"]["changedFields"],
             update_notes=edit_object["archivedVersion"]["notes"],
         )
+
         parsed_edits.append(user_edit)
     return parsed_edits

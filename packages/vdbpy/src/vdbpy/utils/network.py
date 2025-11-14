@@ -1,12 +1,11 @@
 import time
-from datetime import UTC, datetime
+from collections.abc import Callable
 from typing import Any
 
 import requests
 
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
-from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
@@ -154,7 +153,8 @@ def fetch_all_items_between_dates(
     before: str = "2100-01-01T00:00:00Z",
     date_indicator: str = "createDate",
     params: dict[Any, Any] | None = None,
-    page_size: int = 50,
+    page_size: int = PAGE_SIZE,
+    limit: int | Callable[..., bool] | None = None,
 ) -> list[Any]:
     """Get all items by decreasing 'before' parameter incrementally."""
     params = params.copy() if params is not None else {}
@@ -165,15 +165,9 @@ def fetch_all_items_between_dates(
     all_items: list[Any] = []
 
     logger.debug(f"Fetching all '{api_url}' items from '{since}' to '{before}'...")
-    now = datetime.now(tz=UTC)
 
     while True:
-        if parse_date(params["before"]) < now:
-            logger.debug("Fetching cached json since beforedate is in the past...")
-            items = fetch_cached_json(api_url, params=params)["items"]
-        else:
-            logger.debug("Skipping cache, date is still ongoing or in the future...")
-            items = fetch_json(api_url, params=params)["items"]
+        items = fetch_json(api_url, params=params)["items"]
         logger.debug(
             f"Fetching items from '{params['since']}' to '{params['before']}'..."
         )
@@ -182,13 +176,26 @@ def fetch_all_items_between_dates(
             logger.info("No items found, stopping.")
             break
 
-        all_items.extend(items)
-        logger.debug(f"Found {len(items)} items.")
+        limit_reached = False
+        for item in items:
+            if isinstance(limit, int) and len(all_items) >= limit:
+                logger.info(f"Limit {limit} reached, stopping.")
+                limit_reached = True
+                break
+            if callable(limit) and limit(item):
+                logger.info("Limit condition met, stopping.")
+                limit_reached = True
+                break
+            all_items.append(item)
 
-        if len(items) < page_size:
-            logger.debug(f"Less than {page_size} items, stopping.")
+        if limit_reached:
             break
 
+        if len(items) < PAGE_SIZE:
+            logger.debug(f"Less than {PAGE_SIZE} items, stopping.")
+            break
+
+        logger.debug(f"Found {len(items)} items.")
         params["before"] = items[-1][date_indicator]
 
     return all_items

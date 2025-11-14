@@ -3,9 +3,10 @@
 import logging
 import unittest
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import get_args
 
-from vdbpy.api.edits import get_edits_by_entry
+from vdbpy.api.edits import get_edits_by_day, get_edits_by_entry
 from vdbpy.api.entries import get_cached_entry_version, get_random_entry
 from vdbpy.api.songs import (
     SongSearchParams,
@@ -15,6 +16,7 @@ from vdbpy.api.songs import (
 )
 from vdbpy.types.shared import EntryStatus, EntryType
 from vdbpy.types.songs import Service, SongType, SongVersion
+from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger("test-logger")
@@ -513,6 +515,102 @@ class GetVersionTests(unittest.TestCase):
         assert version_data.min_milli_bpm == entry_data.min_milli_bpm
 
 
+class TestParseData(unittest.TestCase):
+    def test_parse_data(self) -> None:
+        assert (
+            str(parse_date("2025-09-29T04:32:04.89"))
+            == "2025-09-29 04:32:04.890000+00:00"
+        )
+        assert str(parse_date("2025-09-29T00:00:00Z")) == "2025-09-29 00:00:00+00:00"
+        assert str(parse_date("2025-09-28T12:47:09")) == "2025-09-28 12:47:09+00:00"
+        assert (
+            str(parse_date("2025-09-29T23:19:37.25Z"))
+            == "2025-09-29 23:19:37.250000+00:00"
+        )
+        assert (
+            str(parse_date("2025-09-28T12:46:59.327"))
+            == "2025-09-28 12:46:59.327000+00:00"
+        )
+        assert (
+            str(parse_date("2025-07-21T02:00:00+02:00")) == "2025-07-21 00:00:00+00:00"
+        )
+        assert str(parse_date("2025-07-21")) == "2025-07-21 00:00:00+00:00"
+
+
+class TestGetEditsByDay(unittest.TestCase):
+    def setUp(self) -> None:
+        logger.info(f"Running test: {self._testMethodName}")
+        self.EDITS_BY_DATE_SAVE_DIR = Path("edits_by_date")
+        _ye = datetime.now(UTC) - timedelta(days=1)
+        self.yesterday = datetime(
+            year=_ye.year, month=_ye.month, day=_ye.day, tzinfo=UTC
+        )
+
+    def test_future_edit(self) -> None:
+        future_edit = get_edits_by_day(
+            2100, 11, 11, limit=None, save_dir=self.EDITS_BY_DATE_SAVE_DIR
+        )
+        assert not future_edit
+
+    def test_yesterday_edits(self) -> None:
+        ten_edits_from_yesterday = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            limit=10,
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
+        )
+        assert len(ten_edits_from_yesterday) == 10
+
+        logger.debug("Fetching less than 10 edits from yesterday")
+        breakpoint_edit_index = 5
+        breakpoint_edit = (
+            ten_edits_from_yesterday[breakpoint_edit_index].entry_type,
+            ten_edits_from_yesterday[breakpoint_edit_index].entry_id,
+            ten_edits_from_yesterday[breakpoint_edit_index].version_id,
+        )
+        some_edits_from_yesterday = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            limit=breakpoint_edit,
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
+        )
+        assert len(some_edits_from_yesterday) == breakpoint_edit_index
+        logger.debug("Fetching last hour edits from yesterday")
+        last_hour_edits_from_yesterday = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            limit=self.yesterday + timedelta(hours=23),
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
+        )
+        logger.debug(
+            f"Found {len(last_hour_edits_from_yesterday)} edits from yesterday"
+        )
+        assert len(last_hour_edits_from_yesterday) > 10
+        for edit in last_hour_edits_from_yesterday:
+            assert edit.edit_date > self.yesterday + timedelta(hours=23)
+
+        logger.debug("Fetching last hour edits from yesterday with date limit")
+        mid_index = len(last_hour_edits_from_yesterday) // 2
+        last_hour_date_cutoff_test = last_hour_edits_from_yesterday[mid_index].edit_date
+        limited_last_hour_edits_from_yesterday = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            limit=last_hour_date_cutoff_test,
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
+        )
+        logger.debug(
+            f"Found {len(limited_last_hour_edits_from_yesterday)} edits from yesterday"
+        )
+        logger.debug(f"(since {last_hour_date_cutoff_test})")
+        assert len(limited_last_hour_edits_from_yesterday) < len(
+            last_hour_edits_from_yesterday
+        )
+
+
 if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     for handler in logger.handlers:
@@ -520,6 +618,6 @@ if __name__ == "__main__":
 
     unittest.main(failfast=True)
 
-    # Limit to certain tests only
-    # suite = unittest.TestLoader().loadTestsFromTestCase(GetVersionTests)
+    ## Limit to certain tests only
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsByDay)
     # unittest.TextTestRunner(verbosity=2, failfast=True).run(suite)

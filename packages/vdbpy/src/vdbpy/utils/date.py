@@ -11,26 +11,10 @@ def parse_date(
     date_format: str = "%Y-%m-%dT%H:%M:%S.%fZ",
     short_date_format: str = "%Y-%m-%d",
 ) -> datetime:
-    """Parse various date formats and return datetime with UTC timezone.
-
-    >>> parse_date("2025-09-29T04:32:04.89")
-    datetime.datetime(2025, 9, 29, 4, 32, 4, 890000, tzinfo=datetime.timezone.utc)
-    >>> parse_date("2025-09-29T00:00:00Z")
-    datetime.datetime(2025, 9, 29, 0, 0, tzinfo=datetime.timezone.utc)
-    >>> parse_date("2025-09-28T12:47:09")
-    datetime.datetime(2025, 9, 28, 12, 47, 9, tzinfo=datetime.timezone.utc)
-    >>> parse_date("2025-09-29T23:19:37.25Z")
-    datetime.datetime(2025, 9, 29, 23, 19, 37, 250000, tzinfo=datetime.timezone.utc)
-    >>> parse_date("2025-09-28T12:46:59.327")
-    datetime.datetime(2025, 9, 28, 12, 46, 59, 327000, tzinfo=datetime.timezone.utc)
-    >>> parse_date("2025-07-21T02:00:00+02:00")
-    datetime.datetime(2025, 7, 21, 0, 0, tzinfo=datetime.timezone.utc)
-    >>> parse_date("2025-07-21")
-    datetime.datetime(2025, 7, 21, 0, 0, tzinfo=datetime.timezone.utc)
-    """
+    """Parse various date formats and return datetime with UTC timezone."""
     if len(date_to_parse) == 10:  # noqa: PLR2004
         # 2024-06-02
-        return datetime.strptime(date_to_parse, short_date_format).astimezone(UTC)
+        return datetime.strptime(date_to_parse, short_date_format).replace(tzinfo=UTC)
 
     date_to_parse = date_to_parse.strip()
     date_to_parse = date_to_parse.replace(" ", "T")
@@ -42,35 +26,37 @@ def parse_date(
     if "+" in date_to_parse:
         # Positive offset: 2025-07-21T02:00:00+02:00
         date_to_parse, offset = date_to_parse.split("+")
-        offset_sign = -1  # Subtract to convert to UTC
+        offset_sign = 1
     elif date_to_parse.count("-") > 2:  # noqa: PLR2004
         # Negative offset: 2025-07-21T02:00:00-05:00
         parts = date_to_parse.rsplit("-", 1)
-        if ":" in parts[1]:  # Confirm it's a timezone offset
+        if ":" in parts[1]:
             date_to_parse, offset = parts
-            offset_sign = 1  # Add to convert to UTC
+            offset_sign = -1
 
-    if not date_to_parse.endswith("Z"):
-        date_to_parse += "Z"
+    has_z = date_to_parse.endswith("Z")
+    if has_z:
+        date_to_parse = date_to_parse[:-1]
 
     if date_to_parse.count("T") > 1:
         msg = f"Invalid date format: multiple 'T' separators in {date_to_parse}"
         raise ValueError(msg)
-    if date_to_parse.count("Z") > 1:
-        msg = f"Invalid date format: multiple 'Z' characters in {date_to_parse}"
-        raise ValueError(msg)
 
-    # Add microseconds field if missing
-    if "." not in date_to_parse and date_to_parse.endswith("Z"):
-        date_to_parse = date_to_parse.replace("Z", ".0Z")
+    if "." in date_to_parse:
+        date_part, microseconds = date_to_parse.rsplit(".", 1)
+        microseconds = microseconds.ljust(6, "0")
+        date_to_parse = f"{date_part}.{microseconds}"
+    else:
+        date_to_parse += ".0"
 
-    parsed = datetime.strptime(date_to_parse, date_format).astimezone(UTC)
+    date_to_parse += "Z"
+    parsed = datetime.strptime(date_to_parse, date_format).replace(tzinfo=UTC)
 
     if offset:
         hours = int(offset.split(":")[0])
         minutes = int(offset.split(":")[1]) if ":" in offset else 0
         offset_delta = timedelta(hours=hours, minutes=minutes)
-        parsed += offset_sign * offset_delta
+        parsed -= offset_sign * offset_delta
 
     return parsed
 

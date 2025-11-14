@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from vdbpy.types.shared import UserEdit
@@ -72,7 +72,7 @@ class UserEditJSONEncoder(json.JSONEncoder):
 def user_edit_from_dict(data: dict[Any, Any]) -> UserEdit:
     return UserEdit(
         user_id=data["user_id"],
-        edit_date=datetime.fromisoformat(data["edit_date"]),
+        edit_date=datetime.fromisoformat(data["edit_date"]).astimezone(UTC),
         entry_type=data["entry_type"],
         entry_id=data["entry_id"],
         version_id=data["version_id"],

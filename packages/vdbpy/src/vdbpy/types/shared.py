@@ -30,6 +30,8 @@ EntryType = Literal[
 type EntryId = int
 type VersionId = int
 type EntryTuple = tuple[EntryType, EntryId]
+type VersionTuple = tuple[EntryType, EntryId, VersionId]
+
 type EditType = Literal[
     "Created", "Updated", "Deleted", "Reverted", "Restored"
 ]  # MergedTo, MergedFrom
