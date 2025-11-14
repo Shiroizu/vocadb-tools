@@ -6,7 +6,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import get_args
 
-from vdbpy.api.edits import get_edits_by_day, get_edits_by_entry
+from vdbpy.api.edits import (
+    get_edits_by_day,
+    get_edits_by_entry,
+    get_edits_by_month,
+    get_edits_until_day,
+)
 from vdbpy.api.entries import get_cached_entry_version, get_random_entry
 from vdbpy.api.songs import (
     SongSearchParams,
@@ -317,19 +322,20 @@ class GetSongsTests(unittest.TestCase):
         ]
         assert self.child_vb_id in artist_ids
 
-    def test_include_group_members(self) -> None:
-        # can drift in the future
-        _, group_song_count = get_songs_with_total_count(
-            song_search_params=SongSearchParams(
-                artist_ids={self.group_id}, max_results=1
-            ),
-        )
-        _, group_member_song_count = get_songs_with_total_count(
-            song_search_params=SongSearchParams(
-                artist_ids={self.group_id}, max_results=1, include_group_members=True
-            ),
-        )
-        assert group_member_song_count > group_song_count
+    # disabled due to slowness (often 20s+ seconds)
+    # def test_include_group_members(self) -> None:
+    #     # can drift in the future
+    #     _, group_song_count = get_songs_with_total_count(
+    #         song_search_params=SongSearchParams(
+    #             artist_ids={self.group_id}, max_results=1
+    #         ),
+    #     )
+    #     _, group_member_song_count = get_songs_with_total_count(
+    #         song_search_params=SongSearchParams(
+    #             artist_ids={self.group_id}, max_results=1, include_group_members=True
+    #         ),
+    #     )
+    #     assert group_member_song_count > group_song_count
 
     def test_only_with_pvs(self) -> None:
         # can drift in the future
@@ -550,10 +556,10 @@ class TestGetEditsByDay(unittest.TestCase):
         future_edit = get_edits_by_day(
             2100, 11, 11, limit=None, save_dir=self.EDITS_BY_DATE_SAVE_DIR
         )
-        assert not future_edit
+        assert not future_edit[0]
 
     def test_yesterday_edits(self) -> None:
-        ten_edits_from_yesterday = get_edits_by_day(
+        ten_edits_from_yesterday, limit_reached = get_edits_by_day(
             self.yesterday.year,
             self.yesterday.month,
             self.yesterday.day,
@@ -561,6 +567,7 @@ class TestGetEditsByDay(unittest.TestCase):
             save_dir=self.EDITS_BY_DATE_SAVE_DIR,
         )
         assert len(ten_edits_from_yesterday) == 10
+        assert limit_reached
 
         logger.debug("Fetching less than 10 edits from yesterday")
         breakpoint_edit_index = 5
@@ -569,7 +576,7 @@ class TestGetEditsByDay(unittest.TestCase):
             ten_edits_from_yesterday[breakpoint_edit_index].entry_id,
             ten_edits_from_yesterday[breakpoint_edit_index].version_id,
         )
-        some_edits_from_yesterday = get_edits_by_day(
+        some_edits_from_yesterday, limit_reached = get_edits_by_day(
             self.yesterday.year,
             self.yesterday.month,
             self.yesterday.day,
@@ -577,25 +584,26 @@ class TestGetEditsByDay(unittest.TestCase):
             save_dir=self.EDITS_BY_DATE_SAVE_DIR,
         )
         assert len(some_edits_from_yesterday) == breakpoint_edit_index
+        assert limit_reached
+
         logger.debug("Fetching last hour edits from yesterday")
-        last_hour_edits_from_yesterday = get_edits_by_day(
+        all_yesterdays_edits, limit_reached = get_edits_by_day(
             self.yesterday.year,
             self.yesterday.month,
             self.yesterday.day,
             limit=self.yesterday + timedelta(hours=23),
             save_dir=self.EDITS_BY_DATE_SAVE_DIR,
         )
-        logger.debug(
-            f"Found {len(last_hour_edits_from_yesterday)} edits from yesterday"
-        )
-        assert len(last_hour_edits_from_yesterday) > 10
-        for edit in last_hour_edits_from_yesterday:
+        logger.debug(f"Found {len(all_yesterdays_edits)} edits from yesterday")
+        assert limit_reached
+        assert len(all_yesterdays_edits) > 10
+        for edit in all_yesterdays_edits:
             assert edit.edit_date > self.yesterday + timedelta(hours=23)
 
         logger.debug("Fetching last hour edits from yesterday with date limit")
-        mid_index = len(last_hour_edits_from_yesterday) // 2
-        last_hour_date_cutoff_test = last_hour_edits_from_yesterday[mid_index].edit_date
-        limited_last_hour_edits_from_yesterday = get_edits_by_day(
+        mid_index = len(all_yesterdays_edits) // 2
+        last_hour_date_cutoff_test = all_yesterdays_edits[mid_index].edit_date
+        limited_last_hour_edits_from_yesterday, limit_reached = get_edits_by_day(
             self.yesterday.year,
             self.yesterday.month,
             self.yesterday.day,
@@ -606,9 +614,63 @@ class TestGetEditsByDay(unittest.TestCase):
             f"Found {len(limited_last_hour_edits_from_yesterday)} edits from yesterday"
         )
         logger.debug(f"(since {last_hour_date_cutoff_test})")
-        assert len(limited_last_hour_edits_from_yesterday) < len(
-            last_hour_edits_from_yesterday
+        assert len(limited_last_hour_edits_from_yesterday) < len(all_yesterdays_edits)
+        assert limit_reached
+
+        all_yesterdays_edits, limit_reached = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
         )
+        assert not limit_reached
+
+
+class TestGetEditsByMonth(unittest.TestCase):
+    def test_get_one_edit_this_month(self) -> None:
+        today = datetime.now(UTC)
+        edits, limit_reached = get_edits_by_month(
+            today.year, today.month, save_dir=Path("edits_by_date"), limit=1
+        )
+        assert len(edits) == 1
+        assert limit_reached
+
+    def test_get_two_edits_last_month(self) -> None:
+        today = datetime.now(UTC)
+        last_month = today.month - 1 if today.month > 1 else 12
+        last_month_year = today.year - 1 if last_month == 12 else today.year
+        edits, limit_reached = get_edits_by_month(
+            last_month_year, last_month, save_dir=Path("edits_by_date"), limit=2
+        )
+        assert len(edits) == 2
+        assert limit_reached
+
+        edit_to_stop = (
+            edits[1].entry_type,
+            edits[1].entry_id,
+            edits[1].version_id,
+        )
+        edits, limit_reached = get_edits_by_month(
+            last_month_year,
+            last_month,
+            save_dir=Path("edits_by_date"),
+            limit=edit_to_stop,
+        )
+        assert len(edits) == 1
+        assert limit_reached
+
+
+class TestGetEditsUntilDay(unittest.TestCase):
+    def test_get_edits_until_yesterday(self) -> None:
+        today = datetime.now(UTC)
+        start_of_today = datetime(today.year, today.month, today.day, tzinfo=UTC)
+        edits = get_edits_until_day(
+            start_of_today,
+            save_dir=Path("edits_by_date"),
+        )
+        assert len(edits) > 0
+        for edit in edits:
+            assert edit.edit_date > start_of_today
 
 
 if __name__ == "__main__":
@@ -619,5 +681,5 @@ if __name__ == "__main__":
     unittest.main(failfast=True)
 
     ## Limit to certain tests only
-    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsByDay)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsUntilDay)
     # unittest.TextTestRunner(verbosity=2, failfast=True).run(suite)

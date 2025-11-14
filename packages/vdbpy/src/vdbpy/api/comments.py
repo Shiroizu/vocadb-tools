@@ -28,7 +28,7 @@ def get_comments_by_user_id(user_id: int) -> list[Comment]:
     params = {"userId": user_id, "fields": "entry"}
     all_comments = fetch_all_items_between_dates(
         COMMENT_API_URL, since=a, before=b, params=params, date_indicator="created"
-    )
+    )[0]
     logger.info(f"Found {len(all_comments)} comments by {user_id}")
     return all_comments
 

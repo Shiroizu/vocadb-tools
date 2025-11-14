@@ -13,6 +13,8 @@ BASE_DELAY = 1
 BASE_TIMEOUT = 20
 PAGE_SIZE = 50
 TOTAL_COUNT_WARNING = 5000
+RETRY_COUNT = 5
+RETRY_TIMER = 10
 
 # TODO user agent
 
@@ -45,17 +47,29 @@ def fetch_json(
 ) -> dict[Any, Any]:
     logger.debug(f"Fetching JSON from url {url} with params {params}")
 
-    r = (
-        session.get(url, params=params)
-        if session
-        else requests.get(url, params=params, timeout=BASE_TIMEOUT)
-    )
+    retry_count = 1
+    while retry_count <= RETRY_COUNT:
+        r = (
+            session.get(url, params=params)
+            if session
+            else requests.get(url, params=params, timeout=BASE_TIMEOUT)
+        )
 
-    if params:
-        logger.debug(f"Parsed URL: {r.url}")
-    r.raise_for_status()
-    time.sleep(BASE_DELAY)
-    return r.json()
+        if params:
+            logger.debug(f"Parsed URL: {r.url}")
+        try:
+            time.sleep(BASE_DELAY)
+            r.raise_for_status()
+        except requests.exceptions.ConnectionError:
+            logger.warning(f"Connection error for '{r.url}', retry #{retry_count}")
+            retry_count += 1
+            logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
+            time.sleep(RETRY_TIMER)
+            continue
+        return r.json()
+
+    msg = f"Failed to fetch JSON from {url}"
+    raise requests.exceptions.ConnectionError(msg)
 
 
 @cache_without_expiration()
@@ -155,7 +169,7 @@ def fetch_all_items_between_dates(
     params: dict[Any, Any] | None = None,
     page_size: int = PAGE_SIZE,
     limit: int | Callable[..., bool] | None = None,
-) -> list[Any]:
+) -> tuple[list[Any], bool]:
     """Get all items by decreasing 'before' parameter incrementally."""
     params = params.copy() if params is not None else {}
     params["maxResults"] = page_size
@@ -166,6 +180,7 @@ def fetch_all_items_between_dates(
 
     logger.debug(f"Fetching all '{api_url}' items from '{since}' to '{before}'...")
 
+    limit_reached = False
     while True:
         items = fetch_json(api_url, params=params)["items"]
         logger.debug(
@@ -176,7 +191,6 @@ def fetch_all_items_between_dates(
             logger.info("No items found, stopping.")
             break
 
-        limit_reached = False
         for item in items:
             if isinstance(limit, int) and len(all_items) >= limit:
                 logger.info(f"Limit {limit} reached, stopping.")
@@ -198,4 +212,4 @@ def fetch_all_items_between_dates(
         logger.debug(f"Found {len(items)} items.")
         params["before"] = items[-1][date_indicator]
 
-    return all_items
+    return all_items, limit_reached

@@ -30,7 +30,7 @@ def get_edits_by_day(  # noqa: PLR0915
     day: int,
     save_dir: Path | None = None,
     limit: datetime | int | VersionTuple | None = None,
-) -> list[UserEdit]:
+) -> tuple[list[UserEdit], bool]:
     date = datetime(year, month, day, tzinfo=UTC)
     date_str = date.strftime("%Y-%m-%d")
 
@@ -41,7 +41,7 @@ def get_edits_by_day(  # noqa: PLR0915
     logger.debug(f"Limit is {limit}")
     if date.date() > today.date():
         logger.debug("Selected date is in the future.")
-        return []
+        return [], True
 
     if date.date() == today.date():
         logger.debug("Selected date is today.")
@@ -69,16 +69,19 @@ def get_edits_by_day(  # noqa: PLR0915
 
             if not partial_save and date.date() < today.date():
                 if limit is None:
-                    return previous_edits
+                    return previous_edits, False
+                limit_reached = False
                 previous_edits_to_return: list[UserEdit] = []
                 if isinstance(limit, datetime):
                     for edit in previous_edits:
                         if edit.edit_date < limit:
+                            limit_reached = True
                             break
                         previous_edits_to_return.append(edit)
                 elif isinstance(limit, int):
                     for edit in previous_edits:
                         if len(previous_edits_to_return) == limit:
+                            limit_reached = True
                             break
                         previous_edits_to_return.append(edit)
                 elif len(limit) == 3:  # noqa: PLR2004
@@ -89,9 +92,10 @@ def get_edits_by_day(  # noqa: PLR0915
                             and edit.version_id == version_id
                         ):
                             break
+                        limit_reached = True
                         previous_edits_to_return.append(edit)
 
-                return previous_edits_to_return
+                return previous_edits_to_return, limit_reached
 
             if previous_edits:
                 date = previous_edits[0].edit_date
@@ -109,7 +113,7 @@ def get_edits_by_day(  # noqa: PLR0915
     )
 
     def is_correct_version(data: dict[Any, Any]) -> bool:
-        assert isinstance(limit, tuple) # noqa: S101
+        assert isinstance(limit, tuple)  # noqa: S101
         entry_type: EntryType = data["entry"]["entryType"]
         version_id: int = (
             data["archivedVersion"]["id"] if "archivedVersion" in data else 0
@@ -129,9 +133,9 @@ def get_edits_by_day(  # noqa: PLR0915
 
     if isinstance(limit, int):
         limit_to_use = limit - len(previous_edits)
-        assert limit_to_use > 0 # noqa: S101
+        assert limit_to_use > 0  # noqa: S101
 
-    edits_by_date = fetch_all_items_between_dates(
+    edits_by_date, limit_reached = fetch_all_items_between_dates(
         ACTIVITY_API_URL,
         date.strftime("%Y-%m-%dT%H:%M:%SZ"),
         day_after.strftime("%Y-%m-%d"),
@@ -150,8 +154,8 @@ def get_edits_by_day(  # noqa: PLR0915
     new_edits = len(parsed_edits) - prev_length
     logger.debug(f"Found total of {new_edits} new edits for date {date_str}")
 
-    if limit is not None:
-        return parsed_edits
+    if limit is not None and limit_reached:
+        return parsed_edits, limit_reached
 
     if save_dir:
         if not edits_from_today_requested:
@@ -177,12 +181,16 @@ def get_edits_by_day(  # noqa: PLR0915
                 ),
             )
 
-    return parsed_edits
+    return parsed_edits, limit_reached
 
 
-def get_edits_by_month(year: int, month: int, save_dir: Path) -> list[UserEdit]:
+def get_edits_by_month(
+    year: int,
+    month: int,
+    save_dir: Path,
+    limit: datetime | int | VersionTuple | None = None,
+) -> tuple[list[UserEdit], bool]:
     # Call get_edits_by_day for each day in the month
-    # TODO add limit
     if not year or not month:
         today = datetime.now(UTC)
         year = today.year
@@ -190,13 +198,64 @@ def get_edits_by_month(year: int, month: int, save_dir: Path) -> list[UserEdit]:
 
     all_edits: list[Any] = []
 
-    date_counter = datetime(year, month, 1, tzinfo=UTC)
+    next_month = month + 1 if month < 12 else 1  # noqa: PLR2004
+    next_month_year = year + 1 if next_month == 1 else year
+
+    date_counter = datetime(next_month_year, next_month, 1, tzinfo=UTC)
+    date_counter -= timedelta(days=1)
+
+    today = datetime.now(UTC)
+    date_counter = min(date_counter, today)
+
+    limit_reached = False
     while True:
         if date_counter.month != month:
             break
-        current_day_edits = get_edits_by_day(year, month, date_counter.day, save_dir)
+        current_day_edits, limit_reached_for_day = get_edits_by_day(
+            year, month, date_counter.day, save_dir=save_dir, limit=limit
+        )
         all_edits.extend(current_day_edits)
-        date_counter += timedelta(days=1)
+        limit_reached = limit_reached_for_day
+        if limit_reached:
+            break
+        date_counter -= timedelta(days=1)
+
+    return all_edits, limit_reached
+
+
+def get_edits_until_day(
+    date: datetime, save_dir: Path, limit: datetime | int | VersionTuple | None = None
+) -> list[UserEdit]:
+    today = datetime.now(tz=UTC)
+    day_to_check = today
+    day_counter = 0
+
+    all_edits: list[UserEdit] = []
+
+    while True:
+        day_counter += 1
+        if day_to_check < date:
+            logger.info(
+                f"Edit age thresold {str(date).split()[0]} reached, stopping.\n"
+            )
+            break
+        edits_by_day, limit_reached = get_edits_by_day(
+            year=day_to_check.year,
+            month=day_to_check.month,
+            day=day_to_check.day,
+            save_dir=save_dir,
+            limit=limit,
+        )
+        total_days = 1 + (today - date).days
+        day_to_check_str = str(day_to_check).split()[0]
+        msg = f"  Found {len(edits_by_day)} edits for {day_to_check_str} \
+                  (day {day_counter}/{total_days})"
+        logger.info(msg)
+
+        all_edits.extend(edits_by_day)
+        day_to_check -= timedelta(days=1)
+        if limit_reached:
+            break
 
     return all_edits
 
@@ -216,7 +275,7 @@ def get_created_entries_by_username(username: str) -> list[UserEdit]:
 
     logger.debug(f"Fetching created entries by user '{username}' ({user_id})")
     return parse_edits(
-        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
+        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)[0]
     )
 
 
@@ -230,7 +289,7 @@ def get_edits_by_username(username: str) -> list[UserEdit]:
 
     logger.debug(f"Fetching edits by user '{username}' ({user_id})")
     return parse_edits(
-        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)
+        fetch_all_items_between_dates(ACTIVITY_API_URL, params=params, page_size=500)[0]
     )
 
 
