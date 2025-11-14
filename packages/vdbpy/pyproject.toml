@@ -1,6 +1,6 @@
 [project]
 name = "vdbpy"
-version = "15.0.0"
+version = "15.0.1"
 description = "Base library for working with https://github.com/VocaDB/vocadb"
 readme = "README.md"
 requires-python = ">=3.13"

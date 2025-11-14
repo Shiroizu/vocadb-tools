@@ -60,7 +60,7 @@ def fetch_json(
         try:
             time.sleep(BASE_DELAY)
             r.raise_for_status()
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError | requests.exceptions.ReadTimeout:  # noqa: B030
             logger.warning(f"Connection error for '{r.url}', retry #{retry_count}")
             retry_count += 1
             logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
