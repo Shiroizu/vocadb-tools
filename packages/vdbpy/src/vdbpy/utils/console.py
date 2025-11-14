@@ -49,12 +49,12 @@ def get_boolean(prompt: str) -> bool:
             return False
 
         logger.warning(f"Invalid input '{user_input}'.")
-        logger.warning("Please value from {truthy_values} / {falsy_values}.")
+        logger.warning(f"Please enter value from {TRUTHY_VALUES} / {FALSY_VALUES}.")
 
 
 def get_boolean_or_none(prompt: str) -> bool | None:
     while True:
-        user_input = input(f"{prompt} [y/n]: ").strip().lower()
+        user_input = input(f"{prompt} [y/n] (press enter to skip): ").strip().lower()
 
         if user_input in TRUTHY_VALUES:
             return True
@@ -64,4 +64,4 @@ def get_boolean_or_none(prompt: str) -> bool | None:
             return None
 
         logger.warning(f"Invalid input '{user_input}'.")
-        logger.warning("Please value from {truthy_values} / {falsy_values}.")
+        logger.warning(f"Please enter value from {TRUTHY_VALUES} / {FALSY_VALUES}.")
