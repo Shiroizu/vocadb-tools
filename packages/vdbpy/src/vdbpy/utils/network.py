@@ -49,20 +49,20 @@ def fetch_json(
 
     retry_count = 1
     while retry_count <= RETRY_COUNT:
-        r = (
-            session.get(url, params=params)
-            if session
-            else requests.get(url, params=params, timeout=BASE_TIMEOUT)
-        )
-
-        if params:
-            logger.debug(f"Parsed URL: {r.url}")
         try:
-            time.sleep(BASE_DELAY)
+            r = (
+                session.get(url, params=params)
+                if session
+                else requests.get(url, params=params, timeout=BASE_TIMEOUT)
+            )
+            if params:
+                logger.debug(f"Parsed URL: {r.url}")
             r.raise_for_status()
+            time.sleep(BASE_DELAY)
         except requests.exceptions.ConnectionError | requests.exceptions.ReadTimeout:  # noqa: B030
-            logger.warning(f"Connection error for '{r.url}', retry #{retry_count}")
+            logger.warning(f"Connection issues with '{url}'")
             retry_count += 1
+            logger.warning(f"Retry attempt #{retry_count}")
             logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
             time.sleep(RETRY_TIMER)
             continue
