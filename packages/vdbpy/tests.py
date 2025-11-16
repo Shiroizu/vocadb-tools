@@ -558,7 +558,27 @@ class TestGetEditsByDay(unittest.TestCase):
         )
         assert not future_edit[0]
 
-    def test_yesterday_edits(self) -> None:
+    def test_last_10_yesterday_edits_with_no_save_dir(self) -> None:
+        ten_edits_from_yesterday, limit_reached = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            limit=10,
+            save_dir=None,
+        )
+        assert len(ten_edits_from_yesterday) == 10
+        assert limit_reached
+
+    def test_yesterday_all_edits(self) -> None:
+        _, limit_reached = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
+        )
+        assert not limit_reached
+
+    def test_last_10_yesterday_edits(self) -> None:
         ten_edits_from_yesterday, limit_reached = get_edits_by_day(
             self.yesterday.year,
             self.yesterday.month,
@@ -569,7 +589,14 @@ class TestGetEditsByDay(unittest.TestCase):
         assert len(ten_edits_from_yesterday) == 10
         assert limit_reached
 
-        logger.debug("Fetching less than 10 edits from yesterday")
+    def test_yesterday_edits_with_version_tuple_limit(self) -> None:
+        ten_edits_from_yesterday, limit_reached = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            limit=10,
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
+        )
         breakpoint_edit_index = 5
         breakpoint_edit = (
             ten_edits_from_yesterday[breakpoint_edit_index].entry_type,
@@ -586,7 +613,7 @@ class TestGetEditsByDay(unittest.TestCase):
         assert len(some_edits_from_yesterday) == breakpoint_edit_index
         assert limit_reached
 
-        logger.debug("Fetching last hour edits from yesterday")
+    def test_yesterday_edits_with_datetime_limit(self) -> None:
         all_yesterdays_edits, limit_reached = get_edits_by_day(
             self.yesterday.year,
             self.yesterday.month,
@@ -600,7 +627,14 @@ class TestGetEditsByDay(unittest.TestCase):
         for edit in all_yesterdays_edits:
             assert edit.edit_date > self.yesterday + timedelta(hours=23)
 
-        logger.debug("Fetching last hour edits from yesterday with date limit")
+    def test_yesterday_edits_with_found_datetime_limit(self) -> None:
+        all_yesterdays_edits, limit_reached = get_edits_by_day(
+            self.yesterday.year,
+            self.yesterday.month,
+            self.yesterday.day,
+            limit=self.yesterday + timedelta(hours=23),
+            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
+        )
         mid_index = len(all_yesterdays_edits) // 2
         last_hour_date_cutoff_test = all_yesterdays_edits[mid_index].edit_date
         limited_last_hour_edits_from_yesterday, limit_reached = get_edits_by_day(
@@ -617,17 +651,9 @@ class TestGetEditsByDay(unittest.TestCase):
         assert len(limited_last_hour_edits_from_yesterday) < len(all_yesterdays_edits)
         assert limit_reached
 
-        all_yesterdays_edits, limit_reached = get_edits_by_day(
-            self.yesterday.year,
-            self.yesterday.month,
-            self.yesterday.day,
-            save_dir=self.EDITS_BY_DATE_SAVE_DIR,
-        )
-        assert not limit_reached
-
 
 class TestGetEditsByMonth(unittest.TestCase):
-    def test_get_one_edit_this_month(self) -> None:
+    def test_get_most_recent_edit_this_month(self) -> None:
         today = datetime.now(UTC)
         edits, limit_reached = get_edits_by_month(
             today.year, today.month, save_dir=Path("edits_by_date"), limit=1
@@ -681,5 +707,5 @@ if __name__ == "__main__":
     unittest.main(failfast=True)
 
     ## Limit to certain tests only
-    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsUntilDay)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsByMonth)
     # unittest.TextTestRunner(verbosity=2, failfast=True).run(suite)

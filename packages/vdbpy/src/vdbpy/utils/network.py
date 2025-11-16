@@ -171,6 +171,8 @@ def fetch_all_items_between_dates(
     limit: int | Callable[..., bool] | None = None,
 ) -> tuple[list[Any], bool]:
     """Get all items by decreasing 'before' parameter incrementally."""
+    if limit == 0:
+        return [], True
     params = params.copy() if params is not None else {}
     params["maxResults"] = page_size
     params["before"] = before
@@ -179,6 +181,7 @@ def fetch_all_items_between_dates(
     all_items: list[Any] = []
 
     logger.debug(f"Fetching all '{api_url}' items from '{since}' to '{before}'...")
+    logger.debug(f"Using limit: {limit}")
 
     limit_reached = False
     while True:

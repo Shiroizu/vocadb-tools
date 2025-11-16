@@ -33,19 +33,16 @@ def get_edits_by_day(  # noqa: PLR0915
 ) -> tuple[list[UserEdit], bool]:
     date = datetime(year, month, day, tzinfo=UTC)
     date_str = date.strftime("%Y-%m-%d")
+    filename = save_dir / f"{date_str}.json" if save_dir else None
+    partial_filename = save_dir / f"{date_str}{PARTIAL_SLUG}.json" if save_dir else None
 
     today = datetime.now(tz=UTC)
-    edits_from_today_requested = False
 
     logger.debug(f"Fetching edits by day {date_str}...")
     logger.debug(f"Limit is {limit}")
     if date.date() > today.date():
         logger.debug("Selected date is in the future.")
         return [], True
-
-    if date.date() == today.date():
-        logger.debug("Selected date is today.")
-        edits_from_today_requested = True
 
     if isinstance(limit, datetime) and limit.date() != date.date():
         logger.info("Ignoring 'limit' date because it is not on this date")
@@ -54,15 +51,32 @@ def get_edits_by_day(  # noqa: PLR0915
     day_after = date + timedelta(days=1)
     partial_save = False
     previous_edits: list[UserEdit] = []
+    file_to_read = filename
+
     if save_dir:
-        filename = save_dir / date_str / f"{PARTIAL_SLUG}.json"
-        if Path.is_file(filename):
-            logger.debug("Partial save file found.")
-            partial_save = True
+        assert filename  # noqa: S101
+        assert partial_filename  # noqa: S101
+        assert file_to_read  # noqa: S101
+        if Path.is_file(partial_filename):
+            logger.debug(f"Partial save file {partial_filename} found.")
+            if Path.is_file(filename):
+                logger.debug(f"Save file {filename} also found.")
+                if get_text(filename):
+                    logger.debug(f"Save file {filename} is not empty.")
+                    logger.debug(f"Removing {partial_filename}")
+                    Path.unlink(partial_filename)
+                else:
+                    logger.debug(f"Save file {filename} is empty.")
+                    logger.debug(f"Removing {filename}")
+                    Path.unlink(filename)
+                    file_to_read = partial_filename
+            else:
+                partial_save = True
+                file_to_read = partial_filename
         else:
-            filename = save_dir / f"{date_str}.json"
-        if data := get_text(filename):
-            logger.debug(f"Loading edits from '{filename}'...")
+            logger.debug(f"Partial save file {partial_filename} not found.")
+        if data := get_text(file_to_read):
+            logger.debug(f"Loading edits from '{file_to_read}'...")
             previous_edits.extend(
                 [user_edit_from_dict(item) for item in json.loads(data)]
             )
@@ -84,7 +98,7 @@ def get_edits_by_day(  # noqa: PLR0915
                             limit_reached = True
                             break
                         previous_edits_to_return.append(edit)
-                elif len(limit) == 3:  # noqa: PLR2004
+                else:
                     entry_type, _, version_id = limit
                     for edit in previous_edits:
                         if (
@@ -124,6 +138,7 @@ def get_edits_by_day(  # noqa: PLR0915
         assert isinstance(limit, datetime)  # noqa: S101
         return parse_date(data["createDate"]) < limit
 
+    prev_length = len(previous_edits)
     limit_to_use = None
     if isinstance(limit, tuple):
         limit_to_use = is_correct_version
@@ -132,8 +147,7 @@ def get_edits_by_day(  # noqa: PLR0915
         limit_to_use = is_later_edit
 
     if isinstance(limit, int):
-        limit_to_use = limit - len(previous_edits)
-        assert limit_to_use > 0  # noqa: S101
+        limit_to_use = limit
 
     edits_by_date, limit_reached = fetch_all_items_between_dates(
         ACTIVITY_API_URL,
@@ -144,23 +158,38 @@ def get_edits_by_day(  # noqa: PLR0915
     )
 
     parsed_edits: list[UserEdit] = parse_edits(edits_by_date)
-
-    prev_length = len(previous_edits)
     if previous_edits:
         for prev_edit in previous_edits:
             if prev_edit not in parsed_edits:
                 parsed_edits.append(prev_edit)
 
     new_edits = len(parsed_edits) - prev_length
-    logger.debug(f"Found total of {new_edits} new edits for date {date_str}")
+    logger.debug(
+        f"Found total of {new_edits} new edits for date {date_str}, {limit_reached=}"
+    )
 
     if limit is not None and limit_reached:
+        if isinstance(limit, int):
+            return parsed_edits[:limit], limit_reached
         return parsed_edits, limit_reached
 
     if save_dir:
-        if not edits_from_today_requested:
+        assert filename  # noqa: S101
+        assert partial_filename  # noqa: S101
+        assert file_to_read  # noqa: S101
+        if date.date() == today.date():
             save_file(
-                f"{save_dir}/{date_str}.json",
+                partial_filename,
+                json.dumps(
+                    parsed_edits,
+                    cls=UserEditJSONEncoder,
+                    indent=4,
+                    separators=(",", ":"),
+                ),
+            )
+        else:
+            save_file(
+                filename,
                 json.dumps(
                     parsed_edits,
                     cls=UserEditJSONEncoder,
@@ -169,17 +198,7 @@ def get_edits_by_day(  # noqa: PLR0915
                 ),
             )
             if partial_save:
-                Path.unlink(save_dir / "date_str" / PARTIAL_SLUG / ".json")
-        else:
-            save_file(
-                f"{save_dir}/{date_str}{PARTIAL_SLUG}.json",
-                json.dumps(
-                    parsed_edits,
-                    cls=UserEditJSONEncoder,
-                    indent=4,
-                    separators=(",", ":"),
-                ),
-            )
+                Path.unlink(partial_filename)
 
     return parsed_edits, limit_reached
 
@@ -214,9 +233,11 @@ def get_edits_by_month(
         current_day_edits, limit_reached_for_day = get_edits_by_day(
             year, month, date_counter.day, save_dir=save_dir, limit=limit
         )
+        logger.debug(f"Found {len(current_day_edits)} edits from {date_counter}")
         all_edits.extend(current_day_edits)
-        limit_reached = limit_reached_for_day
-        if limit_reached:
+        if limit_reached_for_day:
+            logger.debug(f"Limit {limit} reached during {date_counter}")
+            limit_reached = True
             break
         date_counter -= timedelta(days=1)
 
@@ -227,6 +248,10 @@ def get_edits_until_day(
     date: datetime, save_dir: Path, limit: datetime | int | VersionTuple | None = None
 ) -> list[UserEdit]:
     today = datetime.now(tz=UTC)
+
+    logger.debug(f"Today is {today}")
+    logger.debug(f"Fetching edits until {date} with limit {limit}")
+
     day_to_check = today
     day_counter = 0
 
@@ -246,6 +271,7 @@ def get_edits_until_day(
             save_dir=save_dir,
             limit=limit,
         )
+
         total_days = 1 + (today - date).days
         day_to_check_str = str(day_to_check).split()[0]
         msg = f"  Found {len(edits_by_day)} edits for {day_to_check_str} \
@@ -253,9 +279,10 @@ def get_edits_until_day(
         logger.info(msg)
 
         all_edits.extend(edits_by_day)
-        day_to_check -= timedelta(days=1)
+        logger.debug(f"{day_to_check_str} - {limit_reached=}")
         if limit_reached:
             break
+        day_to_check -= timedelta(days=1)
 
     return all_edits
 
