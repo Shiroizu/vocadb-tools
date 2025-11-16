@@ -68,8 +68,8 @@ def fetch_json(
             continue
         return r.json()
 
-    msg = f"Failed to fetch JSON from {url}"
-    raise requests.exceptions.ConnectionError(msg)
+    msg = f"Failed to fetch JSON from {url} after {RETRY_COUNT} retries"
+    raise Exception(msg)  # noqa: TRY002
 
 
 @cache_without_expiration()
@@ -170,7 +170,10 @@ def fetch_all_items_between_dates(
     page_size: int = PAGE_SIZE,
     limit: int | Callable[..., bool] | None = None,
 ) -> tuple[list[Any], bool]:
-    """Get all items by decreasing 'before' parameter incrementally."""
+    """Get all items by decreasing 'before' parameter incrementally.
+
+    Duplicates are possible!
+    """
     if limit == 0:
         return [], True
     params = params.copy() if params is not None else {}

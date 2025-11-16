@@ -23,122 +23,37 @@ logger = get_logger()
 
 PARTIAL_SLUG = "-partial"
 
+# -------------------- internal -------------------- #
 
-def get_edits_by_day(  # noqa: PLR0915
-    year: int,
-    month: int,
-    day: int,
-    save_dir: Path | None = None,
-    limit: datetime | int | VersionTuple | None = None,
-) -> tuple[list[UserEdit], bool]:
-    date = datetime(year, month, day, tzinfo=UTC)
-    date_str = date.strftime("%Y-%m-%d")
-    filename = save_dir / f"{date_str}.json" if save_dir else None
-    partial_filename = save_dir / f"{date_str}{PARTIAL_SLUG}.json" if save_dir else None
 
-    today = datetime.now(tz=UTC)
-
-    logger.debug(f"Fetching edits by day {date_str}...")
-    logger.debug(f"Limit is {limit}")
-    if date.date() > today.date():
-        logger.debug("Selected date is in the future.")
-        return [], True
-
-    if isinstance(limit, datetime) and limit.date() != date.date():
-        logger.info("Ignoring 'limit' date because it is not on this date")
-        limit = None
-
-    day_after = date + timedelta(days=1)
-    partial_save = False
-    previous_edits: list[UserEdit] = []
-    file_to_read = filename
-
-    if save_dir:
-        assert filename  # noqa: S101
-        assert partial_filename  # noqa: S101
-        assert file_to_read  # noqa: S101
-        if Path.is_file(partial_filename):
-            logger.debug(f"Partial save file {partial_filename} found.")
-            if Path.is_file(filename):
-                logger.debug(f"Save file {filename} also found.")
-                if get_text(filename):
-                    logger.debug(f"Save file {filename} is not empty.")
-                    logger.debug(f"Removing {partial_filename}")
-                    Path.unlink(partial_filename)
-                else:
-                    logger.debug(f"Save file {filename} is empty.")
-                    logger.debug(f"Removing {filename}")
-                    Path.unlink(filename)
-                    file_to_read = partial_filename
-            else:
-                partial_save = True
-                file_to_read = partial_filename
+def _load_edits(file: Path) -> list[UserEdit]:
+    edits: list[UserEdit] = []
+    if Path.is_file(file):
+        logger.debug(f"File {file} found.")
+        if data := get_text(file):
+            edits.extend([user_edit_from_dict(item) for item in json.loads(data)])
         else:
-            logger.debug(f"Partial save file {partial_filename} not found.")
-        if data := get_text(file_to_read):
-            logger.debug(f"Loading edits from '{file_to_read}'...")
-            previous_edits.extend(
-                [user_edit_from_dict(item) for item in json.loads(data)]
-            )
+            logger.debug(f"File {file} is empty.")
+            logger.debug(f"Removing {file}")
+            Path.unlink(file)
+    return edits
 
-            if not partial_save and date.date() < today.date():
-                if limit is None:
-                    return previous_edits, False
-                limit_reached = False
-                previous_edits_to_return: list[UserEdit] = []
-                if isinstance(limit, datetime):
-                    for edit in previous_edits:
-                        if edit.edit_date < limit:
-                            limit_reached = True
-                            break
-                        previous_edits_to_return.append(edit)
-                elif isinstance(limit, int):
-                    for edit in previous_edits:
-                        if len(previous_edits_to_return) == limit:
-                            limit_reached = True
-                            break
-                        previous_edits_to_return.append(edit)
-                else:
-                    entry_type, _, version_id = limit
-                    for edit in previous_edits:
-                        if (
-                            edit.entry_type == entry_type
-                            and edit.version_id == version_id
-                        ):
-                            break
-                        limit_reached = True
-                        previous_edits_to_return.append(edit)
 
-                return previous_edits_to_return, limit_reached
-
-            if previous_edits:
-                date = previous_edits[0].edit_date
-                prev_edit_date = f"{previous_edits[0].edit_date}"
-                logger.debug(
-                    f"The most recent saved edit from this date is '{prev_edit_date}'"
-                )
-            else:
-                logger.debug("No edits found for this date.")
-
-    params = {"fields": "Entry,ArchivedVersion"}
-
-    logger.info(
-        f"Fetching edits from {str(date).split()[0]} to {str(day_after).split()[0]}..."
-    )
-
+def _get_edits_with_limit(
+    date: datetime, limit: datetime | int | VersionTuple | None = None
+) -> tuple[list[UserEdit], bool]:
     def is_correct_version(data: dict[Any, Any]) -> bool:
-        assert isinstance(limit, tuple)  # noqa: S101
         entry_type: EntryType = data["entry"]["entryType"]
         version_id: int = (
             data["archivedVersion"]["id"] if "archivedVersion" in data else 0
         )
+        assert isinstance(limit, tuple)  # noqa: S101
         return entry_type == limit[0] and version_id == limit[2]
 
     def is_later_edit(data: dict[Any, Any]) -> bool:
         assert isinstance(limit, datetime)  # noqa: S101
-        return parse_date(data["createDate"]) < limit
+        return parse_date(data["createDate"]) <= limit
 
-    prev_length = len(previous_edits)
     limit_to_use = None
     if isinstance(limit, tuple):
         limit_to_use = is_correct_version
@@ -149,58 +64,201 @@ def get_edits_by_day(  # noqa: PLR0915
     if isinstance(limit, int):
         limit_to_use = limit
 
-    edits_by_date, limit_reached = fetch_all_items_between_dates(
+    raw_new_edits, limit_reached = fetch_all_items_between_dates(
         ACTIVITY_API_URL,
         date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        day_after.strftime("%Y-%m-%d"),
-        params=params,
+        (date + timedelta(days=1)).strftime("%Y-%m-%d"),
+        params={"fields": "Entry,ArchivedVersion"},
         limit=limit_to_use,
     )
 
-    parsed_edits: list[UserEdit] = parse_edits(edits_by_date)
-    if previous_edits:
-        for prev_edit in previous_edits:
-            if prev_edit not in parsed_edits:
-                parsed_edits.append(prev_edit)
+    return parse_edits(raw_new_edits), limit_reached
 
-    new_edits = len(parsed_edits) - prev_length
-    logger.debug(
-        f"Found total of {new_edits} new edits for date {date_str}, {limit_reached=}"
+
+def _save_user_edits(filename: Path, edits: list[UserEdit]) -> None:
+    save_file(
+        filename,
+        json.dumps(
+            edits,
+            cls=UserEditJSONEncoder,
+            indent=4,
+            separators=(",", ":"),
+        ),
     )
 
-    if limit is not None and limit_reached:
-        if isinstance(limit, int):
-            return parsed_edits[:limit], limit_reached
-        return parsed_edits, limit_reached
 
-    if save_dir:
-        assert filename  # noqa: S101
-        assert partial_filename  # noqa: S101
-        assert file_to_read  # noqa: S101
-        if date.date() == today.date():
-            save_file(
-                partial_filename,
-                json.dumps(
-                    parsed_edits,
-                    cls=UserEditJSONEncoder,
-                    indent=4,
-                    separators=(",", ":"),
-                ),
-            )
+def _filter_edits(
+    edits: list[UserEdit], limit: datetime | int | VersionTuple
+) -> tuple[list[UserEdit], bool]:
+    edits_to_return: list[UserEdit] = []
+    for edit in edits:
+        if isinstance(limit, datetime):
+            if edit.edit_date < limit:
+                return edits_to_return, True
+        elif isinstance(limit, int):
+            if len(edits_to_return) == limit:
+                return edits_to_return, True
         else:
-            save_file(
-                filename,
-                json.dumps(
-                    parsed_edits,
-                    cls=UserEditJSONEncoder,
-                    indent=4,
-                    separators=(",", ":"),
-                ),
-            )
-            if partial_save:
-                Path.unlink(partial_filename)
+            entry_type, _, version_id = limit
+            if edit.entry_type == entry_type and edit.version_id == version_id:
+                return edits_to_return, True
+        edits_to_return.append(edit)
+    return edits_to_return, False
 
-    return parsed_edits, limit_reached
+
+def _verify_edits(edits: list[UserEdit]) -> None:
+    if not edits:
+        return
+    seen: set[tuple[EntryType, int]] = set()
+    prev_date = None
+    for edit in edits:
+        edit_key = (edit.entry_type, edit.version_id)
+        assert edit_key not in seen, (  # noqa: S101
+            f"Duplicate edit {edit_key} found in edits ({len(edits)=}."
+        )
+        seen.add(edit_key)
+        if prev_date:
+            assert edit.edit_date < prev_date, (edit.edit_date, prev_date)  # noqa: S101
+        prev_date = edit.edit_date
+
+
+def _merge_edit_lists(
+    new_edits: list[UserEdit], previous_edits: list[UserEdit]
+) -> list[UserEdit]:
+    logger.debug(f"Previous edits ({len(previous_edits)}=):")
+    logger.debug(
+        f"From {previous_edits[0].edit_date} to {previous_edits[-1].edit_date}"
+    )
+    seen: set[tuple[EntryType, int]] = set()
+    duplicate_count = 0
+    logger.debug(f"New edits ({len(new_edits)}=):")
+    logger.debug(f"From {new_edits[0].edit_date} to {new_edits[-1].edit_date}")
+
+    _verify_edits(new_edits)
+    _verify_edits(previous_edits)
+
+    combined_edits: list[UserEdit] = []
+    for edit_list in (new_edits, previous_edits):
+        for edit in edit_list:
+            if (edit.entry_type, edit.version_id) in seen:
+                duplicate_count += 1
+                continue
+            seen.add((edit.entry_type, edit.version_id))
+            combined_edits.append(edit)
+
+    assert duplicate_count <= 1, duplicate_count  # noqa: S101
+
+    logger.debug(f"Combined edits ({len(combined_edits)}=):")
+    logger.debug(
+        f"From {combined_edits[0].edit_date} to {combined_edits[-1].edit_date}"
+    )
+    _verify_edits(combined_edits)
+    return combined_edits
+
+
+def _get_edits_by_current_day(
+    date: datetime,
+    limit: datetime | int | VersionTuple | None = None,
+    partial_filename: Path | None = None,
+) -> tuple[list[UserEdit], bool]:
+    previous_edits: list[UserEdit] = []
+    previous_edits = _load_edits(partial_filename) if partial_filename else []
+
+    since_date = previous_edits[0].edit_date if previous_edits else date
+    new_edits, limit_reached = _get_edits_with_limit(since_date, limit)
+    logger.debug(f"Found {len(new_edits)} new edits, {limit_reached=}")
+    if limit_reached or not previous_edits:
+        return new_edits, limit_reached
+
+    combined_edits = _merge_edit_lists(new_edits, previous_edits)
+
+    if partial_filename:
+        logger.debug(f"Saving partial edit data to {partial_filename}.")
+        _save_user_edits(partial_filename, combined_edits)
+    else:
+        logger.debug("Not saving partial edit data.")
+
+    if limit is None:
+        return combined_edits, False
+
+    return _filter_edits(combined_edits, limit)
+
+
+def _get_edits_by_past_day(
+    date: datetime,
+    limit: datetime | int | VersionTuple | None = None,
+    filename: Path | None = None,
+    partial_filename: Path | None = None,
+) -> tuple[list[UserEdit], bool]:
+    assert (filename and partial_filename) or (not filename and not partial_filename)  # noqa: S101
+
+    previous_partial_edits = _load_edits(partial_filename) if partial_filename else []
+    previous_full_edits = _load_edits(filename) if filename else []
+
+    assert not (previous_partial_edits and previous_full_edits)  # noqa: S101
+
+    edits_to_return: list[UserEdit] = []
+    if previous_full_edits:
+        edits_to_return = previous_full_edits
+    else:
+        since_date = (
+            previous_partial_edits[0].edit_date if previous_partial_edits else date
+        )
+        new_edits, limit_reached = _get_edits_with_limit(since_date, limit)
+        logger.debug(f"Found {len(new_edits)} new edits, {limit_reached=}")
+        if limit_reached:
+            return new_edits, limit_reached
+        edits_to_return = _merge_edit_lists(new_edits, previous_partial_edits)
+
+    if filename:
+        logger.debug(f"Saving edit data to {filename}.")
+        _save_user_edits(filename, edits_to_return)
+        assert partial_filename  # noqa: S101
+        if Path.is_file(partial_filename):
+            logger.debug(f"Removing partial edit data {partial_filename}.")
+            Path.unlink(partial_filename)
+    else:
+        logger.debug("Not saving partial edit data.")
+
+    if limit is None:
+        return edits_to_return, False
+
+    return _filter_edits(edits_to_return, limit)
+
+
+# -------------------- public -------------------- #
+
+
+def get_edits_by_day(
+    year: int,
+    month: int,
+    day: int,
+    save_dir: Path | None = None,
+    limit: datetime | int | VersionTuple | None = None,
+) -> tuple[list[UserEdit], bool]:
+    date = datetime(year, month, day, tzinfo=UTC)
+    today = datetime.now(tz=UTC)
+    if date.date() > today.date():
+        logger.debug("Selected date is in the future.")
+        return [], True
+
+    date_str = date.strftime("%Y-%m-%d")
+    filename = save_dir / f"{date_str}.json" if save_dir else None
+    partial_filename = save_dir / f"{date_str}{PARTIAL_SLUG}.json" if save_dir else None
+
+    logger.debug(f"Fetching edits by day {date_str}...")
+    logger.debug(f"Limit is {limit}")
+
+    if isinstance(limit, datetime) and limit.date() != date.date():
+        logger.info("Ignoring 'limit' date because it is not on this date")
+        limit = None
+
+    if date.date() == today.date():
+        return _get_edits_by_current_day(date, limit, partial_filename)
+
+    return _get_edits_by_past_day(
+        date=date, limit=limit, filename=filename, partial_filename=partial_filename
+    )
 
 
 def get_edits_by_month(

@@ -19,7 +19,7 @@ from vdbpy.api.songs import (
     get_songs,
     get_songs_with_total_count,
 )
-from vdbpy.types.shared import EntryStatus, EntryType
+from vdbpy.types.shared import EntryStatus, EntryType, VersionTuple
 from vdbpy.types.songs import Service, SongType, SongVersion
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
@@ -687,16 +687,40 @@ class TestGetEditsByMonth(unittest.TestCase):
 
 
 class TestGetEditsUntilDay(unittest.TestCase):
-    def test_get_edits_until_yesterday(self) -> None:
+    def setUp(self) -> None:
         today = datetime.now(UTC)
-        start_of_today = datetime(today.year, today.month, today.day, tzinfo=UTC)
+        self.start_of_today = datetime(today.year, today.month, today.day, tzinfo=UTC)
+
+    def test_get_edits_until_yesterday(self) -> None:
         edits = get_edits_until_day(
-            start_of_today,
+            self.start_of_today,
             save_dir=Path("edits_by_date"),
         )
         assert len(edits) > 0
         for edit in edits:
-            assert edit.edit_date > start_of_today
+            assert edit.edit_date > self.start_of_today
+
+    def test_get_edits_until_yesterday_with_version_tuple_limit(self) -> None:
+        edits = get_edits_until_day(
+            self.start_of_today, save_dir=Path("edits_by_date"), limit=2
+        )
+        assert len(edits) == 2
+
+        logger.debug(f"First edit {edits[0]}")
+        edit_to_stop = edits[1]
+        assert edit_to_stop
+        logger.debug(f"{edit_to_stop=}")
+
+        limit: VersionTuple = (
+            edit_to_stop.entry_type,
+            edit_to_stop.entry_id,
+            edit_to_stop.version_id,
+        )
+        logger.debug(f"{limit=}")
+        edits = get_edits_until_day(
+            self.start_of_today, save_dir=Path("edits_by_date"), limit=limit
+        )
+        assert 1 <= len(edits) <= 10, f"{len(edits)} edits"
 
 
 if __name__ == "__main__":
@@ -707,5 +731,5 @@ if __name__ == "__main__":
     unittest.main(failfast=True)
 
     ## Limit to certain tests only
-    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsByMonth)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsUntilDay)
     # unittest.TextTestRunner(verbosity=2, failfast=True).run(suite)

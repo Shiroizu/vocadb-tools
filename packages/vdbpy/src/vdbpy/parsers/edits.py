@@ -40,7 +40,10 @@ def parse_edits_from_archived_versions(
 
 def parse_edits(edit_objects: list[dict[Any, Any]]) -> list[UserEdit]:
     logger.debug(f"Got {len(edit_objects)} edits to parse.")
+    seen: set[tuple[EntryType, int]] = set()
     parsed_edits: list[UserEdit] = []
+    duplicate_count = 0
+    skipped_objects: list[Any] = []
     for edit_object in edit_objects:
         entry_type = edit_object["entry"]["entryType"]
         entry_id = edit_object["entry"]["id"]
@@ -54,10 +57,12 @@ def parse_edits(edit_objects: list[dict[Any, Any]]) -> list[UserEdit]:
             logger.debug(
                 f"Entry {entry_type}/{entry_id} deleted by {deleter} ({usergroup})!"
             )
+            skipped_objects.append(edit_object)
             continue  # edit object doesn't include archivedVersion
 
         if "archivedVersion" not in edit_object:
             logger.warning(f"{entry_type}/{entry_id} has no archived version!")
+            skipped_objects.append(edit_object)
             continue
 
         utc_date = edit_object["createDate"]
@@ -74,5 +79,13 @@ def parse_edits(edit_objects: list[dict[Any, Any]]) -> list[UserEdit]:
             update_notes=edit_object["archivedVersion"]["notes"],
         )
 
+        if (entry_type, version_id) in seen:
+            duplicate_count += 1
+            continue
+        seen.add((entry_type, version_id))
         parsed_edits.append(user_edit)
+
+    logger.debug(f"Found {duplicate_count} duplicates")
+    logger.debug(f"Found {len(skipped_objects)} skipped edits:")
+    logger.debug(skipped_objects)
     return parsed_edits
