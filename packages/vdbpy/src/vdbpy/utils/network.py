@@ -61,9 +61,9 @@ def fetch_json(
             time.sleep(BASE_DELAY)
         except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
             logger.warning(f"Connection issues with '{url}'")
-            retry_count += 1
             logger.warning(f"Retry attempt #{retry_count}")
             logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
+            retry_count += 1
             time.sleep(RETRY_TIMER)
             continue
         return r.json()
