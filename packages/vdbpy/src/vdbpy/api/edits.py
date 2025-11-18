@@ -175,7 +175,7 @@ def _get_edits_by_current_day(
     since_date = previous_edits[0].edit_date if previous_edits else date
     new_edits, limit_reached = _get_edits_with_limit(since_date, limit)
     logger.debug(f"Found {len(new_edits)} new edits, {limit_reached=}")
-    if limit_reached or not previous_edits:
+    if limit_reached:
         return new_edits, limit_reached
 
     combined_edits = _merge_edit_lists(new_edits, previous_edits)
