@@ -33,7 +33,8 @@ def fetch_text(
     if params:
         logger.debug(f"Parsed URL: {r.url}")
     r.raise_for_status()
-    time.sleep(BASE_DELAY)
+    if "localhost" not in url:
+        time.sleep(BASE_DELAY)
     if r.encoding == "ISO-8859-1":
         logger.debug("Converting from ISO-8859-1 to UTF-8")
         return r.text.encode("ISO-8859-1").decode("utf-8")
@@ -58,12 +59,17 @@ def fetch_json(
             if params:
                 logger.debug(f"Parsed URL: {r.url}")
             r.raise_for_status()
-            time.sleep(BASE_DELAY)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
+            if "localhost" not in url:
+                time.sleep(BASE_DELAY)
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ReadTimeout,
+            requests.exceptions.HTTPError,
+        ):
             logger.warning(f"Connection issues with '{url}'")
+            retry_count += 1
             logger.warning(f"Retry attempt #{retry_count}")
             logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
-            retry_count += 1
             time.sleep(RETRY_TIMER)
             continue
         return r.json()
