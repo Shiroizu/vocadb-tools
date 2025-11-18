@@ -5,7 +5,16 @@ from typing import Any, get_args
 import requests
 
 from vdbpy.api.users import get_username_by_id
-from vdbpy.config import WEBSITE
+from vdbpy.config import (
+    ALBUM_API_URL,
+    ARTIST_API_URL,
+    EVENT_API_URL,
+    SERIES_API_URL,
+    SONG_API_URL,
+    TAG_API_URL,
+    VENUE_API_URL,
+    WEBSITE,
+)
 from vdbpy.parsers.albums import parse_album_version
 from vdbpy.parsers.artists import parse_artist_version
 from vdbpy.parsers.events import parse_release_event_version
@@ -63,6 +72,17 @@ entry_type_to_url: dict[EntryType, str] = {
 
 entry_url_to_type: dict[str, EntryType] = {v: k for k, v in entry_type_to_url.items()}
 type EntryDetails = dict[Any, Any]  # TODO implement
+
+
+api_urls_by_entry_type: dict[EntryType, str] = {
+    "Song": SONG_API_URL,
+    "Album": ALBUM_API_URL,
+    "Artist": ARTIST_API_URL,
+    "Tag": TAG_API_URL,
+    "ReleaseEvent": EVENT_API_URL,
+    "ReleaseEventSeries": SERIES_API_URL,
+    "Venue": VENUE_API_URL,
+}
 
 
 def get_entry_details(entry_type: EntryType, entry_id: int) -> EntryDetails:

@@ -114,7 +114,7 @@ class PV:
     length: int
     name: str
     pv_id: str
-    pv_service: Service # TODO rename
+    pv_service: Service  # TODO rename
     pv_type: PvType
     publish_date: datetime | None
     # skipped thumbUrl: str

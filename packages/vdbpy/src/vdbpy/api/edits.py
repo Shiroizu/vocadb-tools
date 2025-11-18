@@ -338,13 +338,13 @@ def get_edits_until_day(
             limit=limit,
         )
 
-        total_days = 1 + (today - date).days
-        day_to_check_str = str(day_to_check).split()[0]
-        msg = f"  Found {len(edits_by_day)} edits for {day_to_check_str} (day {day_counter}/{total_days})"
+        total = 1 + (today - date).days
+        d = str(day_to_check).split()[0]
+        msg = f"  Found {len(edits_by_day)} edits for {d} (day {day_counter}/{total})"
         logger.info(msg)
 
         all_edits.extend(edits_by_day)
-        logger.debug(f"{day_to_check_str} - {limit_reached=}")
+        logger.debug(f"{d} - {limit_reached=}")
         if limit_reached:
             break
         day_to_check -= timedelta(days=1)
