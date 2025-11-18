@@ -110,29 +110,34 @@ def _verify_edits(edits: list[UserEdit]) -> None:
     if not edits:
         return
     seen: set[tuple[EntryType, int]] = set()
-    prev_date = None
+    prev_edit = None
     for edit in edits:
         edit_key = (edit.entry_type, edit.version_id)
         assert edit_key not in seen, (  # noqa: S101
             f"Duplicate edit {edit_key} found in edits ({len(edits)=}."
         )
         seen.add(edit_key)
-        if prev_date:
-            assert edit.edit_date < prev_date, (edit.edit_date, prev_date)  # noqa: S101
-        prev_date = edit.edit_date
+        if prev_edit:
+            assert edit.edit_date <= prev_edit.edit_date, (edit, prev_edit)  # noqa: S101
+            # Matching edit date example:
+            # entry_id=851424, version_id=2936993
+            # entry_id=851990, version_id=2936994
+        prev_edit = edit
 
 
 def _merge_edit_lists(
     new_edits: list[UserEdit], previous_edits: list[UserEdit]
 ) -> list[UserEdit]:
     logger.debug(f"Previous edits ({len(previous_edits)}=):")
-    logger.debug(
-        f"From {previous_edits[0].edit_date} to {previous_edits[-1].edit_date}"
-    )
+    if previous_edits:
+        logger.debug(
+            f"From {previous_edits[0].edit_date} to {previous_edits[-1].edit_date}"
+        )
     seen: set[tuple[EntryType, int]] = set()
     duplicate_count = 0
     logger.debug(f"New edits ({len(new_edits)}=):")
-    logger.debug(f"From {new_edits[0].edit_date} to {new_edits[-1].edit_date}")
+    if new_edits:
+        logger.debug(f"From {new_edits[0].edit_date} to {new_edits[-1].edit_date}")
 
     _verify_edits(new_edits)
     _verify_edits(previous_edits)
@@ -149,9 +154,10 @@ def _merge_edit_lists(
     assert duplicate_count <= 1, duplicate_count  # noqa: S101
 
     logger.debug(f"Combined edits ({len(combined_edits)}=):")
-    logger.debug(
-        f"From {combined_edits[0].edit_date} to {combined_edits[-1].edit_date}"
-    )
+    if combined_edits:
+        logger.debug(
+            f"From {combined_edits[0].edit_date} to {combined_edits[-1].edit_date}"
+        )
     _verify_edits(combined_edits)
     return combined_edits
 
@@ -161,6 +167,8 @@ def _get_edits_by_current_day(
     limit: datetime | int | VersionTuple | None = None,
     partial_filename: Path | None = None,
 ) -> tuple[list[UserEdit], bool]:
+    logger.info(f"Fetching edits until {date} with limit {limit}")
+
     previous_edits: list[UserEdit] = []
     previous_edits = _load_edits(partial_filename) if partial_filename else []
 
@@ -332,8 +340,7 @@ def get_edits_until_day(
 
         total_days = 1 + (today - date).days
         day_to_check_str = str(day_to_check).split()[0]
-        msg = f"  Found {len(edits_by_day)} edits for {day_to_check_str} \
-                  (day {day_counter}/{total_days})"
+        msg = f"  Found {len(edits_by_day)} edits for {day_to_check_str} (day {day_counter}/{total_days})"
         logger.info(msg)
 
         all_edits.extend(edits_by_day)
