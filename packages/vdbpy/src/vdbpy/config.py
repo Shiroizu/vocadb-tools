@@ -1,4 +1,6 @@
 WEBSITE = "https://vocadb.net"
+WIKI_URL = "https://wiki.vocadb.net"
+LOCAL_WIKI_URL = "http://localhost:4321"
 
 ALBUM_API_URL = f"{WEBSITE}/api/albums"
 SONG_API_URL = f"{WEBSITE}/api/songs"
