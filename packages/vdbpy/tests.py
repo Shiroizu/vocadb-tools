@@ -746,7 +746,7 @@ class TestGetSavedEntrySearch(unittest.TestCase):
         data, counts = get_saved_entry_search(
             save_file,
             SONG_API_URL,
-            {"tagId[]": self.noise_pop_tag_id, "sort": "AdditionDate"},
+            {"tagId[]": self.noise_pop_tag_id},
         )
         logger.debug(f"{counts=}")
         assert counts == (0, len(data))

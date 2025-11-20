@@ -273,6 +273,10 @@ def get_saved_entry_search(
     lazy_recheck: bool = True,
 ) -> tuple[list[EntryTuple], tuple[int, int]]:
     logger.debug(f"Fetching saved entry search with file '{file}'")
+
+    if params and "sort" not in params:
+        params["sort"] = "AdditionDate"
+
     logger.debug(f"url {search_url} and params {params}")
     entry_type = entry_types_by_api_url[search_url]
 
