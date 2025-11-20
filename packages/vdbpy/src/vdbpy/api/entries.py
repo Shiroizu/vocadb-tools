@@ -43,7 +43,7 @@ from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_cached_total_count,
     fetch_json,
-    fetch_json_items_with_total_count,
+    fetch_json_items,
     fetch_total_count,
 )
 
@@ -82,6 +82,9 @@ api_urls_by_entry_type: dict[EntryType, str] = {
     "ReleaseEvent": EVENT_API_URL,
     "ReleaseEventSeries": SERIES_API_URL,
     "Venue": VENUE_API_URL,
+}
+entry_types_by_api_url: dict[str, EntryType] = {
+    v: k for k, v in api_urls_by_entry_type.items()
 }
 
 
@@ -236,8 +239,8 @@ def is_entry_tagged(entry: EntryTuple, tag_id: int) -> bool:
     return tag_id in get_entry_tag_ids(*entry)
 
 
-def read_entries_from_file(file: Path) -> set[EntryTuple]:
-    entries: set[EntryTuple] = set()
+def read_entries_from_file(file: Path) -> list[EntryTuple]:
+    entries: list[EntryTuple] = []
     for line in get_lines(file):
         if not line.strip():
             continue
@@ -245,57 +248,90 @@ def read_entries_from_file(file: Path) -> set[EntryTuple]:
         if entry_type not in get_args(EntryType):
             msg = f"Malformatted entry type {entry_type} in {file}"
             raise ValueError(msg)
-        entries.add((entry_type, int(entry_id)))  # type: ignore
+        if (entry_type, int(entry_id)) in entries:
+            logger.warning(f"Duplicate entry {entry_type} {entry_id} in {file}")
+            continue
+        entries.append((entry_type, int(entry_id)))  # type: ignore
     return entries
 
 
 def write_entries_to_file(
-    file: Path, entries: set[EntryTuple], delimiter: str = ","
+    file: Path, entries: list[EntryTuple], delimiter: str = ","
 ) -> None:
-    # TODO convert exising files to this
     lines_to_write = [
         delimiter.join((entry_type, str(entry_id))) for entry_type, entry_id in entries
     ]
+    logger.debug(f"Saving {len(lines_to_write)} entries")
+    logger.debug(f"from {lines_to_write[0]} to {lines_to_write[-1]}")
     save_file(file, lines_to_write)
 
 
 def get_saved_entry_search(
     file: Path,
-    entry_type: EntryType,
     search_url: str,
     params: dict[Any, Any] | None = None,
-    recheck_mode: int = 2,
-) -> set[EntryTuple]:
-    # Possible modes
-    # 1) if count changed, recheck and stop when already seen entry found
-    # 2) if count changed, recheck all (current)
-    # 3) always recheck even if previous count hasn't changed
-    # TODO implement 1 & 3
-
-    logger.debug(f"Fetching saved entry search with file '{file}',")
+    lazy_recheck: bool = True,
+) -> tuple[list[EntryTuple], tuple[int, int]]:
+    logger.debug(f"Fetching saved entry search with file '{file}'")
     logger.debug(f"url {search_url} and params {params}")
-
-    if recheck_mode != 2:  # noqa: PLR2004
-        raise NotImplementedError
+    entry_type = entry_types_by_api_url[search_url]
 
     previous_entries = read_entries_from_file(file)
+    logger.debug(f"Found {len(previous_entries)} previous entries")
+    most_recent_entry_id: int = 0
+    if previous_entries:
+        most_recent_entry_id = previous_entries[0][1]
+        logger.info(f"Most recent entry is {most_recent_entry_id}")
+
     total_count = fetch_total_count(search_url, params=params)
     if len(previous_entries) == total_count:
         logger.debug(
             f"The number of entries to check has not changed ({len(previous_entries)})."
         )
-        return previous_entries
+        return previous_entries, (total_count, 0)
 
     logger.info("The number of entries to check has changed: ")
     logger.info(f"({len(previous_entries)} -> {total_count}")
 
-    entries, _ = fetch_json_items_with_total_count(search_url, params=params)
+    if lazy_recheck and most_recent_entry_id:
 
-    # TODO detect entry type instead of passing it
-    entry_set: set[EntryTuple] = {(entry_type, int(entry["id"])) for entry in entries}
-    write_entries_to_file(file, entry_set)
+        def limit_function(item: dict[Any, Any]) -> bool:
+            return item["id"] == most_recent_entry_id
 
-    return entry_set
+        limit = limit_function if lazy_recheck else None
+        new_entries_json = fetch_json_items(search_url, params=params, limit=limit)
+        new_entries: list[EntryTuple] = []
+        entry_type = entry_types_by_api_url[search_url]
+        for entry in new_entries_json:
+            if (entry_type, entry["id"]) not in new_entries:
+                new_entries.append((entry_type, entry["id"]))
+
+        logger.debug(f"{len(new_entries)} + {len(previous_entries)} =? {total_count}")
+        if len(new_entries) + len(previous_entries) == total_count:
+            logger.info(
+                "The number of new entries + previous entries matches the total count."
+            )
+            combined_entries = new_entries + previous_entries
+            if len(combined_entries) == len(set(combined_entries)):
+                logger.debug("Saving combined entries")
+                write_entries_to_file(file, combined_entries)
+                return combined_entries, (
+                    len(previous_entries),
+                    len(new_entries_json),
+                )
+            logger.warning("Combined entries includes duplicates.")
+        logger.warning("Couldn't lazy recheck entries")
+    entries_json = fetch_json_items(search_url, params=params)
+
+    entries: list[EntryTuple] = []
+    for entry in entries_json:
+        if (entry_type, entry["id"]) not in entries:
+            entries.append((entry_type, entry["id"]))
+
+    logger.debug("Saving fully checked entries")
+    write_entries_to_file(file, entries)
+
+    return entries, (len(previous_entries), len(entries))
 
 
 """

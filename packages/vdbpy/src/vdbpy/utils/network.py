@@ -92,10 +92,14 @@ def fetch_json_items_with_total_count(
     params: dict[Any, Any] | None = None,  # TODO BaseSearchParams type
     session: requests.Session | None = None,
     max_results: int = 10**9,
+    limit: int | Callable[..., bool] | None = None,
 ) -> tuple[list[Any], int]:
+    if limit == 0:
+        return [], True
     page_size: int = 50
     params = params.copy() if params is not None else {}
     logger.info(f"Fetching all items based on '{url}' with params {params}")
+    logger.debug(f"Using limit: {limit}")
     if "maxResults" in params:
         if max_results != 10**9:
             logger.warning("Duplicate max result argument provided!")
@@ -124,7 +128,23 @@ def fetch_json_items_with_total_count(
             _ = input("Press enter to continue...")
             warned = True
 
-        all_items.extend(items)
+        limit_reached = False
+        logger.debug(
+            f"Got {len(items)} items from {items[0]['id']} to {items[-1]['id']}"
+        )
+        for item in items:
+            if isinstance(limit, int) and len(all_items) >= limit:
+                logger.info(f"Limit {limit} reached, stopping.")
+                limit_reached = True
+                break
+            if callable(limit) and limit(item):
+                logger.info("Limit condition met, stopping.")
+                limit_reached = True
+                break
+            all_items.append(item)
+        if limit_reached:
+            break
+
         logger.info(f"  Page {page}/{1 + (total_count // page_size)}")
         if len(all_items) >= max_results:
             break
@@ -139,8 +159,11 @@ def fetch_json_items(
     params: dict[Any, Any] | None = None,
     session: requests.Session | None = None,
     max_results: int = 10**9,
+    limit: int | Callable[..., bool] | None = None,
 ) -> list[Any]:
-    return fetch_json_items_with_total_count(url, params, session, max_results)[0]
+    return fetch_json_items_with_total_count(url, params, session, max_results, limit)[
+        0
+    ]
 
 
 def fetch_total_count(api_url: str, params: dict[Any, Any] | None = None) -> int:

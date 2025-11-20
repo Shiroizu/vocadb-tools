@@ -12,13 +12,20 @@ from vdbpy.api.edits import (
     get_edits_by_month,
     get_edits_until_day,
 )
-from vdbpy.api.entries import get_cached_entry_version, get_random_entry
+from vdbpy.api.entries import (
+    get_cached_entry_version,
+    get_random_entry,
+    get_saved_entry_search,
+    read_entries_from_file,
+    write_entries_to_file,
+)
 from vdbpy.api.songs import (
     SongSearchParams,
     get_song_by_id,
     get_songs,
     get_songs_with_total_count,
 )
+from vdbpy.config import SONG_API_URL
 from vdbpy.types.shared import EntryStatus, EntryType, VersionTuple
 from vdbpy.types.songs import Service, SongType, SongVersion
 from vdbpy.utils.date import parse_date
@@ -473,6 +480,9 @@ class GetVersionTests(unittest.TestCase):
                 continue
             entry = get_random_entry(entry_type=entry_type)
             edits = get_edits_by_entry(entry_type, entry["id"], include_deleted=True)
+            if not edits:
+                logger.warning(f"No edits for {entry_type} entry {entry['id']}")
+                continue
             first_edit = edits[-1]
             assert first_edit.edit_event == "Created"
             assert first_edit.entry_id == entry["id"]
@@ -723,6 +733,43 @@ class TestGetEditsUntilDay(unittest.TestCase):
         assert 1 <= len(edits) <= 10, f"{len(edits)} edits"
 
 
+class TestGetSavedEntrySearch(unittest.TestCase):
+    def setUp(self) -> None:
+        self.save_dir = Path("saved_entry_searches")
+        self.noise_pop_tag_id = 7108  # ~ 60 song entries
+
+    def test_noise_pop_songs(self) -> None:
+        save_file = self.save_dir / "noise_pop_entries.csv"
+        if Path.is_file(save_file):
+            Path.unlink(save_file)
+
+        data, counts = get_saved_entry_search(
+            save_file,
+            SONG_API_URL,
+            {"tagId[]": self.noise_pop_tag_id, "sort": "AdditionDate"},
+        )
+        logger.debug(f"{counts=}")
+        assert counts == (0, len(data))
+        assert len(set(data)) == len(data)
+
+        entries = read_entries_from_file(save_file)
+        assert len(entries) == len(data), f"{len(entries)} != {len(data)}"
+        assert len(set(entries)) == len(entries)
+
+        most_5_recent_removed = entries[5:]
+        logger.debug("Saving 5 most recent removed")
+        write_entries_to_file(save_file, most_5_recent_removed)
+
+        data, counts = get_saved_entry_search(
+            save_file,
+            SONG_API_URL,
+            {"tagId[]": self.noise_pop_tag_id, "sort": "AdditionDate"},
+        )
+        logger.debug(f"{counts=}")
+        assert len(set(data)) == len(data)
+        assert counts == (len(most_5_recent_removed), 5)
+
+
 if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     for handler in logger.handlers:
@@ -731,5 +778,5 @@ if __name__ == "__main__":
     unittest.main(failfast=True)
 
     ## Limit to certain tests only
-    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsUntilDay)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestGetSavedEntrySearch)
     # unittest.TextTestRunner(verbosity=2, failfast=True).run(suite)
