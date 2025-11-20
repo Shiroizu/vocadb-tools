@@ -12,6 +12,13 @@ def parse_edits_from_archived_versions(
     data: list[dict[Any, Any]], entry_type: EntryType, entry_id: int
 ) -> list[UserEdit]:
     parsed_edits: list[UserEdit] = []
+    version_numbers = [version["version"] for version in data]
+    if len(version_numbers) != len(set(version_numbers)):
+        logger.warning(
+            f"Found duplicate version numbers for {entry_type} entry {entry_id}"
+        )
+        # https://github.com/VocaDB/vocadb/issues/1990
+        return []
     for edit_object in data:
         edit_type = edit_object["reason"]
         debug_line = f"{entry_type} {entry_id} v{edit_object['id']}"
