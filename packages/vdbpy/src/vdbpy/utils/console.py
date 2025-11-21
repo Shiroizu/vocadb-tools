@@ -21,7 +21,10 @@ def get_credentials_from_console() -> tuple[str, str]:
     return account_name, password
 
 
-def prompt_choice(choices: list[str]) -> str:
+def prompt_choice(choices: list[str], allow_skip: bool = False) -> str:
+    none = "None of these"
+    if allow_skip:
+        choices.insert(0, none)
     while True:
         logger.info("\nAvailable choices:")
         for i, choice in enumerate(choices, 1):
@@ -32,7 +35,11 @@ def prompt_choice(choices: list[str]) -> str:
             if choice < 1 or choice > len(choices):
                 logger.warning("Invalid selection.")
                 continue
-            return choices[choice - 1]
+            selection = choices[choice - 1]
+            if selection == none:
+                return ""
+
+            return selection  # noqa: TRY300
 
         except ValueError:
             logger.warning("Invalid input. Please enter a number.")
