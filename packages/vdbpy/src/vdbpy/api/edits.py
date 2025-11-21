@@ -151,7 +151,8 @@ def _merge_edit_lists(
             seen.add((edit.entry_type, edit.version_id))
             combined_edits.append(edit)
 
-    assert duplicate_count <= 1, duplicate_count  # noqa: S101
+    if duplicate_count > 1:
+        logger.warning(f"Found {duplicate_count} duplicate edits")
 
     logger.debug(f"Combined edits ({len(combined_edits)}=):")
     if combined_edits:
