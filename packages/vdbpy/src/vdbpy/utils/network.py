@@ -87,7 +87,7 @@ def fetch_cached_json(
     return fetch_json(url, session=session, params=params)
 
 
-def fetch_json_items_with_total_count(
+def fetch_json_items_with_total_count(  # noqa: PLR0915
     url: str,
     params: dict[Any, Any] | None = None,  # TODO BaseSearchParams type
     session: requests.Session | None = None,
@@ -129,6 +129,9 @@ def fetch_json_items_with_total_count(
             warned = True
 
         limit_reached = False
+        if not items:
+            logger.debug("No items found!")
+            break
         logger.debug(
             f"Got {len(items)} items from {items[0]['id']} to {items[-1]['id']}"
         )
