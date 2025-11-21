@@ -20,7 +20,9 @@ from vdbpy.types.shared import EntryType
 # TODO save results by copypasting browser url
 
 
-def search_entry(name: str, entry_type: EntryType, max_results: int = 3) -> str:
+def search_entry_ids(
+    name: str, entry_type: EntryType, max_results: int = 3
+) -> tuple[list[int], int]:
     search_functions: dict[
         EntryType, tuple[Callable[..., tuple[list[Any], int]], str]
     ] = {
@@ -47,9 +49,19 @@ def search_entry(name: str, entry_type: EntryType, max_results: int = 3) -> str:
         params["nameMatchMode"] = "Auto"
         results, total_count = search_function(params, max_results=max_results)
     if not results:
+        return [], 0
+    entry_ids = [int(entry["id"]) for entry in results]
+    return entry_ids, total_count
+
+
+def search_entry(name: str, entry_type: EntryType, max_results: int = 3) -> str:
+    entry_ids, total_count = search_entry_ids(name, entry_type, max_results)
+    if not entry_ids:
         return f"No results found for '{name}'"
 
-    links = [get_entry_link(entry_type, entry["id"]) for entry in results[:max_results]]
+    links = [
+        get_entry_link(entry_type, entry_id) for entry_id in entry_ids[:max_results]
+    ]
 
     if len(links) == 1:
         return links[0]
