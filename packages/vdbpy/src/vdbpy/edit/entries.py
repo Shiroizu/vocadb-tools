@@ -166,7 +166,7 @@ def replace_artist_in_entry(
     )
 
 
-def mark_pvs_unavailable_by_song_id(
+def mark_pvs_unavailable_for_entry(
     session: requests.Session,
     entry: EntryTuple,
     service: Service | None = None,
