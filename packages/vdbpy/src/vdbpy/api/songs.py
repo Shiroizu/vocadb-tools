@@ -119,14 +119,15 @@ def get_cached_song_by_entry_id_and_version_id(
 
 def get_song_by_pv(
     pv_service: Service, pv_id: str, fields: set[OptionalSongFieldName] | None = None
-) -> SongEntry:
+) -> SongEntry | None:
     params = {
         "pvService": pv_service,
         "pvId": pv_id,
     }
     if fields:
         params["fields"] = ",".join(fields)
-    return parse_song(fetch_json(f"{SONG_API_URL}/byPv", params=params), fields=fields)
+    entry = fetch_json(f"{SONG_API_URL}/byPv", params=params)
+    return parse_song(entry, fields=fields) if entry else None
 
 
 def get_tag_voters_by_song_id_and_tag_ids(
