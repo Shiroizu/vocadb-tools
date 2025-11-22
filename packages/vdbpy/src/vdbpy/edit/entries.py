@@ -126,7 +126,8 @@ def _edit_entry(
     session: requests.Session,
     entry: EntryTuple,
     edit_function: Callable[[dict[Any, Any], Any], dict[Any, Any]],
-    args: Any,  # noqa: ANN401
+    args: Any,  # noqa: ANN401,
+    prompt: bool = True,
 ) -> bool:
     entry_type, entry_id = entry
     api_url = f"{api_urls_by_entry_type[entry_type]}/{entry_id}"
@@ -137,7 +138,7 @@ def _edit_entry(
         logger.warning("Nothing to fix")
         return False
     logger.debug(f"{fixed_data=}")
-    if not get_boolean("Fix entry?"):
+    if prompt and not get_boolean("Fix entry?"):
         return False
     logger.info(f"Posting to {api_url}")
     request_save = session.post(api_url, {"contract": json.dumps(fixed_data)})
@@ -150,21 +151,47 @@ def _edit_entry(
 
 
 def replace_artist_in_entry(
-    session: requests.Session, entry: EntryTuple, id_to_remove: int, id_to_add: int
+    session: requests.Session,
+    entry: EntryTuple,
+    id_to_remove: int,
+    id_to_add: int,
+    prompt: bool = True,
 ) -> bool:
     return _edit_entry(
-        session, entry, _replace_artist_in_entry_data, (id_to_remove, id_to_add)
+        session=session,
+        entry=entry,
+        edit_function=_replace_artist_in_entry_data,
+        args=(id_to_remove, id_to_add),
+        prompt=prompt,
     )
 
 
 def mark_pvs_unavailable_by_song_id(
-    session: requests.Session, entry: EntryTuple, service: Service | None = None
+    session: requests.Session,
+    entry: EntryTuple,
+    service: Service | None = None,
+    prompt: bool = True,
 ) -> bool:
     # Does not do an extra check if the PV is unavailable or not!
-    return _edit_entry(session, entry, _mark_pvs_unavailable_in_entry_data, service)
+    return _edit_entry(
+        session=session,
+        entry=entry,
+        edit_function=_mark_pvs_unavailable_in_entry_data,
+        args=service,
+        prompt=prompt,
+    )
 
 
 def add_event_to_entry(
-    session: requests.Session, entry: EntryTuple, event_id: int
+    session: requests.Session,
+    entry: EntryTuple,
+    event_id: int,
+    prompt: bool = True,
 ) -> bool:
-    return _edit_entry(session, entry, _add_event_id_to_entry_data, event_id)
+    return _edit_entry(
+        session=session,
+        entry=entry,
+        edit_function=_add_event_id_to_entry_data,
+        args=event_id,
+        prompt=prompt,
+    )
