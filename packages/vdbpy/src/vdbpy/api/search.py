@@ -109,9 +109,9 @@ def find_vocalist_id(name: str) -> int:
                 logger.warning(f"'{name}' is not a voicebank")
             else:
                 vocalist_id = vocalist_entry["id"]
+                logger.info(f"  Found vocalist {WEBSITE}/Ar/{vocalist_id}:")
                 logger.info(
-                    f"Found {WEBSITE}/Ar/{vocalist_id} \
-                        ({vocalist_entry['artistType']}): '{vocalist_entry['name']}'"
+                    f"   '{vocalist_entry['name']} ({vocalist_entry['artistType']})'"
                 )
                 return vocalist_id
         else:
@@ -126,9 +126,9 @@ def find_vocalist_id(name: str) -> int:
                 logger.warning(f"'  {name}' is not a voicebank")
             else:
                 vocalist_id = vocalist_entry["id"]
+                logger.info(f"  Found vocalist {WEBSITE}/Ar/{vocalist_id}:")
                 logger.info(
-                    f"  Found {WEBSITE}/Ar/{vocalist_id} \
-                        ({vocalist_entry['artistType']}): '{vocalist_entry['name']}'"
+                    f"   '{vocalist_entry['name']} ({vocalist_entry['artistType']})'"
                 )
                 return second_search[0]["id"]
         else:
