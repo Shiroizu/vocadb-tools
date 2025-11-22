@@ -1,6 +1,6 @@
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 from vdbpy.types.shared import UserEdit
 from vdbpy.utils.date import get_last_month_strings, month_is_over
@@ -28,6 +28,11 @@ def truncate_string_with_ellipsis(s: str, max_length: int, ending: str = "...") 
 
 def add_s(word: str) -> str:
     return word if word.lower().endswith("s") else word + "s"
+
+
+def is_alnum_ascii(s: str) -> bool:
+    s = s.replace(" ", "")
+    return all(("0" <= c <= "9") or ("A" <= c <= "Z") or ("a" <= c <= "z") for c in s)
 
 
 def get_monthly_count(
@@ -80,3 +85,9 @@ def user_edit_from_dict(data: dict[Any, Any]) -> UserEdit:
         changed_fields=data["changed_fields"],
         update_notes=data["update_notes"],
     )
+
+
+def get_name_language(song_name: str) -> Literal["English", "Japanese"]:
+    if is_alnum_ascii(song_name):
+        return "English"
+    return "Japanese"

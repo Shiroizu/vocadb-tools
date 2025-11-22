@@ -98,7 +98,7 @@ def fetch_json_items_with_total_count(  # noqa: PLR0915
         return [], True
     page_size: int = 50
     params = params.copy() if params is not None else {}
-    logger.info(f"Fetching all items based on '{url}' with params {params}")
+    logger.debug(f"Fetching all items based on '{url}' with params {params}")
     logger.debug(f"Using limit: {limit}")
     if "maxResults" in params:
         if max_results != 10**9:
@@ -148,11 +148,11 @@ def fetch_json_items_with_total_count(  # noqa: PLR0915
         if limit_reached:
             break
 
-        logger.info(f"  Page {page}/{1 + (total_count // page_size)}")
         if len(all_items) >= max_results:
             break
         if len(items) < page_size:
             break
+        logger.info(f"  Page {page}/{1 + (total_count // page_size)}")
         page += 1
     return all_items[:max_results], total_count
 
