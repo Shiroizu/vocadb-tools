@@ -89,7 +89,7 @@ def search_entry_links(name: str, entry_type: EntryType, max_results: int = 3) -
     return f"Found {total_count} entries for '{name}':\n{'\n'.join(bullet_point_links)}"
 
 
-def find_vocalist_id(name: str) -> int:
+def find_vocalist_id(name: str, lazy: bool = False) -> int:
     # 1) find by exact match
     #    - if 1 vocalist result, return that
     # 2) if multiple results, find unknown vb
@@ -135,7 +135,8 @@ def find_vocalist_id(name: str) -> int:
             logger.info(
                 f"  Incorrect amount of results for '{name} (Unknown)' ({total_count})"
             )
-
+        if lazy:
+            return 0
         choices: list[str] = [
             (
                 f"{WEBSITE}/Ar/{vocalist_entry['id']} "
@@ -158,6 +159,7 @@ def get_vocalists_ids(
     vocalist_id_mapping: dict[str, int],
     vocalist_mapping_file: Path,
     delimiter: str = ",",
+    lazy: bool = False,
 ) -> list[int]:
     logger.debug(f"Vocalists are '{vocalist_line}'")
     vocalist_ids: list[int] = []
@@ -166,7 +168,9 @@ def get_vocalists_ids(
         if stripped_name in vocalist_id_mapping:
             vocalist_ids.append(vocalist_id_mapping[stripped_name])
         else:
-            vocalist_id = find_vocalist_id(stripped_name)
+            vocalist_id = find_vocalist_id(stripped_name, lazy=lazy)
+            if not vocalist_id:
+                return []
             vocalist_ids.append(vocalist_id)
             vocalist_id_mapping[stripped_name] = vocalist_id
             save_file(

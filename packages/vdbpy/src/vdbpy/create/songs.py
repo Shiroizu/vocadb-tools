@@ -31,9 +31,12 @@ def create_song_entry_for_nico_video(
     vocalist_mapping: dict[str, int],
     vocalist_mapping_file: Path,
     prompt: bool = True,
+    lazy: bool = False,
 ) -> int:
     if video.title.count("/") != 1:
         logger.warning("Malformatted title?")
+        if lazy:
+            return 0
         song_name = input("Song name: ").strip()
         vocalist_line = input("Vocalist names, separated by a comma: ")
     else:
@@ -43,8 +46,10 @@ def create_song_entry_for_nico_video(
     name_language = get_name_language(song_name)
     logger.info(f" Song name: '{song_name}' ({name_language})")
     vocalist_ids = get_vocalists_ids(
-        vocalist_line, vocalist_mapping, vocalist_mapping_file
+        vocalist_line, vocalist_mapping, vocalist_mapping_file, lazy=lazy
     )
+    if not vocalist_ids:
+        return 0
     artist_ids: list[int] = [producer_id, *vocalist_ids]
     logger.info(f" Artist ids: {artist_ids}")
 
