@@ -4,7 +4,7 @@ from typing import Any
 
 import requests
 
-from vdbpy.api.artists import get_vocalists_ids
+from vdbpy.api.search import get_vocalists_ids
 from vdbpy.config import SONG_API_URL
 from vdbpy.types.niconico import NicoVideo
 from vdbpy.utils.data import get_name_language
