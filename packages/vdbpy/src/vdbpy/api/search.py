@@ -137,13 +137,16 @@ def find_vocalist_id(name: str) -> int:
             )
 
         choices: list[str] = [
-            f"{WEBSITE}/Ar/{vocalist_entry['id']} \
-                ({vocalist_entry['artistType']}): '{vocalist_entry['name']}'"
+            (
+                f"{WEBSITE}/Ar/{vocalist_entry['id']} "
+                f"({vocalist_entry['artistType']}): "
+                f"'{vocalist_entry['name']}'"
+            )
             for vocalist_entry in first_search
         ]
         chosen_entry = prompt_choice(choices, allow_skip=True)
         if chosen_entry:
-            return int(chosen_entry.split()[0])
+            return int(chosen_entry.split()[0].split("/")[-1])
     else:
         logger.info(f"No results for '{name}'")
 
