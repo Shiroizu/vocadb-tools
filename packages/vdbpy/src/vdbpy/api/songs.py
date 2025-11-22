@@ -1,6 +1,4 @@
-import json
 import random
-import time
 from typing import Any
 
 import requests
@@ -275,74 +273,6 @@ def get_most_recent_song_by_artist_id_1d(artist_id: int) -> SongEntry:
 
 
 # ---------------------------------------------- #
-
-
-def add_event_to_song(
-    session: requests.Session, song_id: int, event_id: int, update_note: str
-) -> bool:
-    logger.debug(f"Adding event {event_id} to song {song_id} ({update_note}).")
-    entry_data = session.get(f"{SONG_API_URL}/{song_id}/for-edit").json()
-    entry_event_ids = [event["id"] for event in entry_data["releaseEvents"]]
-    if event_id in entry_event_ids:
-        logger.warning("Event already added to the entry.")
-        return False
-
-    entry_data["releaseEvents"].append({"id": event_id})
-    entry_data["updateNotes"] = update_note
-
-    request_save = session.post(
-        f"{SONG_API_URL}/{song_id}", {"contract": json.dumps(entry_data)}
-    )
-
-    request_save.raise_for_status()
-    time.sleep(1)
-    return True
-
-
-def mark_pvs_unavailable_by_song_id(
-    session: requests.Session, song_id: int, service: Service | None = None
-) -> None:
-    """Mark all original PVs as unavailable in a song entry.
-
-    Does not do an extra check if the PV is unavailable or not!
-    """
-    logger.info(f"Marking all original PVs unavailable for song {song_id}.")
-    if service:
-        logger.info(f"Restricting to PV service {service}")
-    entry_data = session.get(f"{SONG_API_URL}/{song_id}/for-edit").json()
-    updated_pv_urls: list[str] = []
-    for pv in entry_data["pvs"]:
-        logger.debug(f"{pv['pvId']} {pv['service']} ({pv['pvType']})")
-        if pv["pvType"] != "Original":
-            logger.debug("Not original, skipping.")
-            continue
-
-        if pv["disabled"]:
-            logger.debug("PV is already disabled.")
-            continue
-
-        if service and service != pv["service"]:
-            logger.debug("Skipping service.")
-            continue
-
-        updated_pv_urls.append(pv["url"])
-        pv["disabled"] = True
-
-    if updated_pv_urls:
-        update_note = "Marked PVs as unavailable: "
-        update_note += ", ".join(updated_pv_urls)
-        logger.info(update_note)
-        entry_data["updateNotes"] = update_note
-
-        request_save = session.post(
-            f"{SONG_API_URL}/{song_id}",
-            {"contract": json.dumps(entry_data)},
-        )
-        request_save.raise_for_status()
-        time.sleep(2)
-
-    else:
-        logger.info(f"No PV links to update for song {song_id}")
 
 
 def get_song_entries_by_songlist_id(
