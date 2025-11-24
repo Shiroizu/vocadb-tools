@@ -41,7 +41,7 @@ def _add_artist_id_to_entry_data(
 
     artists_to_keep.append({"artist": {"id": id_to_add}})
     update_notes = f"Added arist {id_to_add}"
-    logger.info(f"Update_notes = {update_notes}")
+    logger.debug(f"Update_notes = {update_notes}")
     data["updateNotes"] = update_notes
     data["artists"] = artists_to_keep
     return data
@@ -64,7 +64,7 @@ def _remove_artist_id_from_entry_data(
         return {}
 
     update_notes = f"Removed artist {id_to_remove}"
-    logger.info(f"Update_notes = {update_notes}")
+    logger.debug(f"Update_notes = {update_notes}")
     data["updateNotes"] = update_notes
     data["artists"] = artists_to_keep
     return data
@@ -81,10 +81,8 @@ def _replace_artist_in_entry_data(
     added_data = _add_artist_id_to_entry_data(data, id_to_add)
     if added_data:
         if removed_notes:
-            update_notes = (
-                f"Replaced artist {id_to_remove} with {id_to_add}. {removed_notes}"
-            )
-            logger.info(f"Update_notes = {update_notes}")
+            update_notes = f"Replaced artist {id_to_remove} with {id_to_add}."
+            logger.info(f"update_notes = {update_notes}")
             added_data["updateNotes"] = update_notes
         return added_data
     if removed_notes:
