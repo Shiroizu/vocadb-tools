@@ -3,7 +3,7 @@ from typing import Any, get_args
 
 from vdbpy.config import ACTIVITY_API_URL, USER_API_URL, WEBSITE
 from vdbpy.types.shared import EditType, EntryType
-from vdbpy.types.users import User, UserGroup
+from vdbpy.types.users import UserGroup
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.date import parse_date
@@ -18,24 +18,24 @@ from vdbpy.utils.network import (
 logger = get_logger()
 
 
-def get_users(params: dict[Any, Any] | None) -> list[User]:
+def get_users(params: dict[Any, Any] | None) -> list[dict[Any, Any]]:
     return fetch_json_items(USER_API_URL, params=params)
 
 
-def get_users_with_total_count(
+def get_json_users_with_total_count(
     params: dict[Any, Any] | None, max_results: int = 10**9
-) -> tuple[list[User], int]:
+) -> tuple[list[dict[Any, Any]], int]:
     return fetch_json_items_with_total_count(
         USER_API_URL, params=params, max_results=max_results
     )
 
 
-def get_user(params: dict[Any, Any] | None) -> User:
+def get_user(params: dict[Any, Any] | None) -> dict[Any, Any]:
     result = fetch_json(USER_API_URL, params=params)
     return result["items"][0] if result["items"] else {}
 
 
-def get_50_most_recent_users() -> list[User]:
+def get_50_most_recent_users() -> list[dict[Any, Any]]:
     # Inverse sorting not supported for RegisterDate
     # 1) Get total count
     # 2) Query with start = total count - 50

@@ -105,7 +105,7 @@ def fetch_json_items_with_total_count(  # noqa: PLR0915
             logger.warning("Duplicate max result argument provided!")
             logger.warning(f"({params['maxResults'] and max_results})")
         max_results = params["maxResults"]
-        logger.info(f"  Stopping after {max_results} results")
+        logger.debug(f"  Stopping after {max_results} results")
     if url == ACTIVITY_API_URL:
         logger.warning(f"Start param not supported for '{ACTIVITY_API_URL}'!")
         logger.warning("Use fetch_all_items_between_dates instead.")

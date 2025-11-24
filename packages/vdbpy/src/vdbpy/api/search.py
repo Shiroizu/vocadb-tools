@@ -6,16 +6,16 @@ if TYPE_CHECKING:
 from pathlib import Path
 from typing import Any, get_args
 
-from vdbpy.api.albums import get_albums_with_total_count
-from vdbpy.api.artists import get_artists, get_artists_with_total_count
+from vdbpy.api.albums import get_json_albums_with_total_count
+from vdbpy.api.artists import get_artists, get_json_artists_with_total_count
 from vdbpy.api.entries import get_entry_link
-from vdbpy.api.events import get_events_with_total_count
-from vdbpy.api.series import get_many_series_with_total_count
-from vdbpy.api.songlists import get_featured_songlists_with_total_count
-from vdbpy.api.songs import get_songs_with_total_count
-from vdbpy.api.tags import get_tags_with_total_count
-from vdbpy.api.users import get_users_with_total_count
-from vdbpy.api.venues import get_venues_with_total_count
+from vdbpy.api.events import get_json_events_with_total_count
+from vdbpy.api.series import get_json_many_series_with_total_count
+from vdbpy.api.songlists import get_json_featured_songlists_with_total_count
+from vdbpy.api.songs import get_json_songs_with_total_count
+from vdbpy.api.tags import get_json_tags_with_total_count
+from vdbpy.api.users import get_json_users_with_total_count
+from vdbpy.api.venues import get_json_venues_with_total_count
 from vdbpy.config import WEBSITE
 from vdbpy.types.artists import ArtistType, VoicebankType
 from vdbpy.types.shared import EntryType
@@ -38,15 +38,15 @@ def search_entries(
     search_functions: dict[
         EntryType, tuple[Callable[..., tuple[list[Any], int]], str]
     ] = {
-        "Song": (get_songs_with_total_count, "RatingScore"),
-        "Album": (get_albums_with_total_count, "CollectionCount"),
-        "Artist": (get_artists_with_total_count, "FollowerCount"),
-        "Tag": (get_tags_with_total_count, "UsageCount"),
-        "SongList": (get_featured_songlists_with_total_count, "None"),
-        "Venue": (get_venues_with_total_count, "None"),
-        "ReleaseEvent": (get_events_with_total_count, "None"),
-        "ReleaseEventSeries": (get_many_series_with_total_count, "None"),
-        "User": (get_users_with_total_count, "RegisterDate"),
+        "Song": (get_json_songs_with_total_count, "RatingScore"),
+        "Album": (get_json_albums_with_total_count, "CollectionCount"),
+        "Artist": (get_json_artists_with_total_count, "FollowerCount"),
+        "Tag": (get_json_tags_with_total_count, "UsageCount"),
+        "SongList": (get_json_featured_songlists_with_total_count, "None"),
+        "Venue": (get_json_venues_with_total_count, "None"),
+        "ReleaseEvent": (get_json_events_with_total_count, "None"),
+        "ReleaseEventSeries": (get_json_many_series_with_total_count, "None"),
+        "User": (get_json_users_with_total_count, "RegisterDate"),
     }
 
     params = {
@@ -81,7 +81,9 @@ def _select_artist_url(artists: list[dict[Any, Any]]) -> str:
 
 
 def search_entry_links(name: str, entry_type: EntryType, max_results: int = 3) -> str:
-    entries, total_count = search_entries(name, entry_type, max_results)
+    entries, total_count = search_entries(
+        name=name, entry_type=entry_type, max_results=max_results
+    )
     if not entries:
         return f"No results found for '{name}'"
 

@@ -1,7 +1,7 @@
 from typing import Any
 
 from vdbpy.config import EVENT_API_URL
-from vdbpy.types.events import ReleaseEvent, ReleaseEventDetails
+from vdbpy.types.events import ReleaseEventDetails
 from vdbpy.utils.network import (
     fetch_json,
     fetch_json_items,
@@ -9,13 +9,13 @@ from vdbpy.utils.network import (
 )
 
 
-def get_events(params: dict[Any, Any] | None) -> list[ReleaseEvent]:
+def get_events(params: dict[Any, Any] | None) -> list[dict[Any, Any]]:
     return fetch_json_items(EVENT_API_URL, params=params)
 
 
-def get_events_with_total_count(
+def get_json_events_with_total_count(
     params: dict[Any, Any] | None, max_results: int = 10**9
-) -> tuple[list[ReleaseEvent], int]:
+) -> tuple[list[dict[Any, Any]], int]:
     return fetch_json_items_with_total_count(
         EVENT_API_URL, params=params, max_results=max_results
     )

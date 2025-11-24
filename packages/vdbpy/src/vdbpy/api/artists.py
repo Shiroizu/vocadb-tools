@@ -1,7 +1,6 @@
 from typing import Any
 
 from vdbpy.config import ARTIST_API_URL, SONG_API_URL, USER_API_URL
-from vdbpy.types.artists import Artist
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
@@ -23,9 +22,9 @@ def get_artist_by_id(artist_id: int, fields: list[str] | None = None) -> dict[An
     return fetch_json(f"{ARTIST_API_URL}/{artist_id}", params=params)
 
 
-def get_artists_with_total_count(
+def get_json_artists_with_total_count(
     params: dict[Any, Any] | None, max_results: int = 10**9
-) -> tuple[list[Artist], int]:
+) -> tuple[list[dict[Any, Any]], int]:
     return fetch_json_items_with_total_count(
         ARTIST_API_URL, params=params, max_results=max_results
     )
@@ -73,7 +72,7 @@ def get_song_count_by_artist_id_1d(
 @cache_with_expiration(days=7)
 def get_followed_artists_by_user_id_7d(
     user_id: int, extra_params: dict[Any, Any] | None = None
-) -> list[Artist]:
+) -> list[dict[Any, Any]]:
     api_url = f"{USER_API_URL}/{user_id}/followedArtists"
     followed_artists = fetch_json_items(api_url, extra_params)
     if followed_artists:

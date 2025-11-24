@@ -4,7 +4,7 @@ from typing import Any
 import requests
 
 from vdbpy.config import SONGLIST_API_URL, WEBSITE
-from vdbpy.types.songlists import Songlist, SonglistCategory
+from vdbpy.types.songlists import SonglistCategory
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_json,
@@ -16,18 +16,18 @@ from vdbpy.utils.network import (
 logger = get_logger()
 
 
-def get_featured_songlists(params: dict[Any, Any] | None) -> list[Songlist]:
+def get_featured_songlists(params: dict[Any, Any] | None) -> list[dict[Any, Any]]:
     return fetch_json_items(SONGLIST_API_URL + "/featured", params=params)
 
 
-def get_featured_songlist(params: dict[Any, Any] | None) -> Songlist:
+def get_featured_songlist(params: dict[Any, Any] | None) -> dict[Any, Any]:
     result = fetch_json(SONGLIST_API_URL + "/featured", params=params)
     return result["items"][0] if result["items"] else {}
 
 
-def get_featured_songlists_with_total_count(
+def get_json_featured_songlists_with_total_count(
     params: dict[Any, Any] | None, max_results: int = 10**9
-) -> tuple[list[Songlist], int]:
+) -> tuple[list[dict[Any, Any]], int]:
     return fetch_json_items_with_total_count(
         SONGLIST_API_URL + "/featured", params=params, max_results=max_results
     )

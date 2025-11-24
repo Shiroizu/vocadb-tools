@@ -26,6 +26,14 @@ from vdbpy.utils.network import (
 logger = get_logger()
 
 
+def get_json_songs_with_total_count(
+    params: dict[Any, Any] | None, max_results: int = 10**9
+) -> tuple[list[dict[Any, Any]], int]:
+    return fetch_json_items_with_total_count(
+        SONG_API_URL, params=params, max_results=max_results
+    )
+
+
 def get_songs_with_total_count(
     fields: set[OptionalSongFieldName] | None = None,
     song_search_params: SongSearchParams | None = None,
@@ -76,8 +84,7 @@ def get_songs_with_total_count(
     logger.debug(f"Query parameters: {params}")
 
     songs_to_parse, total_count = fetch_json_items_with_total_count(
-        SONG_API_URL,
-        params=params,
+        SONG_API_URL, params=params
     )
     logger.debug(f"Found {len(songs_to_parse)} songs to parse")
 
