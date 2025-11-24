@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, get_args
 
 from vdbpy.api.albums import get_albums_with_total_count
-from vdbpy.api.artists import get_artists_with_total_count
+from vdbpy.api.artists import get_artists, get_artists_with_total_count
 from vdbpy.api.entries import get_entry_link
 from vdbpy.api.events import get_events_with_total_count
 from vdbpy.api.series import get_many_series_with_total_count
@@ -17,7 +17,7 @@ from vdbpy.api.tags import get_tags_with_total_count
 from vdbpy.api.users import get_users_with_total_count
 from vdbpy.api.venues import get_venues_with_total_count
 from vdbpy.config import WEBSITE
-from vdbpy.types.artists import VoicebankType
+from vdbpy.types.artists import ArtistType, VoicebankType
 from vdbpy.types.shared import EntryType
 from vdbpy.utils.console import prompt_choice
 from vdbpy.utils.files import save_file
@@ -69,6 +69,17 @@ def search_entries(
     return results, total_count
 
 
+def _select_artist_url(artists: list[dict[Any, Any]]) -> str:
+    artist_entry_links: list[str] = []
+    for artist in artists:
+        line = (
+            f"https://vocadb.net/Ar/{artist['id']} "
+            f"({artist['artistType']}): {artist['name']} "
+        )
+        artist_entry_links.append(line)
+    return prompt_choice(artist_entry_links, allow_skip=True)
+
+
 def search_entry_links(name: str, entry_type: EntryType, max_results: int = 3) -> str:
     entries, total_count = search_entries(name, entry_type, max_results)
     if not entries:
@@ -89,7 +100,72 @@ def search_entry_links(name: str, entry_type: EntryType, max_results: int = 3) -
     return f"Found {total_count} entries for '{name}':\n{'\n'.join(bullet_point_links)}"
 
 
-def find_vocalist_id(name: str, lazy: bool = False) -> int:
+def find_artist_id_by_links(
+    links: list[str], artist_type: ArtistType | None = None, lazy: bool = False
+) -> int:
+    links_to_check = [link.strip() for link in links if link.strip()]
+    logger.info(f"Finding artist with links {links_to_check}")
+    for link in links_to_check:
+        artists = get_artists(params={"query": link})
+        if not artists:
+            logger.info(f"No artists found with {link}")
+            continue
+        if len(artists) > 1:
+            logger.info(f"Multiple artist entries found with {link}")
+            if lazy:
+                logger.info("Lazy skip")
+                return 0
+            entry_url = _select_artist_url(artists)
+            if not entry_url:
+                continue
+            return int(entry_url.split()[0].split("/")[-1])
+        artist_entry = artists[0]
+        artist_id = artist_entry["id"]
+        if artist_type and artist_entry["artistType"] != artist_type:
+            msg = (
+                f"Artist type for {WEBSITE}/Ar/{artist_id}"
+                f" is {artist_entry['artistType']} (not {artist_type})"
+            )
+            logger.warning(msg)
+            if lazy:
+                logger.info("Lazy skip")
+                return 0
+            _ = input("Press enter to continue regardless...")
+        return artist_id
+    return 0
+
+
+def find_artist_id_by_name(
+    name: str, artist_type: ArtistType | None = None, lazy: bool = False
+) -> int:
+    logger.info(
+        f"Searching artist id for '{name}' (artist type filter = {artist_type})"
+    )
+    extra_params = {"artistTypes": artist_type} if artist_type else None
+    search_results, total_count = search_entries(
+        name, "Artist", max_results=10, extra_params=extra_params
+    )
+    if search_results:
+        if len(search_results) == 1:
+            artist_entry = search_results[0]
+            artist_id = artist_entry["id"]
+            logger.debug(f"Found {WEBSITE}/Ar/{artist_id}")
+            return artist_id
+        logger.info(f"Too many results ({total_count})")
+        if lazy:
+            logger.info("Lazy skip")
+            return 0
+
+        entry_url = _select_artist_url(search_results)
+        if entry_url:
+            return int(entry_url.split()[0].split("/")[-1])
+    else:
+        logger.info(f"No results for '{name}'")
+
+    return 0
+
+
+def find_vocalist_id_by_name(name: str, lazy: bool = False) -> int:
     # 1) find by exact match
     #    - if 1 vocalist result, return that
     # 2) if multiple results, find unknown vb
@@ -136,6 +212,7 @@ def find_vocalist_id(name: str, lazy: bool = False) -> int:
                 f"  Incorrect amount of results for '{name} (Unknown)' ({total_count})"
             )
         if lazy:
+            logger.info("Lazy skip")
             return 0
         choices: list[str] = [
             (
@@ -168,7 +245,7 @@ def get_vocalists_ids(
         if stripped_name in vocalist_id_mapping:
             vocalist_ids.append(vocalist_id_mapping[stripped_name])
         else:
-            vocalist_id = find_vocalist_id(stripped_name, lazy=lazy)
+            vocalist_id = find_vocalist_id_by_name(stripped_name, lazy=lazy)
             if not vocalist_id:
                 return []
             vocalist_ids.append(vocalist_id)
