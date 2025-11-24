@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ def create_song_entry(
     if prompt:
         _ = input("Press enter to continue...")
     request_save = session.post(SONG_API_URL, {"contract": json.dumps(data)})
+    time.sleep(1)
     request_save.raise_for_status()
     return request_save.json()
 
