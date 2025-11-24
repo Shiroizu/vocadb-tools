@@ -5,6 +5,7 @@ from vdbpy.types.artists import Artist
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
+    fetch_json,
     fetch_json_items,
     fetch_json_items_with_total_count,
     fetch_total_count,
@@ -13,8 +14,13 @@ from vdbpy.utils.network import (
 logger = get_logger()
 
 
-def get_artists(params: dict[Any, Any] | None) -> list[Artist]:
+def get_artists(params: dict[Any, Any] | None) -> list[dict[Any, Any]]:
     return fetch_json_items(ARTIST_API_URL, params=params)
+
+
+def get_artist_by_id(artist_id: int, fields: list[str] | None = None) -> dict[Any, Any]:
+    params = {"fields": ",".join(fields)} if fields else None
+    return fetch_json(f"{ARTIST_API_URL}/{artist_id}", params=params)
 
 
 def get_artists_with_total_count(
@@ -25,7 +31,7 @@ def get_artists_with_total_count(
     )
 
 
-def get_artists_by_tag_id(tag_id: int) -> list[Artist]:
+def get_artists_by_tag_id(tag_id: int) -> list[dict[Any, Any]]:
     params = {"tagId[]": tag_id}
     return get_artists(params=params)
 
