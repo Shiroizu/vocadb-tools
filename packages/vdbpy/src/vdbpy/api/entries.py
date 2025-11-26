@@ -295,7 +295,7 @@ def get_saved_entry_search(
         return previous_entries, (total_count, 0)
 
     logger.info("The number of entries to check has changed: ")
-    logger.info(f"({len(previous_entries)} -> {total_count}")
+    logger.info(f"({len(previous_entries)} -> {total_count})")
 
     if lazy_recheck and most_recent_entry_id:
 

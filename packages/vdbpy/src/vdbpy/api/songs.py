@@ -92,8 +92,8 @@ def get_songs_with_total_count(
 
 
 def get_songs(
-    fields: set[OptionalSongFieldName] | None = None,
     song_search_params: SongSearchParams | None = None,
+    fields: set[OptionalSongFieldName] | None = None,
 ) -> list[SongEntry]:
     return get_songs_with_total_count(fields, song_search_params)[0]
 
