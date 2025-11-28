@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from vdbpy.api.entries import get_versions_url, is_entry_deleted
+from vdbpy.api.entries import get_entry_link, get_versions_url, is_entry_deleted
 from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.parsers.edits import parse_edits, parse_edits_from_archived_versions
@@ -396,7 +396,9 @@ def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit:
 def get_edits_by_entry(
     entry_type: EntryType, entry_id: int, include_deleted: bool = False
 ) -> list[UserEdit]:
-    data = fetch_json(get_versions_url(entry_type, entry_id))
+    url = get_versions_url(entry_type, entry_id)
+    logger.debug(f"   Downloading version history {url}")
+    data = fetch_json(url)
     if not include_deleted:
         if entry_type in ["Album", "Tag", "ReleaseEvent", "ReleaseEventSeries"]:
             if is_entry_deleted(entry_type, entry_id):
@@ -416,5 +418,9 @@ def get_edits_by_entry(
 def get_cached_edits_by_entry_before_version_id(
     entry_type: EntryType, entry_id: int, version_id: int, include_deleted: bool = False
 ) -> list[UserEdit]:
+    entry_link = get_entry_link(entry_type, entry_id)
+    logger.debug(
+        f"   Downloading versions for {entry_link} to cache since v{version_id}:"
+    )
     edits = get_edits_by_entry(entry_type, entry_id, include_deleted)
     return [edit for edit in edits if edit.version_id <= version_id]

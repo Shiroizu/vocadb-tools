@@ -117,6 +117,7 @@ def get_cached_raw_entry_version(
     entry_type: EntryType, version_id: int
 ) -> dict[Any, Any]:
     url = f"{WEBSITE}/api/{add_s(entry_type)}/versions/{version_id}"
+    logger.debug(f"   Downloading version data to cache from {url}")
     return fetch_json(url)
 
 
