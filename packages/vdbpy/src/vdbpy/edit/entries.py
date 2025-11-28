@@ -15,6 +15,7 @@ logger = get_logger()
 
 def _add_event_id_to_entry_data(
     data: dict[Any, Any],
+    base_update_notes: str,  # noqa: ARG001
     id_to_add: int,
 ) -> dict[Any, Any]:
     entry_event_ids = [event["id"] for event in data["releaseEvents"]]
@@ -71,7 +72,9 @@ def _remove_artist_id_from_entry_data(
 
 
 def _replace_artist_in_entry_data(
-    data: dict[Any, Any], artist_ids: tuple[int, int]
+    data: dict[Any, Any],
+    base_update_note: str,  # noqa: ARG001
+    artist_ids: tuple[int, int],
 ) -> dict[Any, Any]:
     id_to_remove, id_to_add = artist_ids
     removed_data = _remove_artist_id_from_entry_data(data, id_to_remove)
@@ -91,7 +94,9 @@ def _replace_artist_in_entry_data(
 
 
 def _mark_pvs_unavailable_in_entry_data(
-    data: dict[Any, Any], service: Service | None
+    data: dict[Any, Any],
+    base_update_note: str,  # noqa: ARG001
+    service: Service | None,
 ) -> dict[Any, Any]:
     logger.info("Marking all original PVs unavailable.")
     if service:
@@ -120,18 +125,22 @@ def _mark_pvs_unavailable_in_entry_data(
     return data
 
 
-def _edit_entry(
+# --------------------------------------------- #
+
+
+def edit_entry(
     session: requests.Session,
     entry: EntryTuple,
-    edit_function: Callable[[dict[Any, Any], Any], dict[Any, Any]],
-    args: Any,  # noqa: ANN401,
+    edit_function: Callable[[dict[Any, Any], str, Any], dict[Any, Any]],
+    base_update_note: str = "",
     prompt: bool = True,
+    args: Any = None,  # noqa: ANN401
 ) -> bool:
     entry_type, entry_id = entry
     api_url = f"{api_urls_by_entry_type[entry_type]}/{entry_id}"
     entry_data = session.get(f"{api_url}/for-edit").json()
     logger.debug(f"{entry_data=}")
-    fixed_data = edit_function(entry_data, args)
+    fixed_data = edit_function(entry_data, base_update_note, args)
     if not fixed_data:
         logger.warning("Nothing to fix")
         return False
@@ -145,9 +154,6 @@ def _edit_entry(
     return True
 
 
-# --------------------------------------------- #
-
-
 def replace_artist_in_entry(
     session: requests.Session,
     entry: EntryTuple,
@@ -155,7 +161,7 @@ def replace_artist_in_entry(
     id_to_add: int,
     prompt: bool = True,
 ) -> bool:
-    return _edit_entry(
+    return edit_entry(
         session=session,
         entry=entry,
         edit_function=_replace_artist_in_entry_data,
@@ -171,7 +177,7 @@ def mark_pvs_unavailable_for_entry(
     prompt: bool = True,
 ) -> bool:
     # Does not do an extra check if the PV is unavailable or not!
-    return _edit_entry(
+    return edit_entry(
         session=session,
         entry=entry,
         edit_function=_mark_pvs_unavailable_in_entry_data,
@@ -186,7 +192,7 @@ def add_event_to_entry(
     event_id: int,
     prompt: bool = True,
 ) -> bool:
-    return _edit_entry(
+    return edit_entry(
         session=session,
         entry=entry,
         edit_function=_add_event_id_to_entry_data,
