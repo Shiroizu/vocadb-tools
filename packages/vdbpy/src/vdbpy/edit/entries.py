@@ -128,6 +128,14 @@ def _mark_pvs_unavailable_in_entry_data(
 # --------------------------------------------- #
 
 
+def trim_update_notes(update_notes: str, max_length: int = 200) -> str:
+    if len(update_notes) > max_length:
+        update_notes = update_notes[: max_length - 1] + "…"
+        logger.warning(f"Trimmed update notes below {max_length} characters:")
+        logger.warning(update_notes)
+    return update_notes
+
+
 def edit_entry(
     session: requests.Session,
     entry: EntryTuple,
@@ -144,12 +152,19 @@ def edit_entry(
     if not fixed_data:
         logger.warning("Nothing to fix")
         return False
+    fixed_data["updateNotes"] = trim_update_notes(fixed_data["updateNotes"])
     logger.debug(f"{fixed_data=}")
     if prompt and not get_boolean("Fix entry?"):
         return False
     logger.info(f"Posting to {api_url}")
     request_save = session.post(api_url, {"contract": json.dumps(fixed_data)})
     request_save.raise_for_status()
+
+    # TODO post_json function
+    # from requests.adapters import HTTPAdapter, Retry
+    # retries = Retry(total=5, backoff_factor=1, status_forcelist=[ ? ])
+    # session.mount('http://', HTTPAdapter(max_retries=retries))
+
     time.sleep(1)
     return True
 
