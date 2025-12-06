@@ -153,6 +153,8 @@ def edit_entry(
         logger.warning("Nothing to fix")
         return False
     fixed_data["updateNotes"] = trim_update_notes(fixed_data["updateNotes"])
+    logger.info(f"Update notes: {fixed_data['updateNotes']}")
+    assert fixed_data["updateNotes"]  # noqa: S101
     logger.debug(f"{fixed_data=}")
     if prompt and not get_boolean("Fix entry?"):
         return False
