@@ -61,6 +61,11 @@ def get_cached_username_by_id(user_id: int, include_usergroup: bool = False) -> 
 
 
 @cache_with_expiration(days=1)
+def get_cached_username_by_id_1d(user_id: int, include_usergroup: bool = False) -> str:
+    return get_username_by_id(user_id, include_usergroup)
+
+
+@cache_with_expiration(days=1)
 def get_user_profile_by_username_1d(username: str) -> dict[Any, Any]:  # TODO type
     """Get user profile data.
 
