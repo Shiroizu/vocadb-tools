@@ -386,11 +386,14 @@ def get_edits_by_username(username: str) -> list[UserEdit]:
     )
 
 
-def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit:
+def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit | None:
     params = {"userId": user_id, "fields": "Entry,ArchivedVersion", "maxResults": 1}
 
     logger.debug(f"Fetching most recent edit by user id '{user_id}'")
-    return parse_edits(fetch_json(ACTIVITY_API_URL, params=params)["items"])[0]
+    parsed_edits = parse_edits(fetch_json(ACTIVITY_API_URL, params=params)["items"])
+    if parsed_edits:
+        return parsed_edits[0]
+    return None
 
 
 def get_edits_by_entry(
