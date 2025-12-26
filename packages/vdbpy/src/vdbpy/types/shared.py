@@ -11,15 +11,19 @@ from vdbpy.types.users import UserId
 
 type Comment = dict[Any, Any]  # TODO implement
 
-EntryType = Literal[
+VersionedEntryType = Literal[
     "Song",
     "Artist",
     "Album",
     "Tag",
     "ReleaseEvent",
-    "SongList",
     "Venue",
     "ReleaseEventSeries",
+]
+
+EntryType = Literal[
+    VersionedEntryType,
+    "SongList",
     "User",
 ]  # omit 'type' here so this is possible:
 # for entry_type in get_args(EntryType):
