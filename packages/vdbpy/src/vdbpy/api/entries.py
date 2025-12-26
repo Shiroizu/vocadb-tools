@@ -36,7 +36,7 @@ from vdbpy.types.shared import (
 from vdbpy.types.songs import SongVersion
 from vdbpy.types.tags import TagVersion
 from vdbpy.types.venues import VenueVersion
-from vdbpy.utils.cache import cache_without_expiration
+from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import add_s
 from vdbpy.utils.files import get_lines, save_file
 from vdbpy.utils.logger import get_logger
@@ -238,6 +238,11 @@ def get_entry_from_link(entry_link: str) -> EntryTuple:
 
 def is_entry_tagged(entry: EntryTuple, tag_id: int) -> bool:
     return tag_id in get_entry_tag_ids(*entry)
+
+
+@cache_with_expiration(days=1)
+def is_entry_tagged_1d(entry: EntryTuple, tag_id: int) -> bool:
+    return is_entry_tagged(entry, tag_id)
 
 
 def read_entries_from_file(file: Path) -> list[EntryTuple]:
