@@ -72,7 +72,7 @@ def cache_without_expiration() -> Any:
     return decorator
 
 
-def cache_conditionally(days: int = 1) -> Any:
+def cache_conditionally(days: float = 1) -> Any:
     def decorator(func: Callable[..., Any]) -> Any:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Ignore session parameter:
