@@ -9,7 +9,17 @@ from vdbpy.config import (
     TAG_API_URL,
     VENUE_API_URL,
 )
-from vdbpy.types.changed_fields import ChangedFields
+from vdbpy.types.changed_fields import (
+    ChangedAlbumFields,
+    ChangedArtistFields,
+    ChangedFields,
+    ChangedReleaseEventFields,
+    ChangedReleaseEventSeriesFields,
+    ChangedSongFields,
+    ChangedTagFields,
+    ChangedVenueFields,
+    SharedChangedFields,
+)
 from vdbpy.types.shared import EditType, EntryType
 
 edit_event_map: dict[str, EditType] = {
@@ -109,4 +119,21 @@ renamed_version_fields_to_changed_fields_mapping_by_entry_type: dict[
         "latitude": "Coordinates",
         "longitude": "Coordinates",
     },
+}  # type: ignore
+
+derived_fields_by_entry_type: dict[EntryType, list[ChangedFields]] = {
+    "Song": ["Lyrics"],
+    "Artist": ["Groups"],  # Voicebanks only
+    "ReleaseEvent": ["Category", "Names", "OriginalName"],
+}
+
+changed_fields_by_entry_type: dict[EntryType | Literal["Shared"], ChangedFields] = {
+    "Song": ChangedSongFields,
+    "Album": ChangedAlbumFields,
+    "Artist": ChangedArtistFields,
+    "Tag": ChangedTagFields,
+    "Venue": ChangedVenueFields,
+    "ReleaseEvent": ChangedReleaseEventFields,
+    "ReleaseEventSeries": ChangedReleaseEventSeriesFields,
+    "Shared": SharedChangedFields,
 }  # type: ignore

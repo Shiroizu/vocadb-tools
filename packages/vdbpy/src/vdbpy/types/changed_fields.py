@@ -1,14 +1,9 @@
 from typing import Literal
 
-type SharedChangedFields = Literal[
-    "Status",
-    "OriginalName",
-    "Names",
-    "WebLinks"
-]
+SharedChangedFields = Literal["Status", "OriginalName", "Names", "WebLinks"]
 
 # From github/vocadb/VocaDbModel/Domain/{entry_type}s/{entry_type}Diff.cs
-type ChangedSongFields = Literal[
+ChangedSongFields = Literal[
     SharedChangedFields,
     "Artists",
     "Length",
@@ -24,7 +19,7 @@ type ChangedSongFields = Literal[
     "CultureCodes",
 ]
 
-type ChangedAlbumFields = Literal[
+ChangedAlbumFields = Literal[
     SharedChangedFields,
     "Artists",
     "Cover",
@@ -38,7 +33,7 @@ type ChangedAlbumFields = Literal[
     "Tracks",
 ]
 
-type ChangedArtistFields = Literal[
+ChangedArtistFields = Literal[
     SharedChangedFields,
     "Albums",
     "ArtistType",
@@ -51,7 +46,7 @@ type ChangedArtistFields = Literal[
     "CultureCodes",
 ]
 
-type ChangedTagFields = Literal[
+ChangedTagFields = Literal[
     SharedChangedFields,
     "CategoryName",
     "Description",
@@ -62,7 +57,7 @@ type ChangedTagFields = Literal[
     "Targets",
 ]
 
-type ChangedVenueFields = Literal[
+ChangedVenueFields = Literal[
     SharedChangedFields,
     "Address",
     "AddressCountryCode",
@@ -70,7 +65,7 @@ type ChangedVenueFields = Literal[
     "Description",
 ]
 
-type ChangedReleaseEventFields = Literal[
+ChangedReleaseEventFields = Literal[
     SharedChangedFields,
     "Artists",
     "Category",
@@ -86,9 +81,13 @@ type ChangedReleaseEventFields = Literal[
     "VenueName",
 ]
 
-type ChangedReleaseEventSeriesFields = Literal[
+ChangedReleaseEventSeriesFields = Literal[
     SharedChangedFields,
-    "Category", "Description", "OriginalName", "Picture", "WebLinks"
+    "Category",
+    "Description",
+    "OriginalName",
+    "Picture",
+    "WebLinks",
 ]
 
 type ChangedFields = (
