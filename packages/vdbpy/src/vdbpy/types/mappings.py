@@ -1,3 +1,5 @@
+from typing import Literal
+
 from vdbpy.config import (
     ALBUM_API_URL,
     ARTIST_API_URL,
@@ -7,7 +9,7 @@ from vdbpy.config import (
     TAG_API_URL,
     VENUE_API_URL,
 )
-from vdbpy.types.changed_fields import ChangedSongFields
+from vdbpy.types.changed_fields import ChangedFields
 from vdbpy.types.shared import EditType, EntryType
 
 edit_event_map: dict[str, EditType] = {
@@ -46,21 +48,32 @@ entry_types_by_api_url: dict[str, EntryType] = {
 # from vdbpy.types.songs import SongVersion
 # Unsupported: "CultureCodes",
 renamed_version_fields_to_changed_fields_mapping_by_entry_type: dict[
-    EntryType, dict[str, ChangedSongFields]
+    str, dict[EntryType | Literal["Shared"], ChangedFields]
 ] = {
-    "Song": {
+    "Shared": {
         "name_non_english": "Names",
         "name_romaji": "Names",
         "name_english": "Names",
         "aliases": "Names",
+        "default_name_language": "OriginalName",
+        "external_links": "WebLinks",
+    },
+    "Song": {
         "description": "Notes",
         "description_eng": "Notes",
         "length_seconds": "Length",
-        "default_name_language": "OriginalName",
         "original_version_id": "OriginalVersion",
         "release_event_ids": "ReleaseEvents",
-        "external_links": "WebLinks",
         "max_milli_bpm": "Bpm",
         "min_milli_bpm": "Bpm",
-    }
-}
+    },
+    "Artist": {
+        "vb_base_id": "BaseVoicebank",
+        "additional_pictures": "Pictures",
+        "vb_voice_provider_ids": "Groups",
+        "vb_manager_ids": "Groups",
+        "vb_illustrator_ids": "Groups",
+        "vb_chara_designer_ids": "Groups",
+        "vb_release_date": "ReleaseDate",
+    },
+}  # type: ignore
