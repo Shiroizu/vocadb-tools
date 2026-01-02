@@ -6,13 +6,6 @@ import requests
 
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import (
-    ALBUM_API_URL,
-    ARTIST_API_URL,
-    EVENT_API_URL,
-    SERIES_API_URL,
-    SONG_API_URL,
-    TAG_API_URL,
-    VENUE_API_URL,
     WEBSITE,
 )
 from vdbpy.parsers.albums import parse_album_version
@@ -27,9 +20,13 @@ from vdbpy.parsers.venus import parse_venue_version
 from vdbpy.types.albums import AlbumVersion
 from vdbpy.types.artists import ArtistVersion
 from vdbpy.types.events import ReleaseEventVersion
+from vdbpy.types.mappings import (
+    entry_type_to_url,
+    entry_types_by_api_url,
+    entry_url_to_type,
+)
 from vdbpy.types.series import ReleaseEventSeriesVersion
 from vdbpy.types.shared import (
-    EditType,
     EntryTuple,
     EntryType,
 )
@@ -49,43 +46,7 @@ from vdbpy.utils.network import (
 
 logger = get_logger()
 
-edit_event_map: dict[str, EditType] = {
-    "Created": "Created",
-    "Updated": "Updated",
-    "PropertiesUpdated": "Updated",
-    "Reverted": "Reverted",
-    "Deleted": "Deleted",
-    "Merged": "Updated",
-    "Restored": "Restored",
-}
-
-entry_type_to_url: dict[EntryType, str] = {
-    "Song": "S",
-    "Artist": "Ar",
-    "Album": "Al",
-    "Venue": "Venue/Details",
-    "Tag": "T",
-    "ReleaseEvent": "E",
-    "ReleaseEventSeries": "Es",
-    "SongList": "L",
-}
-
-entry_url_to_type: dict[str, EntryType] = {v: k for k, v in entry_type_to_url.items()}
 type EntryDetails = dict[Any, Any]  # TODO implement
-
-
-api_urls_by_entry_type: dict[EntryType, str] = {
-    "Song": SONG_API_URL,
-    "Album": ALBUM_API_URL,
-    "Artist": ARTIST_API_URL,
-    "Tag": TAG_API_URL,
-    "ReleaseEvent": EVENT_API_URL,
-    "ReleaseEventSeries": SERIES_API_URL,
-    "Venue": VENUE_API_URL,
-}
-entry_types_by_api_url: dict[str, EntryType] = {
-    v: k for k, v in api_urls_by_entry_type.items()
-}
 
 
 def get_entry_details(entry_type: EntryType, entry_id: int) -> EntryDetails:

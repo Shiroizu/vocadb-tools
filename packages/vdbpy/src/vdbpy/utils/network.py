@@ -137,11 +137,11 @@ def fetch_json_items_with_total_count(  # noqa: PLR0915
         )
         for item in items:
             if isinstance(limit, int) and len(all_items) >= limit:
-                logger.info(f"Limit {limit} reached, stopping.")
+                logger.debug(f"Limit {limit} reached, stopping.")
                 limit_reached = True
                 break
             if callable(limit) and limit(item):
-                logger.info("Limit condition met, stopping.")
+                logger.debug("Limit condition met, stopping.")
                 limit_reached = True
                 break
             all_items.append(item)

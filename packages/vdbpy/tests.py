@@ -38,8 +38,11 @@ logger = get_logger("test-logger")
 class GetSongsTests(unittest.TestCase):
     # TODO rewrite possibly drifting tests
 
+    test_counter = 0
+
     def setUp(self) -> None:
-        logger.info(f"Running test: {self._testMethodName}")
+        self.__class__.test_counter += 1
+        logger.info(f"Running test #{self.test_counter}: {self._testMethodName}")
         self.entry_count = 1
         test_tags = {481: "rock", 52: "cat"}
         self.query = "kitty"

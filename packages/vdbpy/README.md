@@ -39,8 +39,6 @@ def get_cached_username_by_id(user_id: int, include_usergroup=False) -> str:
 
 ## TODO
 
-TODO-count: 44
-
 - [ ] Type-safe entry versions
     - [x] AlbumVersion
     - [x] ArtistVersion

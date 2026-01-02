@@ -1,6 +1,6 @@
 from typing import Any
 
-from vdbpy.api.entries import edit_event_map
+from vdbpy.types.mappings import edit_event_map
 from vdbpy.types.shared import EntryType, UserEdit
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger

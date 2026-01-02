@@ -327,7 +327,7 @@ def get_edits_until_day(
     while True:
         day_counter += 1
         if day_to_check < date:
-            logger.info(
+            logger.debug(
                 f"Edit age thresold {str(date).split()[0]} reached, stopping.\n"
             )
             break

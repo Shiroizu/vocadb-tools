@@ -20,31 +20,6 @@ type ChangedSongFields = Literal[
     "CultureCodes",
 ]
 
-# from vdbpy.types.songs import SongVersion
-# Unsupported: "CultureCodes",
-song_version_fields_to_changed_song_fields_mapping: dict[str, ChangedSongFields] = {
-    "artists": "Artists",
-    "lyrics": "Lyrics",
-    "publish_date": "PublishDate",
-    "pvs": "PVs",
-    "song_type": "SongType",
-    "status": "Status",
-    # ------
-    "name_non_english": "Names",
-    "name_romaji": "Names",
-    "name_english": "Names",
-    "aliases": "Names",
-    "description": "Notes",
-    "description_eng": "Notes",
-    "length_seconds": "Length",
-    "default_name_language": "OriginalName",
-    "original_version_id": "OriginalVersion",
-    "release_event_ids": "ReleaseEvents",
-    "external_links": "WebLinks",
-    "max_milli_bpm": "Bpm",
-    "min_milli_bpm": "Bpm",
-}
-
 type ChangedAlbumFields = Literal[
     "Artists",
     "Cover",

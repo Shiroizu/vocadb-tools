@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 
-from vdbpy.api.entries import api_urls_by_entry_type
+from vdbpy.types.mappings import api_urls_by_entry_type
 from vdbpy.types.shared import EntryTuple, Service
 from vdbpy.utils.console import get_boolean
 from vdbpy.utils.logger import get_logger
