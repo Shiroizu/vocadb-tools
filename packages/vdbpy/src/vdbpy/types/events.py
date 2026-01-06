@@ -54,7 +54,6 @@ class ReleaseEventVersion(BaseEntryVersion):
     # Missing/unsupported fields:
     # - endDate
     # - pvs
-    autofilled_names: tuple[str, str, str] | None
     event_category: EventCategory
     start_date: datetime | None
     series_number: int

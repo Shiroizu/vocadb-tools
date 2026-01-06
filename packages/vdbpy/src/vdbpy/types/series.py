@@ -11,7 +11,6 @@ type ReleaseEventSeriesEntry = dict[Any, Any]  # TODO implement
 
 @dataclass
 class ReleaseEventSeriesVersion(BaseEntryVersion):
-    autofilled_names: tuple[str, str, str] | None
     event_category: "EventCategory"
 
 

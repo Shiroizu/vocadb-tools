@@ -50,14 +50,8 @@ def parse_event_artists(
 
 def parse_release_event_version(data: dict[Any, Any]) -> ReleaseEventVersion:
     version_data = data["versions"]["firstData"]
-    autofilled_names = (
-        version_data["translatedName"].values()
-        if "names" not in version_data and "translatedName" in version_data
-        else None
-    )
 
     return ReleaseEventVersion(
-        autofilled_names=autofilled_names,
         artists=parse_event_artists(version_data),
         custom_venue_name=version_data.get("venueName", ""),
         event_category=version_data["category"],

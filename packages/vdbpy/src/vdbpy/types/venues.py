@@ -5,7 +5,6 @@ from vdbpy.types.shared import BaseEntry, BaseEntryVersion
 
 @dataclass
 class VenueVersion(BaseEntryVersion):
-    autofilled_names: tuple[str, str, str] | None
     address: str | None
     country_code: str | None
     latitude: float | None

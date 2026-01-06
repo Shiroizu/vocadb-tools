@@ -13,12 +13,12 @@ from vdbpy.utils.date import parse_date
 
 
 def parse_version_names(data: dict[Any, Any]) -> tuple[str, str, str, list[str]]:
-    name_non_english = ""
-    name_romaji = ""
-    name_english = ""
-    aliases: list[str] = []
-
     if "names" in data:
+        name_non_english = ""
+        name_romaji = ""
+        name_english = ""
+        aliases: list[str] = []
+
         for entry in data["names"]:
             language = entry["language"]
             value = entry["value"]
@@ -35,7 +35,18 @@ def parse_version_names(data: dict[Any, Any]) -> tuple[str, str, str, list[str]]
                     msg = f"Unexpected language {language}"
                     raise ValueError(msg)
 
-    return name_non_english, name_romaji, name_english, aliases
+        return name_non_english, name_romaji, name_english, aliases
+
+    if "translatedName" in data:
+        return (
+            data["translatedName"]["japanese"],
+            data["translatedName"]["romaji"],
+            data["translatedName"]["english"],
+            [],
+        )
+
+    msg = f"No names found: {data}"
+    raise ValueError(msg)
 
 
 def parse_names(data: dict[Any, Any]) -> tuple[dict[DefaultLanguage, str], list[str]]:

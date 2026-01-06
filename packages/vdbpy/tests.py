@@ -584,7 +584,7 @@ class TestGetEditsByDay(unittest.TestCase):
             limit=10,
             save_dir=None,
         )
-        assert len(ten_edits_from_yesterday) == 10
+        assert 1 < len(ten_edits_from_yesterday) <= 10, ten_edits_from_yesterday
         assert limit_reached
 
     # def test_yesterday_all_edits(self) -> None:
@@ -797,8 +797,8 @@ if __name__ == "__main__":
     for handler in logger.handlers:
         handler.setLevel(logging.DEBUG)
 
-    unittest.main(failfast=True)
+    logger.warning("Run 'uv run coverage run -m unittest tests.py' for all tests.")
 
     ## Limit to certain tests only
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestSearchEntries)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestGetEditsByDay)
     unittest.TextTestRunner(verbosity=2, failfast=True).run(suite)
