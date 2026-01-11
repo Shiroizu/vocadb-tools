@@ -138,6 +138,7 @@ def parse_base_entry_version(
     data: dict[Any, Any],
 ) -> BaseEntryVersion:
     entry_status = data["archivedVersion"]["status"]
+    version_id = data["archivedVersion"]["id"]
     data = data["versions"]["firstData"]
 
     name_non_english, name_romaji, name_english, aliases = parse_version_names(data)
@@ -158,6 +159,7 @@ def parse_base_entry_version(
         description=desc,
         description_eng=desc_eng,
         entry_id=data["id"],
+        version_id=version_id,
         external_links=parse_links(data),
         name_english=name_english,
         name_non_english=name_non_english,

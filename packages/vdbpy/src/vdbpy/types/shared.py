@@ -127,6 +127,7 @@ class PV:
 @dataclass
 class BaseEntryVersion:
     entry_id: int
+    version_id: int
     default_name_language: DefaultLanguage
     name_non_english: str
     name_romaji: str

@@ -3,6 +3,7 @@ from typing import Any
 
 import requests
 
+from vdbpy.api.edits import get_edits_by_entry
 from vdbpy.config import SONG_API_URL, SONGLIST_API_URL
 from vdbpy.parsers.songs import parse_song
 from vdbpy.types.shared import (
@@ -109,10 +110,19 @@ def get_song_by_id(
 @cache_without_expiration()
 def get_cached_song_by_entry_id_and_version_id(
     song_id: int, version_id: int, fields: set[OptionalSongFieldName] | None = None
-) -> SongEntry:
+) -> SongEntry | None:
     logger.debug(
         f"Fetching cached song by entry id {song_id} and version id {version_id}..."
     )
+
+    most_recent_edit = get_edits_by_entry("Song", song_id, include_deleted=True)[0]
+    if most_recent_edit.version_id != version_id:
+        logger.warning(
+            f"    Cached entry has been edited after v{version_id}. Not going to fetch."
+        )
+        return None
+
+    # TODO cacheable type for optional song fields
     uncacheable_fields: set[OptionalSongFieldName] = {"albums", "tags"}
     if fields:
         field_intersection = fields & uncacheable_fields
