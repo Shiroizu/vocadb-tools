@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import Any
 
 import requests
+from requests import Response
 
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
@@ -50,6 +51,7 @@ def fetch_json(
 
     retry_count = 1
     while retry_count <= RETRY_COUNT:
+        r: Response
         try:
             r = (
                 session.get(url, params=params)
@@ -66,7 +68,11 @@ def fetch_json(
             requests.exceptions.ReadTimeout,
             requests.exceptions.HTTPError,
         ):
-            logger.warning(f"Connection issues with '{url}'")
+            assert r  # type: ignore # noqa: S101
+            if r.status_code == 404:  # noqa: PLR2004
+                logger.warning(f"Not found: {r.url}")
+                return {}
+            logger.warning(f"Connection issues with '{r.url}'")
             retry_count += 1
             logger.warning(f"Retry attempt #{retry_count}")
             logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
