@@ -116,13 +116,17 @@ def fetch_json_items_with_total_count(  # noqa: PLR0915
         logger.warning("Use fetch_all_items_between_dates instead.")
         raise NotImplementedError
     all_items: list[Any] = []
-    page = 1
+    total_count = 0
     params["maxResults"] = min(page_size, max_results)
     params["getTotalCount"] = True
     warned = False
+    page = 1
     while True:
         params["start"] = str(page_size * (page - 1))
         json = fetch_json(url, session=session, params=params)
+        if "items" not in json:
+            logger.warning(f"Items not found in json: {json}")
+            break
         items = json["items"]
         total_count = json["totalCount"]
 
@@ -225,11 +229,14 @@ def fetch_all_items_between_dates(
 
     limit_reached = False
     while True:
-        items = fetch_json(api_url, params=params)["items"]
         logger.debug(
             f"Fetching items from '{params['since']}' to '{params['before']}'..."
         )
-
+        json = fetch_json(api_url, params=params)
+        if "items" not in json:
+            logger.warning(f"Items not found in json: {json}")
+            break
+        items = json["items"]
         if not items:
             logger.info("No items found, stopping.")
             break
