@@ -51,7 +51,7 @@ def fetch_json(
 
     retry_count = 1
     while retry_count <= RETRY_COUNT:
-        r: Response
+        r: Response | None = None
         try:
             r = (
                 session.get(url, params=params)
@@ -68,7 +68,7 @@ def fetch_json(
             requests.exceptions.ReadTimeout,
             requests.exceptions.HTTPError,
         ):
-            if not r or r.status_code == 404:  # type: ignore # noqa: PLR2004
+            if not r or r.status_code == 404:  # noqa: PLR2004
                 logger.warning(f"Not found: {url}")
                 return {}
             logger.warning(f"Connection issues with '{r.url}'")
