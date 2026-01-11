@@ -68,9 +68,8 @@ def fetch_json(
             requests.exceptions.ReadTimeout,
             requests.exceptions.HTTPError,
         ):
-            assert r  # type: ignore # noqa: S101
-            if r.status_code == 404:  # noqa: PLR2004
-                logger.warning(f"Not found: {r.url}")
+            if not r or r.status_code == 404:  # type: ignore # noqa: PLR2004
+                logger.warning(f"Not found: {url}")
                 return {}
             logger.warning(f"Connection issues with '{r.url}'")
             retry_count += 1
