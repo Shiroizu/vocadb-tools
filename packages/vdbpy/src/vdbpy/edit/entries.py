@@ -23,7 +23,7 @@ def _add_event_id_to_entry_data(
         logger.warning("Event already added to the entry.")
         return {}
     update_notes = f"Added event {id_to_add}"
-    logger.info(f"Update_notes = {update_notes}")
+    logger.debug(f"Update_notes = {update_notes}")
     data["releaseEvents"].append({"id": id_to_add})
     data["updateNotes"] = update_notes
     return data

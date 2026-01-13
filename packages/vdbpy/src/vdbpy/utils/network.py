@@ -183,7 +183,11 @@ def fetch_total_count(api_url: str, params: dict[Any, Any] | None = None) -> int
     params = params.copy() if params is not None else {}
     params["maxResults"] = 1
     params["getTotalCount"] = True
-    total_count = fetch_json(api_url, params=params)["totalCount"]
+    data = fetch_json(api_url, params=params)
+    if "totalCount" not in data:
+        logger.warning(f"Total count not found in {data}")
+        return 0
+    total_count = data["totalCount"]
     if not total_count:
         return 0
     return int(total_count)

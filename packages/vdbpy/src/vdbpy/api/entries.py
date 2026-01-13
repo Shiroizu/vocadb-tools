@@ -96,6 +96,9 @@ def get_cached_entry_version(  # noqa: PLR0911
 ):
     try:
         data = get_cached_raw_entry_version(entry_type, version_id)
+        if "versions" not in data:
+            logger.warning(f"Version data not available for v{version_id}")
+            return None
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:  # noqa: PLR2004
             logger.warning(f"Version data not available for v{version_id}")

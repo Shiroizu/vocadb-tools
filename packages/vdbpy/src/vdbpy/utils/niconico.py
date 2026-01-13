@@ -14,6 +14,7 @@ def get_nico_videos_by_tag(
     tag_name: str,
 ) -> list[NicoVideo]:
     # docs: https://site.nicovideo.jp/search-api-docs/snapshot
+    nico_tag_base_url = "https://www.nicovideo.jp/tag/"
     url = "https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search"
     page = 0
     page_size = 32
@@ -28,14 +29,14 @@ def get_nico_videos_by_tag(
 
     videos_to_return: list[NicoVideo] = []
 
-    logger.info(f"Fetching nico videos by tag {tag_name}...")
+    logger.info(f"Fetching nico videos from url {nico_tag_base_url}{tag_name}")
     while True:
         params["_offset"] = page * page_size
         videos = fetch_json(url=url, params=params)["data"]
-        logger.info(f"Found {len(videos)} videos on page {page + 1}")
         if not videos:
-            logger.info("End of tag reached.")
+            logger.debug("End of tag reached.")
             break
+        logger.info(f"- Found {len(videos)} videos on page {page + 1}")
 
         for video in videos:
             video_id = video["contentId"]
@@ -98,6 +99,7 @@ def get_nico_videos_by_tag_or_file(
             logger.info(f"Saved nico videos to {file}.")
         return videos
 
+    logger.warning("No videos found!")
     return []
 
 

@@ -73,6 +73,8 @@ def cache_without_expiration() -> Any:
 
 
 def cache_conditionally(days: float = 1) -> Any:
+    # Return values that are truthly are permanently cached
+    # Falsy values are cached for the specified amount
     def decorator(func: Callable[..., Any]) -> Any:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Ignore session parameter:
@@ -81,7 +83,6 @@ def cache_conditionally(days: float = 1) -> Any:
                 k: v for k, v in kwargs.items() if not isinstance(v, Session)
             }
             key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
-
             try:
                 if key in cache:
                     return cache[key]  # type: ignore
@@ -92,14 +93,13 @@ def cache_conditionally(days: float = 1) -> Any:
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
-
             if not result:
-                logger.debug(f"Caching result '{result}' for {days} days")
+                logger.debug(f"Caching result '{result}' for {days} days with key '{key}'")
                 expire_time = timedelta(days=days).total_seconds()
                 cache.set(key, result, expire=expire_time)  # type: ignore
             else:
                 # No expiration if result found
-                logger.debug(f"Caching result '{result}' indefinitely")
+                logger.debug(f"Caching result '{result}' permanently with key '{key}'")
                 cache.set(key, result, expire=None)  # type: ignore
 
             return result
