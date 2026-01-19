@@ -1,5 +1,4 @@
 import json
-import time
 from collections.abc import Callable
 from typing import Any
 
@@ -9,6 +8,7 @@ from vdbpy.types.mappings import api_urls_by_entry_type
 from vdbpy.types.shared import EntryTuple, Service
 from vdbpy.utils.console import get_boolean
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.network import fetch_with_retries
 
 logger = get_logger()
 
@@ -146,7 +146,8 @@ def edit_entry(
 ) -> bool:
     entry_type, entry_id = entry
     api_url = f"{api_urls_by_entry_type[entry_type]}/{entry_id}"
-    entry_data = session.get(f"{api_url}/for-edit").json()
+    url = f"{api_url}/for-edit"
+    entry_data = fetch_with_retries(url=url, verb="get", session=session).json()
     logger.debug(f"{entry_data=}")
     fixed_data = edit_function(entry_data, base_update_note, args)
     if not fixed_data:
@@ -159,15 +160,12 @@ def edit_entry(
     if prompt and not get_boolean("Fix entry?"):
         return False
     logger.info(f"Posting to {api_url}")
-    request_save = session.post(api_url, {"contract": json.dumps(fixed_data)})
-    request_save.raise_for_status()
-
-    # TODO post_json function
-    # from requests.adapters import HTTPAdapter, Retry
-    # retries = Retry(total=5, backoff_factor=1, status_forcelist=[ ? ])
-    # session.mount('http://', HTTPAdapter(max_retries=retries))
-
-    time.sleep(1)
+    fetch_with_retries(
+        url=api_url,
+        verb="post",
+        session=session,
+        post_data={"contract": json.dumps(fixed_data)},
+    )
     return True
 
 

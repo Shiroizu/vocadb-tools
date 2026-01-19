@@ -1,9 +1,9 @@
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 import requests
-from requests import Response
+from requests import Response, Session
 
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
@@ -19,68 +19,100 @@ RETRY_TIMER = 10
 
 # TODO user agent
 
+HTTP_verb = Literal["get", "post", "delete"]
+
+
+def fetch_with_retries(
+    url: str,
+    verb: HTTP_verb,
+    session: Session | None = None,
+    params: dict[Any, Any] | None = None,
+    post_data: dict[Any, Any] | None = None,
+    max_retries: int = RETRY_COUNT,
+) -> Response:
+    """Fetch a URL with automatic retries on connection errors."""
+    logger.debug(f"Fetching {verb.upper()} from url '{url}' with params {params}")
+
+    for attempt in range(1, max_retries + 1):
+        r: Response | None = None
+        try:
+            # Execute the request
+            if session:
+                r = getattr(session, verb)(
+                    url, params=params, timeout=BASE_TIMEOUT, data=post_data
+                )
+            else:
+                r = getattr(requests, verb)(
+                    url, params=params, timeout=BASE_TIMEOUT, data=post_data
+                )
+
+            assert isinstance(r, Response)  # noqa: S101
+            if params:
+                logger.debug(f"Parsed URL: {r.url}")
+
+            r.raise_for_status()
+
+            # Rate limiting for non-localhost requests
+            if "localhost" not in url:
+                time.sleep(BASE_DELAY)
+
+        except requests.exceptions.HTTPError as e:
+            # Don't retry on 404s
+            if r and r.status_code == 404:  # noqa: PLR2004
+                logger.warning(f"Not found: {url}")
+                raise
+            logger.warning(f"HTTP error: {e}")
+
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ReadTimeout,
+        ) as e:
+            logger.warning(f"Connection issues: {e}")
+
+        # Log retry attempt (unless we've exhausted all retries)
+        if attempt < max_retries:
+            logger.warning(f"Retry attempt #{attempt + 1}/{max_retries}")
+            logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
+            time.sleep(RETRY_TIMER)
+
+        assert r is not None  # noqa: S101
+        return r
+
+    # All retries exhausted
+    msg = f"Failed to fetch {verb.upper()} from {url} after {max_retries} retries"
+    raise Exception(msg)  # noqa: TRY002
+
 
 def fetch_text(
     url: str,
-    session: requests.Session | None = None,
+    session: Session | None = None,
     params: dict[Any, Any] | None = None,
 ) -> str:
-    logger.debug(f"Fetching text from url '{url}' with params {params}")
-    r = (
-        session.get(url, params=params)
-        if session
-        else requests.get(url, params=params, timeout=BASE_TIMEOUT)
-    )
-    if params:
-        logger.debug(f"Parsed URL: {r.url}")
-    r.raise_for_status()
-    if "localhost" not in url:
-        time.sleep(BASE_DELAY)
+    """Fetch text content from a URL."""
+    r = fetch_with_retries(url, "get", session, params)
+
+    # Handle encoding issues
     if r.encoding == "ISO-8859-1":
         logger.debug("Converting from ISO-8859-1 to UTF-8")
         return r.text.encode("ISO-8859-1").decode("utf-8")
+
     return r.text
 
 
 def fetch_json(
     url: str,
-    session: requests.Session | None = None,
-    params: dict[Any, Any] | tuple[Any, Any] | None = None,
+    session: Session | None = None,
+    params: dict[Any, Any] | None = None,
 ) -> dict[Any, Any]:
-    logger.debug(f"Fetching JSON from url {url} with params {params}")
-
-    retry_count = 1
-    while retry_count <= RETRY_COUNT:
-        r: Response | None = None
-        try:
-            r = (
-                session.get(url, params=params)
-                if session
-                else requests.get(url, params=params, timeout=BASE_TIMEOUT)
-            )
-            if params:
-                logger.debug(f"Parsed URL: {r.url}")
-            r.raise_for_status()
-            if "localhost" not in url:
-                time.sleep(BASE_DELAY)
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.ReadTimeout,
-            requests.exceptions.HTTPError,
-        ):
-            if not r or r.status_code == 404:  # noqa: PLR2004
-                logger.warning(f"Not found: {url}")
-                return {}
-            logger.warning(f"Connection issues with '{r.url}'")
-            retry_count += 1
-            logger.warning(f"Retry attempt #{retry_count}")
-            logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
-            time.sleep(RETRY_TIMER)
-            continue
+    """Fetch JSON content from a URL."""
+    try:
+        r = fetch_with_retries(url, "get", session, params)
         return r.json()
-
-    msg = f"Failed to fetch JSON from {url} after {RETRY_COUNT} retries"
-    raise Exception(msg)  # noqa: TRY002
+    except requests.exceptions.HTTPError as e:
+        # Return empty dict for 404s
+        if e.response and e.response.status_code == 404:  # noqa: PLR2004
+            return {}
+        raise
 
 
 @cache_without_expiration()
