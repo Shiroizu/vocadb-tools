@@ -31,24 +31,27 @@ def fetch_with_retries(
     max_retries: int = RETRY_COUNT,
 ) -> Response:
     """Fetch a URL with automatic retries on connection errors."""
-    logger.debug(f"Fetching {verb.upper()} from url '{url}' with params {params}")
+    logger.debug(f"Fetching ({verb.upper()}) from url '{url}' with params {params}")
 
+    r: Response | None = None
     for attempt in range(1, max_retries + 1):
-        r: Response | None = None
         try:
             # Execute the request
             if session:
+                logger.debug("Re-using session")
                 r = getattr(session, verb)(
                     url, params=params, timeout=BASE_TIMEOUT, data=post_data
                 )
             else:
+                logger.debug("No previous session found")
                 r = getattr(requests, verb)(
                     url, params=params, timeout=BASE_TIMEOUT, data=post_data
                 )
 
             assert isinstance(r, Response)  # noqa: S101
-            if params:
-                logger.debug(f"Parsed URL: {r.url}")
+            logger.debug(f"{r.status_code=}")
+            logger.debug(f"{r.reason=}")
+            logger.debug(f"Parsed URL: {r.url}")
 
             r.raise_for_status()
 
@@ -56,27 +59,25 @@ def fetch_with_retries(
             if "localhost" not in url:
                 time.sleep(BASE_DELAY)
 
+            return r  # noqa: TRY300
+
         except requests.exceptions.HTTPError as e:
             # Don't retry on 404s
+            logger.warning(f"HTTP error: {e}")
             if r and r.status_code == 404:  # noqa: PLR2004
                 logger.warning(f"Not found: {url}")
                 raise
-            logger.warning(f"HTTP error: {e}")
 
         except (
             requests.exceptions.ConnectionError,
             requests.exceptions.ReadTimeout,
         ) as e:
-            logger.warning(f"Connection issues: {e}")
+            logger.warning(f"Connection issue: {e}")
 
-        # Log retry attempt (unless we've exhausted all retries)
         if attempt < max_retries:
-            logger.warning(f"Retry attempt #{attempt + 1}/{max_retries}")
+            logger.warning(f"Retry attempt #{attempt}/{max_retries}")
             logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
             time.sleep(RETRY_TIMER)
-
-        assert r is not None  # noqa: S101
-        return r
 
     # All retries exhausted
     msg = f"Failed to fetch {verb.upper()} from {url} after {max_retries} retries"
