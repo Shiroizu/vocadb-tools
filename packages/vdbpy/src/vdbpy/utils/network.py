@@ -59,12 +59,12 @@ def fetch_with_retries(
             if "localhost" not in url:
                 time.sleep(BASE_DELAY)
 
-            return r  # noqa: TRY300
+            return r
 
         except requests.exceptions.HTTPError as e:
             # Don't retry on 404s
             logger.warning(f"HTTP error: {e}")
-            if r and r.status_code == 404:  # noqa: PLR2004
+            if r and r.status_code == 404:
                 logger.warning(f"Not found: {url}")
                 raise
 
@@ -81,7 +81,7 @@ def fetch_with_retries(
 
     # All retries exhausted
     msg = f"Failed to fetch {verb.upper()} from {url} after {max_retries} retries"
-    raise Exception(msg)  # noqa: TRY002
+    raise Exception(msg)
 
 
 def fetch_text(
@@ -111,7 +111,7 @@ def fetch_json(
         return r.json()
     except requests.exceptions.HTTPError as e:
         # Return empty dict for 404s
-        if e.response and e.response.status_code == 404:  # noqa: PLR2004
+        if e.response and e.response.status_code == 404:
             return {}
         raise
 
@@ -125,7 +125,7 @@ def fetch_cached_json(
     return fetch_json(url, session=session, params=params)
 
 
-def fetch_json_items_with_total_count(  # noqa: PLR0915
+def fetch_json_items_with_total_count(
     url: str,
     params: dict[Any, Any] | None = None,  # TODO BaseSearchParams type
     session: requests.Session | None = None,

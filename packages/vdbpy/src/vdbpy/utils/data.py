@@ -57,7 +57,7 @@ def get_monthly_count(
 class UserEditJSONEncoder(json.JSONEncoder):
     """Custom JSON encoder for UserEdit objects."""
 
-    def default(self, o: object):  # noqa: ANN201
+    def default(self, o: object):
         if isinstance(o, UserEdit):
             return {
                 "user_id": o.user_id,

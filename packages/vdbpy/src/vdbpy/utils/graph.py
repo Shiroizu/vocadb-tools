@@ -15,12 +15,12 @@ def generate_date_graph(
     y: str = "Count",
     date_format: str = "%Y-%m",
 ) -> None:
-    dates, values = zip(*data)
+    dates, values = zip(*data, strict=True)
 
-    dates = [datetime.strptime(date, date_format) for date in dates]
+    dates = [datetime.strptime(date, date_format).replace(tzinfo=UTC) for date in dates]
 
-    sorted_dates_values = sorted(zip(dates, values), key=lambda x: x[0])
-    sorted_dates, sorted_values = zip(*sorted_dates_values)
+    sorted_dates_values = sorted(zip(dates, values, strict=True), key=lambda x: x[0])
+    sorted_dates, sorted_values = zip(*sorted_dates_values, strict=True)
 
     fig = go.Figure()
     fig.add_trace(
@@ -52,7 +52,8 @@ def get_monthly_graph(
         monthly_count = count_function(current_year, current_month)
         year_month_str = f"{current_year}-{current_month}"
         if monthly_count:
-            logger.info(f"{count_function.__name__}, {year_month_str}: {monthly_count}")
+            function_name = getattr(count_function, "__name__", "count_function")
+            logger.info(f"{function_name}, {year_month_str}: {monthly_count}")
             counts_by_month.append((f"{year_month_str}", monthly_count))
             continue
         break

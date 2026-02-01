@@ -284,7 +284,7 @@ def get_edits_by_month(
 
     all_edits: list[Any] = []
 
-    next_month = month + 1 if month < 12 else 1  # noqa: PLR2004
+    next_month = month + 1 if month < 12 else 1
     next_month_year = year + 1 if next_month == 1 else year
 
     date_counter = datetime(next_month_year, next_month, 1, tzinfo=UTC)

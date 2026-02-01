@@ -39,7 +39,7 @@ def prompt_choice(choices: list[str], allow_skip: bool = False) -> str:
             if selection == none:
                 return ""
 
-            return selection  # noqa: TRY300
+            return selection
 
         except ValueError:
             logger.warning("Invalid input. Please enter a number.")

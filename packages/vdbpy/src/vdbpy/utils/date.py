@@ -12,7 +12,7 @@ def parse_date(
     short_date_format: str = "%Y-%m-%d",
 ) -> datetime:
     """Parse various date formats and return datetime with UTC timezone."""
-    if len(date_to_parse) == 10:  # noqa: PLR2004
+    if len(date_to_parse) == 10:
         # 2024-06-02
         return datetime.strptime(date_to_parse, short_date_format).replace(tzinfo=UTC)
 
@@ -27,7 +27,7 @@ def parse_date(
         # Positive offset: 2025-07-21T02:00:00+02:00
         date_to_parse, offset = date_to_parse.split("+")
         offset_sign = 1
-    elif date_to_parse.count("-") > 2:  # noqa: PLR2004
+    elif date_to_parse.count("-") > 2:
         # Negative offset: 2025-07-21T02:00:00-05:00
         parts = date_to_parse.rsplit("-", 1)
         if ":" in parts[1]:
@@ -91,7 +91,7 @@ def get_month_strings(year: int, month: int) -> tuple[str, str]:
         raise ValueError(msg)
 
     first_day_of_this_month = f"{year}-{str(month).zfill(2)}-01"
-    if month == 12:  # noqa: PLR2004
+    if month == 12:
         first_day_of_next_month = f"{year + 1}-01-01"
     else:
         first_day_of_next_month = f"{year}-{str(month + 1).zfill(2)}-01"
@@ -135,9 +135,9 @@ def get_all_month_strings_since(start_year: int) -> list[tuple[str, str]]:
         if current_month_year >= end_year and current_month >= end_month:
             break
 
-        next_month = current_month + 1 if current_month < 12 else 1  # noqa: PLR2004
+        next_month = current_month + 1 if current_month < 12 else 1
         next_month_year = (
-            current_month_year + 1 if current_month == 12 else current_month_year  # noqa: PLR2004
+            current_month_year + 1 if current_month == 12 else current_month_year
         )
 
         a_string = f"{current_month_year}-{str(current_month).zfill(2)}-01"

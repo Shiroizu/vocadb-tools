@@ -1,6 +1,6 @@
 from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal, cast
 
 from vdbpy.types.albums import Album
 from vdbpy.types.artists import ArtistParticipation, ArtistParticipationStatus
@@ -183,7 +183,9 @@ class SongSearchParams:
             )
 
             if isinstance(value, set):
-                value_str_list: list[str] = list(map(str, value))  # type: ignore
+                value_str_list: list[str] = [
+                    str(item) for item in cast("set[Any]", value)
+                ]
                 if renamed_field_name.endswith("[]"):
                     if len(value_str_list) == 1:
                         params[renamed_field_name] = value_str_list[0]

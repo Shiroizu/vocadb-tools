@@ -1,9 +1,9 @@
-from typing import Literal, TypeAlias
+from typing import Literal
 
-SharedChangedFields: TypeAlias = Literal["Status", "OriginalName", "Names", "WebLinks"]
+type SharedChangedFields = Literal["Status", "OriginalName", "Names", "WebLinks"]
 
 # From github/vocadb/VocaDbModel/Domain/{entry_type}s/{entry_type}Diff.cs
-ChangedSongFields: TypeAlias = Literal[
+type ChangedSongFields = Literal[
     SharedChangedFields,
     "Artists",
     "Length",
@@ -19,7 +19,7 @@ ChangedSongFields: TypeAlias = Literal[
     "CultureCodes",
 ]
 
-ChangedAlbumFields: TypeAlias = Literal[
+type ChangedAlbumFields = Literal[
     SharedChangedFields,
     "Artists",
     "Cover",
@@ -33,7 +33,7 @@ ChangedAlbumFields: TypeAlias = Literal[
     "Tracks",
 ]
 
-ChangedArtistFields: TypeAlias = Literal[
+type ChangedArtistFields = Literal[
     SharedChangedFields,
     "Albums",
     "ArtistType",
@@ -46,7 +46,7 @@ ChangedArtistFields: TypeAlias = Literal[
     "CultureCodes",
 ]
 
-ChangedTagFields: TypeAlias = Literal[
+type ChangedTagFields = Literal[
     SharedChangedFields,
     "CategoryName",
     "Description",
@@ -57,7 +57,7 @@ ChangedTagFields: TypeAlias = Literal[
     "Targets",
 ]
 
-ChangedVenueFields: TypeAlias = Literal[
+type ChangedVenueFields = Literal[
     SharedChangedFields,
     "Address",
     "AddressCountryCode",
@@ -65,7 +65,7 @@ ChangedVenueFields: TypeAlias = Literal[
     "Description",
 ]
 
-ChangedReleaseEventFields: TypeAlias = Literal[
+type ChangedReleaseEventFields = Literal[
     SharedChangedFields,
     "Artists",
     "Category",
@@ -81,7 +81,7 @@ ChangedReleaseEventFields: TypeAlias = Literal[
     "VenueName",
 ]
 
-ChangedReleaseEventSeriesFields: TypeAlias = Literal[
+type ChangedReleaseEventSeriesFields = Literal[
     SharedChangedFields,
     "Category",
     "Description",
@@ -90,7 +90,7 @@ ChangedReleaseEventSeriesFields: TypeAlias = Literal[
     "WebLinks",
 ]
 
-ChangedFields: TypeAlias = (
+type ChangedFields = (
     ChangedSongFields
     | ChangedAlbumFields
     | ChangedArtistFields

@@ -110,22 +110,25 @@ class ArtistVersion(BaseEntryVersion):
 @dataclass
 class ArtistParticipation:
     # api/songs?fields=Artists
-    """
-    "artist": {
-        "additionalNames": "string",
-        "artistType": "Unknown",
-        "deleted": true,
+    """Artist participation information.
+
+    {
+        "artist": {
+            "additionalNames": "string",
+            "artistType": "Unknown",
+            "deleted": true,
+            "id": 0,
+            "name": "string",
+            "pictureMime": "string",
+            "releaseDate": "2025-11-08T07:48:57.066Z",
+            "status": "Draft",
+            "version": 0
+        },
+        "effectiveRoles": "Default",
         "id": 0,
         "name": "string",
-        "pictureMime": "string",
-        "releaseDate": "2025-11-08T07:48:57.066Z",
-        "status": "Draft",
-        "version": 0
-    },
-    "effectiveRoles": "Default",
-    "id": 0,
-    "name": "string",
-    "roles": "Default"
+        "roles": "Default"
+    }
     """
 
     entry: Artist | Literal["Custom artist"]

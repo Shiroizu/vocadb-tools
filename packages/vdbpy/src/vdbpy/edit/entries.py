@@ -142,7 +142,7 @@ def edit_entry(
     edit_function: Callable[[dict[Any, Any], str, Any], dict[Any, Any]],
     base_update_note: str = "",
     prompt: bool = True,
-    args: Any = None,  # noqa: ANN401
+    args: Any = None,
 ) -> bool:
     entry_type, entry_id = entry
     api_url = f"{api_urls_by_entry_type[entry_type]}/{entry_id}"

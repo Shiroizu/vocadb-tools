@@ -1,4 +1,4 @@
-# ruff: noqa: S101, PLR2004
+# ruff: noqa: S101
 
 import logging
 import unittest
