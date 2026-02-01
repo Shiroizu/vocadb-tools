@@ -13,7 +13,9 @@ dependencies = [
     "pydeps>=3.0.1",
     "python-dateutil==2.9.0.post0",
     "requests==2.32.4",
+    "ruff>=0.14.14",
     "tabulate==0.9.0",
+    "ty>=0.0.14",
 ]
 
 [tool.ruff]
@@ -21,8 +23,39 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D101", "D102", "D103", "D202", "D204", "D205", "D212", "D213", "D400", "D403", "D415", "COM812", "G004", "C901", "PLR0912", "PLR0913", "FBT001", "FBT002", "TRY003", "TD002", "TD003", "TD004", "FIX002", "S311", "ERA001", "PGH003", "PT028", "INP001", "UP040"]
-
+ignore = [ # Copied from another project, TODO count these
+    "ANN", # x, Missing return type
+    "C901",	 # x, function too complex
+    "COM812", # x, Trailing comma missing
+    "D100", # x, Missing docstring in public module
+    "D101",	# x, Missing docstring in public class
+    "D102",	# x Missing docstring in a public method
+    "D103",	# x, Missing docstring in public function
+    "D107", # x, Missing docstring in `__init__`
+    "D203", # ? incorrect-blank-line-before-class
+    "D213", # ? multi-line-summary-first-line
+    "EM101", # x, Exception must not use a string literal	
+    "EM102", # x, Exception must not use an f-string literal
+    "ERA001", # x, Commented-out code	
+    "FBT001", # x, Boolean-typed positional argument in function definition
+    "FBT002", # x, Boolean default positional argument in function definition	
+    "FIX002", # x, Line contains TODO	
+    "G004",	# x, Logging statement uses f-string
+    "INP001", # x, Missing __init__.py	
+    "PERF401", # x, Replace for loop with extend / list comprehension
+    "PGH003", # x, Use specific rule codes when ignoring type issues
+    "PLR0912", # x, Too many branches
+    "PLR0913", # x, Too many arguments
+    "PLR0915", # x, Too many statements
+    "PLR2004", # x, Magic values
+    "PTH",	# x, `open()` should be replaced by `Path.open()` !! TODO
+    "S311",	# x, standard pseudo-random generator
+    "SIM102", # x, Use a single `if` statement instead of nested `if` statements
+    "TD", # x, Missing issue link for TODO
+    "TRY002", # x, Create your own exception
+    "TRY003", # x, void specifying long messages outside the exception class
+    "TRY300", # x, try-consider-else
+]
 [tool.pyright]
 typeCheckingMode = "strict"
 
