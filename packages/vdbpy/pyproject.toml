@@ -1,6 +1,6 @@
 [project]
 name = "vdbpy"
-version = "19.0.0"
+version = "19.1.0"
 description = "Base library for working with https://github.com/VocaDB/vocadb"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -56,6 +56,7 @@ ignore = [ # Copied from another project, TODO count these
     "TRY002", # x, Create your own exception
     "TRY003", # x, void specifying long messages outside the exception class
     "TRY300", # x, try-consider-else
+    "UP040", # x, Type alias instead of the `type` keyword
 ]
 [tool.pyright]
 typeCheckingMode = "strict"

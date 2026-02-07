@@ -1,9 +1,9 @@
-from typing import Literal
+from typing import Literal, TypeAlias
 
-type SharedChangedFields = Literal["Status", "OriginalName", "Names", "WebLinks"]
+SharedChangedFields: TypeAlias = Literal["Status", "OriginalName", "Names", "WebLinks"]
 
 # From github/vocadb/VocaDbModel/Domain/{entry_type}s/{entry_type}Diff.cs
-type ChangedSongFields = Literal[
+ChangedSongFields: TypeAlias = Literal[
     SharedChangedFields,
     "Artists",
     "Length",
@@ -19,7 +19,7 @@ type ChangedSongFields = Literal[
     "CultureCodes",
 ]
 
-type ChangedAlbumFields = Literal[
+ChangedAlbumFields: TypeAlias = Literal[
     SharedChangedFields,
     "Artists",
     "Cover",
@@ -33,7 +33,7 @@ type ChangedAlbumFields = Literal[
     "Tracks",
 ]
 
-type ChangedArtistFields = Literal[
+ChangedArtistFields: TypeAlias = Literal[
     SharedChangedFields,
     "Albums",
     "ArtistType",
@@ -46,7 +46,7 @@ type ChangedArtistFields = Literal[
     "CultureCodes",
 ]
 
-type ChangedTagFields = Literal[
+ChangedTagFields: TypeAlias = Literal[
     SharedChangedFields,
     "CategoryName",
     "Description",
@@ -57,7 +57,7 @@ type ChangedTagFields = Literal[
     "Targets",
 ]
 
-type ChangedVenueFields = Literal[
+ChangedVenueFields: TypeAlias = Literal[
     SharedChangedFields,
     "Address",
     "AddressCountryCode",
@@ -65,7 +65,7 @@ type ChangedVenueFields = Literal[
     "Description",
 ]
 
-type ChangedReleaseEventFields = Literal[
+ChangedReleaseEventFields: TypeAlias = Literal[
     SharedChangedFields,
     "Artists",
     "Category",
@@ -81,7 +81,7 @@ type ChangedReleaseEventFields = Literal[
     "VenueName",
 ]
 
-type ChangedReleaseEventSeriesFields = Literal[
+ChangedReleaseEventSeriesFields: TypeAlias = Literal[
     SharedChangedFields,
     "Category",
     "Description",
@@ -90,7 +90,7 @@ type ChangedReleaseEventSeriesFields = Literal[
     "WebLinks",
 ]
 
-type ChangedFields = (
+ChangedFields: TypeAlias = (
     ChangedSongFields
     | ChangedAlbumFields
     | ChangedArtistFields

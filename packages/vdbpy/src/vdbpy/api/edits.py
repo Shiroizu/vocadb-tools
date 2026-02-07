@@ -255,7 +255,7 @@ def get_edits_by_day(
     filename = save_dir / f"{date_str}.json" if save_dir else None
     partial_filename = save_dir / f"{date_str}{PARTIAL_SLUG}.json" if save_dir else None
 
-    logger.debug(f"Fetching edits by day {date_str}...")
+    logger.info(f"Fetching edits by day {date_str}...")
     logger.debug(f"Limit is {limit}")
 
     if isinstance(limit, datetime) and limit.date() != date.date():
@@ -282,6 +282,7 @@ def get_edits_by_month(
         year = today.year
         month = today.month
 
+    logger.info(f"Fetching edits by {year}-{month}")
     all_edits: list[Any] = []
 
     next_month = month + 1 if month < 12 else 1

@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 import diskcache as dc  # type: ignore
@@ -9,7 +10,18 @@ from requests.sessions import Session
 
 from vdbpy.utils.logger import get_logger
 
-cache = dc.Cache("cache")
+
+def get_vdbpy_cache_dir() -> Path:
+    """Get a consistent cache directory for vdbpy."""
+    cache_dir = Path.home() / ".cache"
+    if cache_dir.is_dir():
+        cache_dir = cache_dir / "vdb" / "cache"
+    else:
+        cache_dir = Path.cwd() / "cache"
+    cache_dir.mkdir(exist_ok=True, parents=True)
+    return cache_dir
+
+cache = dc.Cache(str(get_vdbpy_cache_dir()))
 
 # TODO merge logic, dry
 

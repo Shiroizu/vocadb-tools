@@ -16,9 +16,13 @@ def get_logger(
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
-    logs_dir = Path("logs")
+    logs_dir = Path.home() / ".logs" / "vdb"
+    if not logs_dir.parent.is_dir():
+        logs_dir = Path.cwd()
+
     log_path = logs_dir / log_filename
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Log path is {log_path}")  # noqa: T201
 
     # Avoid duplicate handlers
     if not logger.handlers:
