@@ -36,28 +36,3 @@ def get_username_by_id_1d(user_id: int, include_usergroup=False) -> str:
 @cache_without_expiration()
 def get_cached_username_by_id(user_id: int, include_usergroup=False) -> str:
 ```
-
-## TODO
-
-- [ ] Type-safe entry versions
-    - [x] AlbumVersion
-    - [x] ArtistVersion
-    - [x] SongVersion
-    - [x] TagVersion
-    - [x] ReleaseEventVersion
-    - [x] ReleaseEventSeriesVersion
-    - [x] VenueVersion
-    - [x] Simple tests
-    - [x] Tests for matching entry & version data
-- [ ] Type safe entries
-    - [x] SongEntry (test progress 27/27)
-    - [ ] AlbumEntry
-    - [ ] ArtistEntry
-    - [ ] TagEntry
-    - [ ] ReleaseEventEntry
-    - [ ] ReleaseEventSeriesEntry
-    - [ ] VenueEntry
-    - [ ] UserEntry
-    - [ ] SongListEntry
-    - [ ] Add advanced search filters
-    - [ ] Full tests
