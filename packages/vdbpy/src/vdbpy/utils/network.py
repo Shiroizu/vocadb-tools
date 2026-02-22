@@ -64,9 +64,10 @@ def fetch_with_retries(
         except requests.exceptions.HTTPError as e:
             # Don't retry on 404s
             logger.warning(f"HTTP error: {e}")
-            if r and r.status_code == 404:
+            assert r is not None  # noqa: S101
+            if r.status_code == 404:
                 logger.warning(f"Not found: {url}")
-                raise
+                raise e  # noqa: TRY201
 
         except (
             requests.exceptions.ConnectionError,
@@ -111,7 +112,7 @@ def fetch_json(
         return r.json()
     except requests.exceptions.HTTPError as e:
         # Return empty dict for 404s
-        if e.response and e.response.status_code == 404:
+        if e.response.status_code == 404:
             return {}
         raise
 
