@@ -4,28 +4,27 @@
 
 import argparse
 from datetime import UTC, datetime
+from typing import Any
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_artist_by_id, get_song_count_by_artist_id
+from vdbpy.api.albums import get_albums_by_user_id_7d
+from vdbpy.api.artists import get_artist_by_id, get_followed_artists_by_user_id_7d
 from vdbpy.api.songs import (
-    get_most_rated_song_by_artist_id,
-    get_most_recent_song_by_artist_id,
+    get_most_rated_song_by_artist_id_1d,
+    get_rated_songs_by_user_id_7d,
 )
 from vdbpy.api.users import (
-    get_albums_by_user_id,
-    get_followed_artists_by_user_id,
-    get_rated_songs_by_user_id,
     get_username_by_id,
 )
 from vdbpy.config import WEBSITE
-from vdbpy.utils.date import parse_date
+from vdbpy.types.songs import OptionalSongFieldName, SongEntry
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger("find-favourite-producers")
 
 
-def get_youtube_link(artist_entry) -> str:
+def get_youtube_link(artist_entry: dict[Any, Any]) -> str:
     if "webLinks" not in artist_entry:
         logger.warning("Artist entry does not include any external links!")
         return ""
@@ -39,38 +38,37 @@ def get_youtube_link(artist_entry) -> str:
     return ""
 
 
-def get_days_since_song_publish_date(song_entry, today: datetime) -> int:
-    if "publishDate" not in song_entry:
-        logger.warning(f"Song {song_entry['id']} does not include a publish date!")
+def get_days_since_song_publish_date(song_entry: SongEntry, today: datetime) -> int:
+    if not song_entry.publish_date:
+        logger.warning(f"Song {song_entry.id} does not include a publish date!")
         return -1
 
-    publish_date = parse_date(song_entry["publishDate"])
-    if publish_date > today:
-        logger.warning(f"Song {song_entry['id']} has a publish date in the future!")
+    if song_entry.publish_date > today:
+        logger.warning(f"Song {song_entry.id} has a publish date in the future!")
         return -1
 
-    return (today - publish_date).days
+    return (today - song_entry.publish_date).days
 
 
-def find_favourite_producers_by_user_id(user_id: int, max_results):
+def find_favourite_producers_by_user_id(user_id: int, max_results: int):
     username = get_username_by_id(user_id)
     logger.info(f"Searching favourite producers for user '{username}' ({user_id})")
 
     unique_artists = {}
 
-    fields = [
-        "Albums",
-        "Artists",
-        "PVs",
-        "ReleaseEvent",
-        "Tags",
-        "WebLinks",
-        "CultureCodes",
-    ]
+    fields: set[OptionalSongFieldName] = {
+        "albums",
+        "artists",
+        "pvs",
+        "releaseEvent",
+        "tags",
+        "webLinks",
+        "cultureCodes",
+    }
 
-    params = {"fields": ", ".join(fields)}
-    rated_songs = get_rated_songs_by_user_id(user_id, params)
-    # TODO permanent* cache
+    rated_songs: list[SongEntry] = get_rated_songs_by_user_id_7d(
+        fields=fields, user_id=user_id
+    )
 
     for song in rated_songs:
         placeholder = ""
@@ -106,7 +104,7 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
             logger.debug(f"Custom artist '{placeholder}' on S/{song['song']['id']}")
             continue
 
-    albums = get_albums_by_user_id(user_id, extra_params={"fields": "Artists, Tracks"})
+    albums = get_albums_by_user_id_7d(user_id)
     for album in albums:
         album_producers_ids_by_name = {
             artist["artist"]["name"]: artist["artist"]["id"]
@@ -141,7 +139,8 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
                 unique_artists[artist_id][4] += 1
             else:
                 logger.info(
-                    f"Album '{album['album']['name']}': Found an unknown tracklist artist '{artist_name_from_artist_string}'"
+                    f"Album '{album['album']['name']}': Found an unknown tracklist"
+                    f" artist '{artist_name_from_artist_string}'"
                 )
                 logger.info(f"Album producers: {album_producers_ids_by_name}")
     logger.info(f"Analyzed {len(albums)} albums...")
@@ -165,7 +164,7 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
 
     followed_artists = []
     logger.info("Fetching followed artists...")
-    followed_artists = get_followed_artists_by_user_id(user_id)
+    followed_artists = get_followed_artists_by_user_id_7d(user_id)
     followed_artists_ids = [int(artist["id"]) for artist in followed_artists]
 
     table_to_print = []
@@ -176,9 +175,15 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
         counter += 1
         following = False
         name, favs, likes, score, ar_id, album_count, album_track_count = ar
-        artist_entry = get_artist_by_id(ar_id, fields="webLinks")
-        songcount_by_artist = get_song_count_by_artist_id(ar_id, only_main_songs=True)
-        rated_songs_percentage = round(((favs + likes) / songcount_by_artist * 100), 1) if songcount_by_artist else 0
+        artist_entry = get_artist_by_id(ar_id, fields=["webLinks"])
+        songcount_by_artist = get_followed_artists_by_user_id_7d(
+            ar_id, only_main_songs=True
+        )
+        rated_songs_percentage = (
+            round(((favs + likes) / songcount_by_artist * 100), 1)
+            if songcount_by_artist
+            else 0
+        )
         if ar_id in followed_artists_ids:
             following = True
         headers = [
@@ -208,9 +213,9 @@ def find_favourite_producers_by_user_id(user_id: int, max_results):
             following,
             f"{WEBSITE}/Ar/{ar_id}",
             get_youtube_link(artist_entry),
-            f"{WEBSITE}/S/{get_most_rated_song_by_artist_id(ar_id)['id']}",
+            f"{WEBSITE}/S/{get_most_rated_song_by_artist_id_1d(ar_id)['id']}",
             get_days_since_song_publish_date(
-                get_most_recent_song_by_artist_id(ar_id), today
+                get_most_rated_song_by_artist_id_1d(ar_id), today
             ),
         )
         table_to_print.append(line_to_print)

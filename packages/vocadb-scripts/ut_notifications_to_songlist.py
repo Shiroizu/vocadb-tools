@@ -1,16 +1,21 @@
 import argparse
-import datetime
 import sys
+from datetime import UTC, datetime
+from pathlib import Path
 
 import requests
 from vdbpy.api.notifications import (
+    Notification,
     delete_notifications,
-    get_notification_by_id,
-    get_notifications_by_user_id,
+    get_cached_notification_by_id,
 )
-from vdbpy.api.songlists import create_or_update_songlist
+from vdbpy.api.songlists import (
+    create_songlists_with_size_limit,
+    export_songlist,
+    parse_csv_songlist,
+)
 from vdbpy.api.songs import get_song_by_id
-from vdbpy.api.users import find_user_by_username
+from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.files import get_credentials, get_lines, save_file
@@ -27,41 +32,46 @@ logger = get_logger("notifications_to_songlist")
 @cache_with_expiration(days=1)
 def is_cover_with_original_as_entry(song_id: int) -> bool:
     entry = get_song_by_id(song_id)
-    result = (entry["songType"] == "Cover") and ("originalVersionId" in entry)
+    result = (entry.song_type == "Cover") and (entry.original_version_id > 0)
     if result:
-        logger.info(f"\t  Cover of {WEBSITE}/S/{entry['originalVersionId']}, skipping.")
+        logger.info(f"\t  Cover of {WEBSITE}/S/{entry.original_version_id}, skipping.")
     return result
 
 
-@cache_with_expiration(days=1)
 def is_instrumental(song_id: int) -> bool:
-    entry = get_song_by_id(song_id, fields="artists")
-    for artist in entry["artists"]:
-        if artist["categories"] == "Vocalist" or "Vocalist" in artist["effectiveRoles"]:
+    entry = get_song_by_id(song_id, fields={"artists"})
+    assert entry.artists != "Unknown"  # noqa: S101
+    for artist in entry.artists:
+        if artist.entry == "Custom artist":
+            continue
+        if "Vocalist" in artist.categories or "Vocalist" in artist.effective_roles:
             return False
     return True
 
 
 def filter_notifications(
-    all_notifications,
+    user_id: int,
+    all_notifications: list[Notification],
     session: requests.Session,
-    skip_covers=False,
-    skip_music_pvs=False,
-    skip_instruments=False,
-    delete_seen_notifs=False,
+    skip_covers: bool = False,
+    skip_music_pvs: bool = False,
+    skip_instruments: bool = False,
+    delete_seen_notifs: bool = False,
 ) -> list[int]:
-    """Returns a list of new song IDs from notifications."""
+    """Return a list of new song IDs from notifications."""
     notification_messages: list[str] = []
     new_song_ids: list[int] = []
     counter = 0
 
     for item in all_notifications:
-        notif_body: str = get_notification_by_id(session, item["id"])["body"]
+        notif_body: str = get_cached_notification_by_id(session, item["id"])["body"]
         notification_messages.append(notif_body)
 
         counter += 1
         logger.debug(item)
-        notif_body = notif_body.split("You're receiving this notification")[0]
+        notif_body = notif_body.split("You're receiving this notification", maxsplit=1)[
+            0
+        ]
         logger.debug(f"{counter}/{len(all_notifications)} {notif_body}")
 
         # A new song tagged with electro drug https://vocadb.net/S/807206
@@ -71,13 +81,14 @@ def filter_notifications(
         # A new song (original song) by Avaraya https://vocadb.net/S/807206
         # ...
 
-        if not notif_body.startswith("A new song "):
+        if not notif_body.startswith("A new song"):
             logger.debug("Skipping non-song notification")
             continue
 
         song_id = int(notif_body.split("/S/")[-1].split(")',")[0].split("?")[0])
         logger.info(
-            f"\t{counter}/{len(all_notifications)} {item['subject']} {WEBSITE}/S/{song_id}"
+            f"\t{counter}/{len(all_notifications)} {item['subject']} "
+            f"{WEBSITE}/S/{song_id}"
         )
 
         # Skip duplicate notifs
@@ -86,11 +97,11 @@ def filter_notifications(
             continue
 
         if skip_covers and is_cover_with_original_as_entry(song_id):
-            logger.debug("\t\tSkipping cover song ")
+            logger.info("\t\tSkipping cover song ")
             continue
 
         if skip_instruments and is_instrumental(song_id):
-            logger.debug("\t\tSkipping instrumental song ")
+            logger.info("\t\tSkipping instrumental song ")
             continue
 
         if skip_music_pvs and notif_body.startswith("New song (music pv)"):
@@ -104,21 +115,25 @@ def filter_notifications(
     save_file(NOTIF_LOG_FILE, notification_messages, append=True)
     if delete_seen_notifs:
         logger.info("Deleting seen notificatoins...")
-        delete_notifications(session, USER_ID, [item["id"] for item in all_notifications])
+        delete_notifications(
+            session=session,
+            user_id=user_id,
+            notification_ids=[item["id"] for item in all_notifications],
+        )
 
     logger.info(f"\nFound {len(new_song_ids)} new songs based on notifications.")
     return new_song_ids
 
 
-def filter_out_seen_song_ids(seen_file: str, new_song_ids: list[int]) -> list[int]:
-    """Filters seen song IDs out based on the seen song ids -file."""
+def filter_out_seen_song_ids(seen_file: Path, new_song_ids: list[int]) -> list[int]:
+    """Filter out seen song IDs out based on the seen song ids -file."""
     seen_song_ids_set = set(map(int, get_lines(seen_file)))
     new_song_ids_set = set(new_song_ids)
     unseen_song_ids = list(new_song_ids_set - seen_song_ids_set)
     number_of_removed_ids = len(new_song_ids_set) - len(unseen_song_ids)
 
     logger.info(
-        f"Filtered out {number_of_removed_ids}/{len(new_song_ids_set)} already seen ids."
+        f"Filtered {number_of_removed_ids}/{len(new_song_ids_set)} already seen ids."
     )
     return unseen_song_ids
 
@@ -189,6 +204,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def get_songlist_song_ids(songlist_id: int) -> list[int]:
+    rows = parse_csv_songlist(export_songlist(songlist_id))
+    song_ids: list[int] = []
+    for row in rows[1:]:
+        entry_url = row[3]
+        song_ids.append(int(entry_url.split("/S/")[-1]))
+    return song_ids
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -203,17 +227,17 @@ if __name__ == "__main__":
     SONGLIST_TITLE = args.songlist_title
 
     CREDENTIALS_FILE = "credentials.env"
-    SEEN_SONG_IDS_FILE = "data/seen song ids.txt"
-    NOTIF_LOG_FILE = "output/notifications.txt"
+    SEEN_SONG_IDS_FILE = Path("data") / "seen song ids.txt"
+    NOTIF_LOG_FILE = Path("output") / "notifications.txt"
 
     un, pw = get_credentials(CREDENTIALS_FILE)
     login = {"userName": un, "password": pw}
 
-    _, USER_ID = find_user_by_username(un)
+    _, USER_ID = find_user_by_username_1d(un)
 
-    if not SONGLIST_TITLE:
-        date = str(datetime.datetime.now())[:10]  # YYYY-MM-DD
-        songlist_title = f"Songs to check {date}"
+    songlist_title = (
+        SONGLIST_TITLE or f"Songs to check {str(datetime.now(tz=UTC))[:10]}"
+    )
 
     logger.info(f"Fetching notifications for user {un} ({USER_ID}) with settings:\n")
     logger.info(
@@ -225,8 +249,13 @@ if __name__ == "__main__":
     logger.info(f"\t{SKIP_MUSIC_PVS=} (change with --skip_music_pvs or -sm)")
     logger.info(f"\t{SKIP_INSTRUMENTALS=} (change with --skip_instruments or -si)")
     logger.info(f"\t{INCLUDE_SEEN_SONGS=} (change with --include_seen_songs or -is)")
-    logger.info(f"\t{INCLUDE_READ_NOTIFICATIONS=} (change with --include_read_notifications or -ir)")
-    logger.info(f"\t{DELETE_SEEN_NOTIFS=} (change with --delete_seen_notifications or -ds)")
+    logger.info(
+        f"\t{INCLUDE_READ_NOTIFICATIONS=} "
+        "(change with --include_read_notifications or -ir)"
+    )
+    logger.info(
+        f"\t{DELETE_SEEN_NOTIFS=} (change with --delete_seen_notifications or -ds)"
+    )
     logger.info(f"\t{songlist_title=} (change with --songlist_title S)")
 
     _ = input("\nPress enter to continue...")
@@ -240,32 +269,51 @@ if __name__ == "__main__":
         else:
             logger.debug("Login successful!")
 
+        _ = set(map(int, get_lines(SEEN_SONG_IDS_FILE)))
+        """
         all_notifications = get_notifications_by_user_id(
             USER_ID,
             session,
             include_read=INCLUDE_READ_NOTIFICATIONS,
             max_notifs=MAX_NOTIFS,
         )
+        logger.info(f"Found {len(all_notifications)} notifications")
 
         new_song_ids = filter_notifications(
-            all_notifications,
-            session,
+            user_id=USER_ID,
+            session=session,
+            all_notifications=all_notifications,
             skip_covers=SKIP_COVERS,
             skip_music_pvs=SKIP_MUSIC_PVS,
             skip_instruments=SKIP_INSTRUMENTALS,
             delete_seen_notifs=DELETE_SEEN_NOTIFS,
         )
+
+        """
+
+        from vdbpy.api.songs import SongSearchParams, get_songs
+
+        song_entries = get_songs(
+            song_search_params=SongSearchParams(release_event_id=9122)
+        )
+        new_song_ids = [entry.id for entry in song_entries]
+
+        logger.info(f"{len(new_song_ids)}")
+
         if not INCLUDE_SEEN_SONGS:
             new_song_ids = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_song_ids)
+
+        logger.info(f"{len(new_song_ids)}")
+
         if not new_song_ids:
             logger.warning("No new songs found")
             sys.exit(0)
         _ = input("Press enter to create the songlist(s)...")
-        create_or_update_songlist(
+        create_songlists_with_size_limit(
             session=session,
             song_ids=new_song_ids,
             author_id=USER_ID,
-            title=songlist_title,
+            title="Anon3 songs to check",
         )
         save_file(SEEN_SONG_IDS_FILE, new_song_ids, append=True)
         logger.info(f"Notifications appended to '{SEEN_SONG_IDS_FILE}'")

@@ -2,8 +2,11 @@ import sys
 from datetime import datetime
 
 import requests
-from vdbpy.api.notifications import get_messages_by_user_id, get_notification_by_id
-from vdbpy.api.users import find_user_by_username
+from vdbpy.api.notifications import (
+    get_cached_notification_by_id,
+    get_messages_by_user_id,
+)
+from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import WEBSITE
 from vdbpy.utils.files import get_credentials, sanitize_filename, save_file
 from vdbpy.utils.logger import get_logger
@@ -28,17 +31,17 @@ if __name__ == "__main__":
         else:
             logger.debug("Login successful!")
 
-        _, user_id = find_user_by_username(un)
+        _, user_id = find_user_by_username_1d(un)
         messages = get_messages_by_user_id(user_id, session)
 
         total = len(messages)
         counter = 1
         for message in messages:
-            details = get_notification_by_id(session, message["id"])
+            details = get_cached_notification_by_id(session, message["id"])
             subject: str = details["subject"]
 
             date = details["createdFormatted"]  # 2024/05/03 8:03
-            parsed_date = datetime.strptime(date, "%Y/%m/%d %H:%M")
+            parsed_date = datetime.strptime(date, "%Y/%m/%d %H:%M")  # noqa: DTZ007
             formatted_date = parsed_date.strftime("%Y-%m-%d %H-%M")
 
             receiver_id = details["receiver"]["id"]
@@ -51,7 +54,10 @@ if __name__ == "__main__":
 
             direction = "TO" if sender_id == user_id else "FROM"
 
-            filename = f"{formatted_date} - {direction} '{recipient}' ({recipient_id}) - {subject}"
+            filename = (
+                f"{formatted_date} - {direction} '{recipient}' ({recipient_id}) "
+                f" - {subject}"
+            )
             logger.info(f"\n{counter}/{total}: From {sender_name} to {receiver_name}")
             logger.info(filename)
             counter += 1
