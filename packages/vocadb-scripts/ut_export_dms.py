@@ -11,10 +11,12 @@ from vdbpy.config import WEBSITE
 from vdbpy.utils.files import get_credentials, sanitize_filename, save_file
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("export-dms")
+logger = get_logger()
 
+# TODO main function
 
 if __name__ == "__main__":
+    logger = get_logger("export_dms")
     CREDENTIALS_FILE = "credentials.env"
     OUTPUT_DIR = "output/dms"
 

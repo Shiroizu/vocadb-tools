@@ -4,7 +4,7 @@ from vdbpy.api.songs import get_rated_songs_by_user_id_7d
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("export_rated_song_entries_as_csv")
+logger = get_logger()
 
 
 def list_to_string_or_zero(data: list[str]) -> str:
@@ -22,7 +22,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+# TODO main function
+
 if __name__ == "__main__":
+    logger = get_logger("export_rated_song_entries_as_csv")
     args = parse_args()
 
     user_id = args.user_id

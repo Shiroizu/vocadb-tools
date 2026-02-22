@@ -103,6 +103,7 @@ def get_relevant_tag_artists_table(
 
 
 if __name__ == "__main__":
+    logger = get_logger("calculate_most_relevant_artists_by_a_tag")
     args = parse_args()
     producers_only = args.producers_only
     skip_supporting_artists = not args.include_supporting_artists

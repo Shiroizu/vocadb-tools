@@ -26,7 +26,7 @@ from vdbpy.config import WEBSITE
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("find-favourite-vocalists")
+logger = get_logger()
 
 
 def parse_args() -> argparse.Namespace:
@@ -52,6 +52,7 @@ def parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
+    logger = get_logger("find_favourite_vocalists")
     args = parse_args()
     user_id = args.user_id
     max_results = args.max_results

@@ -21,7 +21,7 @@ from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.files import get_credentials, get_lines, save_file
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("notifications_to_songlist")
+logger = get_logger()
 
 # TODO --skip_out_of_scope songs
 # TODO --skip_already_rated
@@ -214,6 +214,7 @@ def get_songlist_song_ids(songlist_id: int) -> list[int]:
 
 
 if __name__ == "__main__":
+    logger = get_logger("notifications_to_songlist")
     args = parse_args()
 
     INCLUDE_READ_NOTIFICATIONS = args.include_read_notifications

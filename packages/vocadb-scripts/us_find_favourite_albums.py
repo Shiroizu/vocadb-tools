@@ -14,7 +14,7 @@ from vdbpy.utils.data import truncate_string_with_ellipsis
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("find-favourite-albums")
+logger = get_logger()
 
 
 def get_favourite_albums_based_on_songs_by_user_id(user_id: int) -> dict[Any, Any]:
@@ -82,6 +82,7 @@ if __name__ == "__main__":
     user_id = args.user_id
     max_results = args.max_results
 
+    logger = get_logger("find_favourite_albums")
     username = get_username_by_id(user_id)
     logger.info(f"Searching favourite albums for user '{username}' ({user_id})")
 

@@ -4,6 +4,6 @@ from vdbpy.api.comments import get_monthly_comment_count
 from vdbpy.utils.graph import get_monthly_graph
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("monthly_edits")
+logger = get_logger("monthly_comments")
 
 get_monthly_graph(get_monthly_comment_count, "Monthly comments on VocaDB")

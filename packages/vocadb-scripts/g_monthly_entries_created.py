@@ -8,7 +8,7 @@ from vdbpy.utils.data import get_monthly_count
 from vdbpy.utils.graph import get_monthly_graph
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("monthly_songs_added")
+logger = get_logger("monthly_entries_created")
 
 entry_types: list[EntryType] = ["Song", "Album", "Artist"]
 for entry_type in entry_types:

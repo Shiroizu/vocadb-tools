@@ -21,7 +21,7 @@ from vdbpy.types.songs import OptionalSongFieldName, SongEntry
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("find-favourite-producers")
+logger = get_logger()
 
 
 def get_youtube_link(artist_entry: dict[Any, Any]) -> str:
@@ -242,6 +242,7 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
+    logger = get_logger("find_favourite_producers")
     user_id = args.user_id
     max_results = args.max_results
     OUTPUT_FILE = f"output/favourite-producers-{user_id}.csv"

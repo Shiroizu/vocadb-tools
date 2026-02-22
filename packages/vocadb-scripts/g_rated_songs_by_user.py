@@ -8,7 +8,7 @@ from vdbpy.api.users import get_username_by_id
 from vdbpy.utils.graph import generate_date_graph
 from vdbpy.utils.logger import get_logger
 
-logger = get_logger("monthly_rated_songs_by_user")
+logger = get_logger()
 
 
 def get_months(start_year: int) -> list[str]:
@@ -73,6 +73,7 @@ def get_rated_songs_by_month_by_user_id(
 
 if __name__ == "__main__":
     args = parse_args()
+    logger = get_logger("rated_songs_by_user")
     user_id = args.user_id
     username = get_username_by_id(user_id)
     logger.info(
