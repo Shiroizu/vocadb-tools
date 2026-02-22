@@ -1,7 +1,7 @@
 from typing import Any
 
 from vdbpy.config import ARTIST_API_URL, SONG_API_URL, USER_API_URL
-from vdbpy.utils.cache import cache_with_expiration
+from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
     fetch_json,
@@ -48,25 +48,22 @@ def get_song_count_by_artist_id_1d(
     return fetch_total_count(SONG_API_URL, params)
 
 
-# def get_base_voicebank_id_by_artist_id(artist_id: int, recursive: bool = True) ->
-# Artist:
-#     """Get base voicebank id if it exists. Return current id otherwise."""
-#     params = {"fields": "baseVoiceBank"}
-#     next_base_vb_id = artist_id
-#     while True:
-#         url = f"{ARTIST_API_URL}/{next_base_vb_id}"
-#         next_base_vb = fetch_json(url, params=params)  # TODO FIX
-#         if "baseVoicebank" in next_base_vb and recursive:
-#             next_base_vb_id = next_base_vb["baseVoicebank"]["id"]
-#             continue
-#         return next_base_vb
+def get_base_voicebank_id_by_artist_id(artist_id: int, recursive: bool = True) -> int:
+    """Get base voicebank id if it exists. Return current id otherwise."""
+    params = {"fields": "baseVoiceBank"}
+    next_base_vb_id: int = artist_id
+    while True:
+        url = f"{ARTIST_API_URL}/{next_base_vb_id}"
+        next_base_vb: dict[Any, Any] = fetch_json(url, params=params)
+        if "baseVoicebank" in next_base_vb and recursive:
+            next_base_vb_id = next_base_vb["baseVoicebank"]["id"]
+            continue
+        return next_base_vb["id"]
 
 
-# @cache_without_expiration()
-# def get_cached_base_voicebank_by_artist_id(
-#     artist_id: int, recursive: bool = True
-# ) -> Artist:
-#     return get_base_voicebank_id_by_artist_id(artist_id, recursive)
+@cache_without_expiration()
+def get_cached_base_voicebank_by_artist_id(artist_id: int, recursive: bool = True):
+    return get_base_voicebank_id_by_artist_id(artist_id, recursive)
 
 
 @cache_with_expiration(days=7)
