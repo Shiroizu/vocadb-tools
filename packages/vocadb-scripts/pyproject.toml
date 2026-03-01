@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "vocadb-scripts"
 version = "2.0.0"
@@ -5,10 +9,15 @@ description = "Collection of VocaDB related scripts"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "kaleido==0.2.1",
+    "plotly",
     "ruff>=0.15.2",
     "ty>=0.0.18",
     "vdbpy",
 ]
+
+[tool.setuptools]
+packages = ["scripts", "scripts.graph"]
 
 [tool.uv.sources]
 vdbpy = { git = "https://github.com/Shiroizu/VDBpy" }
@@ -51,6 +60,7 @@ ignore = [ # Copied from another project, TODO count these
     "TRY003", # x, void specifying long messages outside the exception class
     "TRY300", # x, try-consider-else
     "UP040", # x, Type alias instead of the `type` keyword
+    "D104", # Missing docstring in public package
 ]
 
 [tool.pyright]

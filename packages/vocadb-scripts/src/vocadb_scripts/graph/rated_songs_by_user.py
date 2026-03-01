@@ -1,93 +1,57 @@
-"""Generate two graphs for rated & published songs by month by user id."""
+"""Rated songs by publish month graph."""
 
-import argparse
-from datetime import UTC, datetime
+import sys
 
 from vdbpy.api.songs import OptionalSongFieldName, SongSearchParams, get_songs
-from vdbpy.api.users import get_username_by_id
-from vdbpy.utils.graph import generate_date_graph
 from vdbpy.utils.logger import get_logger
+
+from scripts.graph.graph_utils import build_figure
 
 logger = get_logger()
 
-
-def get_months(start_year: int) -> list[str]:
-    logger.debug(f"Fetching months from start year {start_year}")
-    months: list[str] = []
-    for year in range(start_year, datetime.now(tz=UTC).year + 1):
-        for month in range(1, 13):
-            month_string = f"{year:04}-{month:02}"
-            months.append(month_string)
-    return months
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "user_id",
-        type=int,
-        help="VocaDB user id",
-    )
-
-    return parser.parse_args()
+_FIELDS: set[OptionalSongFieldName] = {
+    "albums",
+    "artists",
+    "pvs",
+    "releaseEvent",
+    "tags",
+    "webLinks",
+    "cultureCodes",
+}
 
 
-def get_rated_songs_by_month_by_user_id(
-    user_id: int,
-) -> tuple[dict[str, list[int]], dict[str, list[int]]]:
-    # TODO test
-
-    song_ids_by_published_month: dict[str, list[int]] = {}
-    song_ids_by_rated_month: dict[str, list[int]] = {}
-
-    fields: set[OptionalSongFieldName] = {
-        "albums",
-        "artists",
-        "pvs",
-        "releaseEvent",
-        "tags",
-        "webLinks",
-        "cultureCodes",
-    }
-
+def _collect(user_id: int, username: str) -> list[tuple[str, int]]:
+    logger.info(f"Generating rated songs graph for '{username}' ({user_id})")
     rated_songs = get_songs(
-        fields=fields, song_search_params=SongSearchParams(user_collection_id=user_id)
+        fields=_FIELDS,
+        song_search_params=SongSearchParams(user_collection_id=user_id),
     )
-
+    by_publish: dict[str, int] = {}
     for song in rated_songs:
         if song.publish_date:
-            year_and_month = str(song.publish_date)[:7]
-
-            if year_and_month not in song_ids_by_published_month:
-                song_ids_by_published_month[year_and_month] = []
-                song_ids_by_published_month[year_and_month].append(song.id)
-
-            if year_and_month not in song_ids_by_rated_month:
-                song_ids_by_rated_month[year_and_month] = []
-                song_ids_by_rated_month[year_and_month].append(song.id)
+            month = str(song.publish_date)[:7]
+            by_publish[month] = by_publish.get(month, 0) + 1
         else:
             logger.info(f"Song S/{song.id} has no publish date.")
+    return sorted(by_publish.items())
 
-    return song_ids_by_published_month, song_ids_by_rated_month
+
+def _figure(user_id: int, username: str):
+    data = _collect(user_id, username)
+    return build_figure(
+        data,
+        f"{username}'s rated songs by publish month",
+        "Songs",
+        "Songs",
+    )
+
+
+def get_rated_songs_png(user_id: int, username: str) -> bytes:
+    """Return PNG of rated songs grouped by publish month for the given user."""
+    return _figure(user_id, username).to_image(format="png")
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    logger = get_logger("rated_songs_by_user")
-    user_id = args.user_id
-    username = get_username_by_id(user_id)
-    logger.info(
-        f"Generating a graph of monthly rated songs for user '{user_id}' ({username})"
-    )
-
-    song_ids_by_published_month, song_ids_by_rated_month = (
-        get_rated_songs_by_month_by_user_id(user_id)
-    )
-
-    sp = [(str(month), len(ids)) for month, ids in song_ids_by_published_month.items()]
-    title = f"{username}'s ({user_id}) rated songs by publish date"
-    generate_date_graph(sp, title=title, date_format="%Y-%m")
-
-    sr = [(str(month), len(ids)) for month, ids in song_ids_by_rated_month.items()]
-    title = f"{username}'s ({user_id}) rated songs by rating date"
-    generate_date_graph(sr, title=title, date_format="%Y-%m")
+    if len(sys.argv) != 3:
+        sys.exit(f"Usage: {sys.argv[0]} <user_id> <username>")
+    _figure(int(sys.argv[1]), sys.argv[2]).show()

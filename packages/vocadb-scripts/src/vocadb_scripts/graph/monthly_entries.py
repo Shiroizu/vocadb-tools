@@ -1,24 +1,24 @@
-"""Generate a monthly songs added graph."""
+"""Monthly entry creation graph."""
 
-from vdbpy.config import (
-    ACTIVITY_API_URL,
-)
-from vdbpy.types.shared import EntryType
+from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.utils.data import get_monthly_count
-from vdbpy.utils.graph import get_monthly_graph
-from vdbpy.utils.logger import get_logger
 
-logger = get_logger("monthly_entries_created")
+from scripts.graph.graph_utils import build_figure, collect_monthly_data
 
-entry_types: list[EntryType] = ["Song", "Album", "Artist"]
-for entry_type in entry_types:
-    logger.info(f"Counting entry type: {entry_type}")
 
-    def get_created_entry_count_by_month(year: int, month: int) -> int:
-        return get_monthly_count(year, month, ACTIVITY_API_URL)
+def _count_fn(year: int, month: int) -> int:
+    return get_monthly_count(year, month, ACTIVITY_API_URL)
 
-    get_monthly_graph(
-        get_created_entry_count_by_month,
-        f"Monthly created {entry_type.lower()} entries on VocaDB",
-    )
-    _ = input("Press enter to continue")
+
+def _figure():
+    data = collect_monthly_data(_count_fn, "monthly_entries")
+    return build_figure(data, "Monthly entry creations on VocaDB", "Entries")
+
+
+def get_monthly_entries_png() -> bytes:
+    """Return PNG bytes for the monthly entry creation graph."""
+    return _figure().to_image(format="png")
+
+
+if __name__ == "__main__":
+    _figure().show()

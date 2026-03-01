@@ -1,9 +1,19 @@
-"""Generate a monthly edit count graph."""
+"""Monthly edit count graph."""
 
 from vdbpy.api.edits import get_monthly_edit_count
-from vdbpy.utils.graph import get_monthly_graph
-from vdbpy.utils.logger import get_logger
 
-logger = get_logger("monthly_edits")
+from scripts.graph.graph_utils import build_figure, collect_monthly_data
 
-get_monthly_graph(get_monthly_edit_count, "Monthly edits on VocaDB")
+
+def _figure():
+    data = collect_monthly_data(get_monthly_edit_count, "monthly_edits")
+    return build_figure(data, "Monthly edits on VocaDB", "Edits")
+
+
+def get_monthly_edits_png() -> bytes:
+    """Return PNG bytes for the monthly edit count graph."""
+    return _figure().to_image(format="png")
+
+
+if __name__ == "__main__":
+    _figure().show()
