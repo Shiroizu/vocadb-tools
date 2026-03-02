@@ -46,6 +46,7 @@ def get_artist_tag_table(
             else "OnlyMainAlbums",
             only_with_pvs=only_with_pvs,
             max_results=max_results,
+            sort="RatingScore"
         ),
     )
     truncated = bool(max_results and total_count > max_results)

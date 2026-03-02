@@ -39,7 +39,9 @@ def get_relevant_tag_artists_table(
     # TODO test
     songs_by_tag, total_count = get_songs_with_total_count(
         fields={"artists"},
-        song_search_params=SongSearchParams(tag_ids={tag_id}, max_results=MAX_SONGS),
+        song_search_params=SongSearchParams(
+            tag_ids={tag_id}, max_results=MAX_SONGS, sort="RatingScore"
+        ),
     )
     truncated = total_count > MAX_SONGS
     if truncated:
