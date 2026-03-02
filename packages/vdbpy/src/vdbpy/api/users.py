@@ -246,7 +246,11 @@ def get_monthly_user_count(year: int, month: int) -> int:
 def get_user_account_age_by_user_id(user_id: int) -> int:
     """Get user account age in days."""
     username = get_username_by_id(user_id)
-    creation_date = parse_date(get_user_profile_by_username_1d(username)["createDate"])
+    user_profile = get_user_profile_by_username_1d(username)
+    creation_date = user_profile.get("createDate", 0)
+    if not creation_date:
+        return -1
+    creation_date = parse_date(creation_date)
     today = datetime.now(UTC)
     return (today - creation_date).days
 
