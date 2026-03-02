@@ -2,14 +2,15 @@ import argparse
 from typing import Any
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_artist_by_id
-from vdbpy.api.songs import SongSearchParams, get_songs, get_songs_with_total_count
+from vdbpy.api.artists import get_artist_by_id_1d, get_song_count_by_artist_id_1d
+from vdbpy.api.songs import SongSearchParams, get_songs
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
 MAX_SONGS = 50
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -19,8 +20,8 @@ def parse_args() -> argparse.Namespace:
         help="Tag id to check.",
     )
     parser.add_argument(
-        "--producers_only",
-        help="Only include producers artists from the entries.",
+        "--all_artists",
+        help="Include all artist types, not just producers.",
         action="store_true",
     )
     parser.add_argument(
@@ -52,32 +53,18 @@ def get_relevant_tag_artists_table(
                 continue
 
             artist_id = artist.entry.artist_id
-            if producers_only and artist.categories != "Producer":
+            if producers_only and "Producer" not in artist.categories:
                 continue
 
             if skip_supporting_artists and artist.is_support:
                 continue
 
             if artist_id not in song_counts:
-                # TODO convert to fetch_total_count_30d
-                if skip_supporting_artists:
-                    _, songcount_by_artist = get_songs_with_total_count(
-                        song_search_params=SongSearchParams(
-                            artist_participation_status="OnlyMainAlbums",
-                            artist_ids={artist_id},
-                            max_results=1,
-                        )
-                    )
-                else:
-                    songcount_by_artist = get_songs_with_total_count(
-                        song_search_params=SongSearchParams(
-                            artist_participation_status="Everything",
-                            artist_ids={artist_id},
-                            max_results=1,
-                        )
-                    )
+                songcount_by_artist = get_song_count_by_artist_id_1d(
+                    artist_id, only_main_songs=skip_supporting_artists
+                )
 
-                artist_entry = get_artist_by_id(artist_id, fields=["Tags"])
+                artist_entry = get_artist_by_id_1d(artist_id, fields=["Tags"])
                 artist_entry_tag_ids = [
                     tag["tag"]["id"] for tag in artist_entry["tags"]
                 ]
@@ -93,7 +80,7 @@ def get_relevant_tag_artists_table(
             else:
                 song_counts[artist_id]["entry_count"] += 1
 
-            logger.info(f"\t{song_counts[artist_id]}")
+            logger.debug(f"\t{song_counts[artist_id]}")
 
     artists_to_print = song_counts.values()
     sorted_by_entry_count = sorted(
@@ -109,7 +96,7 @@ def get_relevant_tag_artists_table(
 if __name__ == "__main__":
     logger = get_logger("most_relevant_artist_tags")
     args = parse_args()
-    producers_only = args.producers_only
+    producers_only = not args.all_artists
     skip_supporting_artists = not args.include_supporting_artists
 
     tag_id = args.tag_id
