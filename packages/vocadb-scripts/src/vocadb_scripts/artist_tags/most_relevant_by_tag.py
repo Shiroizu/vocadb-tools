@@ -3,7 +3,7 @@ from typing import Any
 
 from tabulate import tabulate
 from vdbpy.api.artists import get_artist_by_id_1d, get_song_count_by_artist_id_1d
-from vdbpy.api.songs import SongSearchParams, get_songs
+from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
 
@@ -37,16 +37,17 @@ def get_relevant_tag_artists_table(
     tag_id: int, skip_supporting_artists: bool = False, producers_only: bool = False
 ) -> tuple[list[dict[str, Any]], bool]:
     # TODO test
-    songs_by_tag = get_songs(
-        fields={"artists"}, song_search_params=SongSearchParams(tag_ids={tag_id})
+    songs_by_tag, total_count = get_songs_with_total_count(
+        fields={"artists"},
+        song_search_params=SongSearchParams(tag_ids={tag_id}, max_results=MAX_SONGS),
     )
-    truncated = len(songs_by_tag) > MAX_SONGS
+    truncated = total_count > MAX_SONGS
     if truncated:
         logger.warning("Only the first 50 songs will be checked!")
     logger.info(f"\nFound {len(songs_by_tag)} songs")
     song_counts: dict[int, dict[str, Any]] = {}
 
-    for counter, song in enumerate(songs_by_tag[:MAX_SONGS]):
+    for counter, song in enumerate(songs_by_tag):
         logger.info(f"Song {counter}/{len(songs_by_tag[:MAX_SONGS])}:")
         assert song.artists != "Unknown"  # noqa: S101
         for artist in song.artists:

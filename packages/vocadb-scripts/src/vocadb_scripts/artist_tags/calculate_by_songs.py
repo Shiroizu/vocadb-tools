@@ -3,7 +3,7 @@ from typing import Any
 
 from tabulate import tabulate
 from vdbpy.api.artists import get_artist_by_id_1d
-from vdbpy.api.songs import SongSearchParams, get_songs
+from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
@@ -31,10 +31,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def get_artist_tag_table(
-    artist_id: int, include_collabs: bool = False, only_with_pvs: bool = False
-) -> list[Any]:
+    artist_id: int,
+    include_collabs: bool = False,
+    only_with_pvs: bool = False,
+    max_results: int = 0,
+) -> tuple[list[Any], bool]:
     # TODO test
-    songs_by_artist = get_songs(
+    songs_by_artist, total_count = get_songs_with_total_count(
         fields={"tags"},
         song_search_params=SongSearchParams(
             artist_ids={artist_id},
@@ -42,8 +45,10 @@ def get_artist_tag_table(
             if include_collabs
             else "OnlyMainAlbums",
             only_with_pvs=only_with_pvs,
+            max_results=max_results,
         ),
     )
+    truncated = bool(max_results and total_count > max_results)
     logger.info(f"\nFound {len(songs_by_artist)} songs")
     tag_counts: dict[Any, Any] = {}
     for song in songs_by_artist:
@@ -70,7 +75,7 @@ def get_artist_tag_table(
             tag["tag_added"] = True
         else:
             tag["tag_added"] = False
-    return sorted_by_entry_count
+    return sorted_by_entry_count, truncated
 
 
 if __name__ == "__main__":
@@ -78,7 +83,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     artist_name = get_artist_by_id_1d(args.artist_id)["name"]
-    table = get_artist_tag_table(
+    table, truncated = get_artist_tag_table(
         args.artist_id,
         include_collabs=args.include_collabs,
         only_with_pvs=args.only_with_pvs,
@@ -90,4 +95,6 @@ if __name__ == "__main__":
         f"\nArtist '{artist_name}' (Ar/{args.artist_id})"
         f" - Most common tags ({participation}){pvs_only}:"
     )
+    if truncated:
+        logger.warning("Results were truncated.")
     logger.info(tabulate(table, headers="keys", tablefmt="github"))

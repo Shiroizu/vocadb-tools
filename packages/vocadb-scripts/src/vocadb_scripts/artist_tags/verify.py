@@ -2,7 +2,10 @@ import argparse
 from typing import Any
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_artists_by_tag_id, get_song_count_by_artist_id_1d
+from vdbpy.api.artists import (
+    get_json_artists_with_total_count,
+    get_song_count_by_artist_id_1d,
+)
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
 
@@ -13,16 +16,18 @@ logger = get_logger()
 
 def get_tagged_artists_table(tag_id: int) -> tuple[list[Any], bool]:
     # TODO test
-    artists_by_tag = get_artists_by_tag_id(tag_id)
-    truncated = len(artists_by_tag) > MAX_ARTISTS
+    artists_by_tag, total_count = get_json_artists_with_total_count(
+        {"tagId[]": tag_id}, max_results=MAX_ARTISTS
+    )
+    truncated = total_count > MAX_ARTISTS
     logger.info(
-        f"\nFound {len(artists_by_tag)} artists tagged with {WEBSITE}/T/{tag_id}"
+        f"\nFound {total_count} artists tagged with {WEBSITE}/T/{tag_id}"
     )
     if truncated:
         logger.warning("Only the first 50 artists will be included in the table")
     tagged_entry_counts: dict[str, Any] = {}
 
-    for counter, artist in enumerate(artists_by_tag[:MAX_ARTISTS]):
+    for counter, artist in enumerate(artists_by_tag):
         logger.info(f"Artist {counter}/{len(artists_by_tag)}")
         artist_id = artist["id"]
         tagged_song_count = get_song_count_by_artist_id_1d(
