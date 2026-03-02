@@ -243,14 +243,27 @@ def get_monthly_user_count(year: int, month: int) -> int:
     return get_monthly_count(year, month, USER_API_URL, param_name="joinDateBefore")
 
 
-def get_user_account_age_by_user_id(user_id: int) -> int:
-    """Get user account age in days."""
+@cache_without_expiration()
+def get_cached_user_creation_date_by_user_id(user_id) -> datetime | None:
     username = get_username_by_id(user_id)
+    if not username:
+        logger.warning(f"Could not find username for user id {user_id}")
+        return None
     user_profile = get_user_profile_by_username_1d(username)
+    if not user_profile:
+        logger.warning(f"Could not find user profile for username {username}")
+        return None
     creation_date = user_profile.get("createDate", 0)
     if not creation_date:
+        logger.warning(f"Could not find creation date for username {username}")
+        return None
+    return parse_date(creation_date)
+
+def get_user_account_age_by_user_id(user_id: int) -> int:
+    """Get user account age in days."""
+    creation_date = get_cached_user_creation_date_by_user_id(user_id)
+    if not creation_date:
         return -1
-    creation_date = parse_date(creation_date)
     today = datetime.now(UTC)
     return (today - creation_date).days
 
