@@ -6,6 +6,8 @@ from vdbpy.api.artists import get_artist_by_id
 from vdbpy.api.songs import SongSearchParams, get_songs
 from vdbpy.utils.logger import get_logger
 
+logger = get_logger()
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -72,7 +74,7 @@ def get_artist_tag_table(
 
 
 if __name__ == "__main__":
-    logger = get_logger("calculate_artist_tags_based_on_songs")
+    logger = get_logger("artist_tags_by_songs")
     args = parse_args()
 
     artist_name = get_artist_by_id(args.artist_id)["name"]

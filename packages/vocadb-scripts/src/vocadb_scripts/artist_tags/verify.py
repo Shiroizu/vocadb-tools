@@ -7,6 +7,10 @@ from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
 
+MAX_ARTISTS = 50
+
+logger = get_logger()
+
 
 def get_tagged_artists_table(tag_id: int) -> list[Any]:
     # TODO test
@@ -14,11 +18,13 @@ def get_tagged_artists_table(tag_id: int) -> list[Any]:
     logger.info(
         f"\nFound {len(artists_by_tag)} artists tagged with {WEBSITE}/T/{tag_id})"
     )
+    if len(artists_by_tag) > MAX_ARTISTS:
+        logger.warning("Only the first 50 artists will be included in the table")
     tagged_entry_counts: dict[str, Any] = {}
 
-    for counter, artist in enumerate(artists_by_tag):
+    for counter, artist in enumerate(artists_by_tag[:MAX_ARTISTS]):
         logger.info(f"Artist {counter}/{len(artists_by_tag)}")
-        tagged_song_count = get_songs_with_total_count(
+        _, tagged_song_count = get_songs_with_total_count(
             song_search_params=SongSearchParams(
                 artist_ids=artist["id"],
                 artist_participation_status="OnlyMainAlbums",
@@ -66,8 +72,8 @@ def parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    logger = get_logger("verify_tagged_artists")
     args = parse_args()
+    logger = get_logger("verify_artist_tags")
 
     table = get_tagged_artists_table(args.tag_id)
     logger.info(f"\nTag ({WEBSITE}/T/{args.tag_id}) - Most relevant artists:")

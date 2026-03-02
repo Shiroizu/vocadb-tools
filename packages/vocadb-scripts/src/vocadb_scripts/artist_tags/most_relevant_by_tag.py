@@ -9,6 +9,7 @@ from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
+MAX_SONGS = 50
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -38,11 +39,13 @@ def get_relevant_tag_artists_table(
     songs_by_tag = get_songs(
         fields={"artists"}, song_search_params=SongSearchParams(tag_ids={tag_id})
     )
+    if len(songs_by_tag) > MAX_SONGS:
+        logger.warning("Only the first 50 songs will be checked!")
     logger.info(f"\nFound {len(songs_by_tag)} songs")
     song_counts: dict[int, dict[str, Any]] = {}
 
-    for counter, song in enumerate(songs_by_tag):
-        logger.info(f"Song {counter}/{len(songs_by_tag)}:")
+    for counter, song in enumerate(songs_by_tag[:MAX_SONGS]):
+        logger.info(f"Song {counter}/{len(songs_by_tag[:MAX_SONGS])}:")
         assert song.artists != "Unknown"  # noqa: S101
         for artist in song.artists:
             if artist.entry == "Custom artist":
@@ -56,6 +59,7 @@ def get_relevant_tag_artists_table(
                 continue
 
             if artist_id not in song_counts:
+                # TODO convert to fetch_total_count_30d
                 if skip_supporting_artists:
                     _, songcount_by_artist = get_songs_with_total_count(
                         song_search_params=SongSearchParams(
@@ -103,7 +107,7 @@ def get_relevant_tag_artists_table(
 
 
 if __name__ == "__main__":
-    logger = get_logger("calculate_most_relevant_artists_by_a_tag")
+    logger = get_logger("most_relevant_artist_tags")
     args = parse_args()
     producers_only = args.producers_only
     skip_supporting_artists = not args.include_supporting_artists
