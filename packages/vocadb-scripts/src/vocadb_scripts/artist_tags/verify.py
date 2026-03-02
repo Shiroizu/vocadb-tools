@@ -11,13 +11,14 @@ MAX_ARTISTS = 50
 logger = get_logger()
 
 
-def get_tagged_artists_table(tag_id: int) -> list[Any]:
+def get_tagged_artists_table(tag_id: int) -> tuple[list[Any], bool]:
     # TODO test
     artists_by_tag = get_artists_by_tag_id(tag_id)
+    truncated = len(artists_by_tag) > MAX_ARTISTS
     logger.info(
         f"\nFound {len(artists_by_tag)} artists tagged with {WEBSITE}/T/{tag_id}"
     )
-    if len(artists_by_tag) > MAX_ARTISTS:
+    if truncated:
         logger.warning("Only the first 50 artists will be included in the table")
     tagged_entry_counts: dict[str, Any] = {}
 
@@ -48,7 +49,7 @@ def get_tagged_artists_table(tag_id: int) -> list[Any]:
             else "∞"
         )
         artist["percentage"] = percentage
-    return sorted_by_entry_count
+    return sorted_by_entry_count, truncated
 
 
 def parse_args() -> argparse.Namespace:
@@ -66,6 +67,8 @@ if __name__ == "__main__":
     args = parse_args()
     logger = get_logger("verify_artist_tags")
 
-    table = get_tagged_artists_table(args.tag_id)
+    table, truncated = get_tagged_artists_table(args.tag_id)
     logger.info(f"\nTag ({WEBSITE}/T/{args.tag_id}) - Most relevant artists:")
+    if truncated:
+        logger.warning(f"Results limited to first {MAX_ARTISTS} artists.")
     logger.info(tabulate(table, headers="keys", tablefmt="github"))

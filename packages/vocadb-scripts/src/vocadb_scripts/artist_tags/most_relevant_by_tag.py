@@ -35,12 +35,13 @@ def parse_args() -> argparse.Namespace:
 
 def get_relevant_tag_artists_table(
     tag_id: int, skip_supporting_artists: bool = False, producers_only: bool = False
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], bool]:
     # TODO test
     songs_by_tag = get_songs(
         fields={"artists"}, song_search_params=SongSearchParams(tag_ids={tag_id})
     )
-    if len(songs_by_tag) > MAX_SONGS:
+    truncated = len(songs_by_tag) > MAX_SONGS
+    if truncated:
         logger.warning("Only the first 50 songs will be checked!")
     logger.info(f"\nFound {len(songs_by_tag)} songs")
     song_counts: dict[int, dict[str, Any]] = {}
@@ -90,7 +91,7 @@ def get_relevant_tag_artists_table(
         percentage = str(100 * artist["entry_count"] // artist["songs_total"]) + " %"
         artist["percentage"] = percentage
 
-    return sorted_by_entry_count
+    return sorted_by_entry_count, truncated
 
 
 if __name__ == "__main__":
@@ -100,11 +101,13 @@ if __name__ == "__main__":
     skip_supporting_artists = not args.include_supporting_artists
 
     tag_id = args.tag_id
-    table = get_relevant_tag_artists_table(
+    table, truncated = get_relevant_tag_artists_table(
         tag_id,
         skip_supporting_artists=skip_supporting_artists,
         producers_only=producers_only,
     )
 
     logger.info(f"\nTag ({WEBSITE}/T/{tag_id}) - Most relevant artists:")
+    if truncated:
+        logger.warning(f"Results limited to first {MAX_SONGS} songs.")
     logger.info(tabulate(table, headers="keys", tablefmt="github"))
