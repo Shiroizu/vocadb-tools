@@ -22,6 +22,13 @@ def get_artist_by_id(artist_id: int, fields: list[str] | None = None) -> dict[An
     return fetch_json(f"{ARTIST_API_URL}/{artist_id}", params=params)
 
 
+@cache_with_expiration(days=1)
+def get_artist_by_id_1d(
+    artist_id: int, fields: list[str] | None = None
+) -> dict[Any, Any]:
+    return get_artist_by_id(artist_id, fields=fields)
+
+
 def get_json_artists_with_total_count(
     params: dict[Any, Any] | None, max_results: int = 10**9
 ) -> tuple[list[dict[Any, Any]], int]:
