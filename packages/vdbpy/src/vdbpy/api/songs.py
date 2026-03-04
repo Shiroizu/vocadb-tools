@@ -1,3 +1,4 @@
+import dataclasses
 import random
 from typing import Any
 
@@ -199,7 +200,11 @@ def get_random_related_song_id_by_song_id(song_id: int) -> int:
 
 
 def get_random_song_id(song_search_params: SongSearchParams | None = None) -> int:
-    params = song_search_params if song_search_params else SongSearchParams()
+    params = (
+        dataclasses.replace(song_search_params)
+        if song_search_params
+        else SongSearchParams()
+    )
     params.max_results = 1
     _, total = get_songs_with_total_count(song_search_params=params)
     random_start = random.randint(0, total - 1)

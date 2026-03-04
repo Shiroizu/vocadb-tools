@@ -92,7 +92,7 @@ def remove_all_comments_by_user_id(
         comment_id = comment["id"]
         comment_content = comment["message"]
         logger.info(f"\nDeleting comment id {comment_id} by {author_name},")
-        logger.info(f"{entry_type} entry {entry_id} f'({entry_name})':")
+        logger.info(f"{entry_type} entry {entry_id} ({entry_name}):")
         logger.info(f"\t'{comment_content}'")
 
         if prompt_interval > 0 and counter % prompt_interval == 0:

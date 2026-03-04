@@ -139,7 +139,7 @@ def get_random_entry(
     )
     total = get_cached_entry_count_by_entry_type(selected_entry_type)
     random_index = random.randint(1, total)
-    url = f"{WEBSITE}/api/{add_s(str(entry_type))}"
+    url = f"{WEBSITE}/api/{add_s(str(selected_entry_type))}"
     params = {"getTotalCount": True, "maxResults": 1, "start": random_index}
     return fetch_json(url, params=params)["items"][0]
 

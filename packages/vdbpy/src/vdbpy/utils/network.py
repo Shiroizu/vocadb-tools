@@ -134,7 +134,7 @@ def fetch_json_items_with_total_count(
     limit: int | Callable[..., bool] | None = None,
 ) -> tuple[list[Any], int]:
     if limit == 0:
-        return [], True
+        return [], 0
     page_size: int = 50
     params = params.copy() if params is not None else {}
     logger.debug(f"Fetching all items based on '{url}' with params {params}")
@@ -236,7 +236,13 @@ def fetch_cached_total_count(api_url: str, params: dict[Any, Any] | None = None)
     params = params.copy() if params is not None else {}
     params["maxResults"] = 1
     params["getTotalCount"] = True
-    total_count = fetch_cached_json(api_url, params=params)["totalCount"]
+    data = fetch_cached_json(api_url, params=params)
+    if "totalCount" not in data:
+        logger.warning(f"Total count not found in {data}")
+        return 0
+    total_count = data["totalCount"]
+    if not total_count:
+        return 0
     return int(total_count)
 
 
@@ -254,7 +260,7 @@ def fetch_all_items_between_dates(
     Duplicates are possible!
     """
     if limit == 0:
-        return [], True
+        return [], False
     params = params.copy() if params is not None else {}
     params["maxResults"] = page_size
     params["before"] = before
