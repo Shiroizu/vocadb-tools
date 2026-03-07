@@ -21,6 +21,7 @@ def main() -> None:
     run(["uv", "version", "--bump", bump])
     version = run(["uv", "version"])
     run(["git", "add", "pyproject.toml"])
+    run(["git", "add", "uv.lock"])
     run(["git", "commit", "-m", f"{version}, {message}"])
     print(f"Committed: {version}, {message}")  # noqa: T201
 

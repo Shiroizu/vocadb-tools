@@ -65,6 +65,18 @@ def get_the_oldest_comment_by_user_id(user_id: int = 0) -> Comment:
     return fetch_json(COMMENT_API_URL, params=params)["items"][0]
 
 
+def get_recent_comments_by_user_id(
+    user_id: int, max_results: int = 50
+    ) -> list[Comment]:
+    params = {
+        "userId": user_id,
+        "sortRule": "CreateDateDescending",
+        "maxResults": max_results,
+        "fields": "Entry",
+    }
+    return fetch_json(COMMENT_API_URL, params=params).get("items", [])
+
+
 def remove_comment_by_id(
     session: requests.Session, entry_type: EntryType | Literal["User"], comment_id: int
 ) -> bool:
