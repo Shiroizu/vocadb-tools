@@ -18,6 +18,13 @@ Upgrade to the most recent version with:
 
 - `uv add --upgrade git+https://github.com/Shiroizu/VDBpy`
 
+To use a different VocaDB instance (e.g. beta), set the base URL before any vdbpy import. All of these work:
+
+- Shell (session): `export VDBPY_WEBSITE=https://beta.vocadb.net` then run your script.
+- One-off (single command): `VDBPY_WEBSITE=https://beta.vocadb.net uv run python your_script.py`
+
+All API URLs and links are derived from this single value in `vdbpy.config`.
+
 ## Conventions
 
 ### File structure

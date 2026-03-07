@@ -1,4 +1,7 @@
-WEBSITE = "https://vocadb.net"
+import os
+
+# Override with VDBPY_WEBSITE (e.g. https://beta.vocadb.net) to target another instance.
+WEBSITE = os.environ.get("VDBPY_WEBSITE", "https://vocadb.net").rstrip("/")
 WIKI_URL = "https://wiki.vocadb.net"
 LOCAL_WIKI_URL = "http://localhost:4321"
 

@@ -1,12 +1,13 @@
 [project]
 name = "vdbpy"
-version = "19.4.1"
+version = "19.4.2"
 description = "Base library for working with https://github.com/VocaDB/vocadb"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "coverage>=7.11.2",
     "defusedxml>=0.7.1",
+    "pytest>=8",
+    "pytest-mock>=3",
     "diskcache==5.6.3",
     "genbadge>=1.1.2",
     "plotly==5.17.0",
@@ -17,6 +18,7 @@ dependencies = [
     "ruff>=0.14.14",
     "tabulate==0.9.0",
     "ty>=0.0.14",
+    "coverage>=7.13.4",
 ]
 
 [tool.ruff]
@@ -32,6 +34,7 @@ ignore = [ # Copied from another project, TODO count these
     "D101",	# x, Missing docstring in public class
     "D102",	# x Missing docstring in a public method
     "D103",	# x, Missing docstring in public function
+    "D104",	# x, D104 Missing docstring in public package
     "D107", # x, Missing docstring in `__init__`
     "D203", # ? incorrect-blank-line-before-class
     "D213", # ? multi-line-summary-first-line
@@ -58,6 +61,13 @@ ignore = [ # Copied from another project, TODO count these
     "TRY300", # x, try-consider-else
     "UP040", # x, Type alias instead of the `type` keyword
 ]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: requires live VocaDB API",
+    "slow: takes more than 10 seconds",
+]
+
 [tool.pyright]
 typeCheckingMode = "strict"
 
