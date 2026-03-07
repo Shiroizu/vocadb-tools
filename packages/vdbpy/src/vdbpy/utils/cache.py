@@ -1,11 +1,11 @@
-# ruff: noqa: ANN401
-
+import os
 from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
-import diskcache as dc  # type: ignore
+import diskcache as dc
 from requests.sessions import Session
 
 from vdbpy.utils.logger import get_logger
@@ -18,8 +18,14 @@ def get_vdbpy_cache_dir() -> Path:
         cache_dir = cache_dir / "vdb" / "cache"
     else:
         cache_dir = Path.cwd() / "cache"
+    website_env = os.environ.get("VDBPY_WEBSITE", "").rstrip("/")
+    if website_env:
+        website_slug = urlparse(website_env).netloc  # e.g. "beta.vocadb.net"
+        cache_dir = cache_dir / website_slug
     cache_dir.mkdir(exist_ok=True, parents=True)
+    print(f"Cache directory: {cache_dir}")  # noqa: T201
     return cache_dir
+
 
 cache = dc.Cache(str(get_vdbpy_cache_dir()))
 
@@ -36,11 +42,11 @@ def cache_with_expiration(days: int = 1) -> Any:
             cache_kwargs = {
                 k: v for k, v in kwargs.items() if not isinstance(v, Session)
             }
-            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
+            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"  # ty:ignore[unresolved-attribute]
 
             try:
                 if key in cache:
-                    return cache[key]  # type: ignore
+                    return cache[key]
             except (AttributeError, ModuleNotFoundError):
                 logger.warning(
                     f"Couldn't get '{key}' from cache due to mismatching types."
@@ -48,7 +54,7 @@ def cache_with_expiration(days: int = 1) -> Any:
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
-            cache.set(key, result, expire=timedelta(days=days).total_seconds())  # type: ignore
+            cache.set(key, result, expire=timedelta(days=days).total_seconds())
             return result
 
         return wrapper
@@ -64,11 +70,11 @@ def cache_without_expiration() -> Any:
             cache_kwargs = {
                 k: v for k, v in kwargs.items() if not isinstance(v, Session)
             }
-            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
+            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"  # ty:ignore[unresolved-attribute]
 
             try:
                 if key in cache:
-                    return cache[key]  # type: ignore
+                    return cache[key]
             except (AttributeError, ModuleNotFoundError):
                 logger.warning(
                     f"Couldn't get '{key}' from cache due to mismatching types."
@@ -76,7 +82,7 @@ def cache_without_expiration() -> Any:
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
-            cache.set(key, result, expire=None)  # type: ignore # No expiration
+            cache.set(key, result, expire=None)  # No expiration
             return result
 
         return wrapper
@@ -94,10 +100,10 @@ def cache_conditionally(days: float = 1) -> Any:
             cache_kwargs = {
                 k: v for k, v in kwargs.items() if not isinstance(v, Session)
             }
-            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"
+            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"  # ty:ignore[unresolved-attribute]
             try:
                 if key in cache:
-                    return cache[key]  # type: ignore
+                    return cache[key]
             except (AttributeError, ModuleNotFoundError):
                 logger.warning(
                     f"Couldn't get '{key}' from cache due to mismatching types."
@@ -106,13 +112,16 @@ def cache_conditionally(days: float = 1) -> Any:
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
             if not result:
-                logger.debug(f"Caching result '{result}' for {days} days with key '{key}'")
+                logger.debug(
+                    f"Caching result '{result}' for {days} days with key '{key}'"
+                )
                 expire_time = timedelta(days=days).total_seconds()
-                cache.set(key, result, expire=expire_time)  # type: ignore
+                cache.set(key, result, expire=expire_time)
+                # type:l ignore
             else:
                 # No expiration if result found
                 logger.debug(f"Caching result '{result}' permanently with key '{key}'")
-                cache.set(key, result, expire=None)  # type: ignore
+                cache.set(key, result, expire=None)
 
             return result
 
