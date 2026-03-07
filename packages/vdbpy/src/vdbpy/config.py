@@ -13,8 +13,8 @@ SERIES_API_URL = f"{WEBSITE}/api/releaseEventSeries"
 TAG_API_URL = f"{WEBSITE}/api/tags"
 VENUE_API_URL = f"{WEBSITE}/api/venues"
 SONGLIST_API_URL = f"{WEBSITE}/api/songLists"
-
 USER_API_URL = f"{WEBSITE}/api/users"
 
+ENTRY_REPORTS_URL = f"{WEBSITE}/api/admin/reports"
 ACTIVITY_API_URL = f"{WEBSITE}/api/activityEntries"
 COMMENT_API_URL = f"{WEBSITE}/api/comments"

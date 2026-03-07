@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from typing import Any, get_args
 
+import requests
+
 from vdbpy.config import ACTIVITY_API_URL, USER_API_URL, WEBSITE
 from vdbpy.types.shared import EditType, EntryType
 from vdbpy.types.users import UserGroup
@@ -270,3 +272,12 @@ def get_user_account_age_by_user_id(user_id: int) -> int:
 
 def get_user_group_by_user_id(user_id: int) -> UserGroup:
     return fetch_json(f"{USER_API_URL}/{user_id}")["groupId"]
+
+def reactivate(session: requests.Session, username: str) -> None:
+    """Reactivate a disabled user account by username."""
+    user = find_user_by_username_and_mode_1d(username, "Exact")
+    profile = get_user_profile_by_username_1d(username)
+    user["active"] = True
+    user["email"] = profile["email"]
+    user_id = user["id"]
+    session.post(f"{USER_API_URL}/{user_id}", json=user).raise_for_status()

@@ -175,9 +175,10 @@ def fetch_json_items_with_total_count(
         if not items:
             logger.debug("No items found!")
             break
-        logger.debug(
-            f"Got {len(items)} items from {items[0]['id']} to {items[-1]['id']}"
-        )
+        if "id" in items[0]:
+            logger.debug(
+                f"Got {len(items)} items from {items[0]['id']} to {items[-1]['id']}"
+            )
         for item in items:
             if isinstance(limit, int) and len(all_items) >= limit:
                 logger.debug(f"Limit {limit} reached, stopping.")

@@ -1,4 +1,5 @@
-from typing import Literal
+from datetime import datetime
+from typing import Any, Literal
 
 import requests
 
@@ -13,6 +14,13 @@ from vdbpy.utils.network import (
 )
 
 logger = get_logger()
+
+
+def get_comments_since(since: datetime) -> Any:
+    """Retrieve comments posted after `since` (and possibly some slightly earlier)."""
+    params = {"since": str(since), "fields": "Entry", "maxResults": 100}
+    logger.info(f"Fetching new comments with params {params}")
+    return fetch_json(COMMENT_API_URL, params=params)
 
 
 def get_comments_by_user_id(user_id: int) -> list[Comment]:

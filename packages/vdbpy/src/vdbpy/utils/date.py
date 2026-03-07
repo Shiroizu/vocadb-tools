@@ -12,6 +12,12 @@ def parse_date(
     short_date_format: str = "%Y-%m-%d",
 ) -> datetime:
     """Parse various date formats and return datetime with UTC timezone."""
+    if "/" in date_to_parse:
+        # 01/25/2024 03:45 PM
+        return datetime.strptime(date_to_parse.strip(), "%m/%d/%Y %I:%M %p").replace(
+            tzinfo=UTC
+        )
+
     if len(date_to_parse) == 10:
         # 2024-06-02
         return datetime.strptime(date_to_parse, short_date_format).replace(tzinfo=UTC)

@@ -42,3 +42,11 @@ def test_parse_date_with_positive_offset() -> None:
 
 def test_parse_date_short_format() -> None:
     assert str(parse_date("2025-07-21")) == "2025-07-21 00:00:00+00:00"
+
+
+def test_parse_date_formatted_am_pm() -> None:
+    assert str(parse_date("01/25/2024 03:45 PM")) == "2024-01-25 15:45:00+00:00"
+
+
+def test_parse_date_formatted_midnight() -> None:
+    assert str(parse_date("06/01/2023 12:00 AM")) == "2023-06-01 00:00:00+00:00"
