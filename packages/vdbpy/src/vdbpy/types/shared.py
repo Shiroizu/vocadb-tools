@@ -49,7 +49,7 @@ type Service = Literal[
     "SoundCloud",
     "Vimeo",
     "Piapro",
-    "BiliBili",
+    "Bilibili",
     "File",
     "LocalFile",
     "Creofuga",
