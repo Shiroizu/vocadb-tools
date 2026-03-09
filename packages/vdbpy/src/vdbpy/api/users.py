@@ -275,9 +275,13 @@ def get_user_group_by_user_id(user_id: int) -> UserGroup:
 
 def reactivate(session: requests.Session, username: str) -> None:
     """Reactivate a disabled user account by username."""
-    user = find_user_by_username_and_mode_1d(username, "Exact")
+    logger.info(f"Reactivating user '{username}'")
+    _, user_id = find_user_by_username_and_mode_1d(username, "Exact")
+    logger.debug(f"User id: {user_id}")
     profile = get_user_profile_by_username_1d(username)
+    logger.debug(f"User profile: {profile}")
+    user = fetch_json(f"{USER_API_URL}/{user_id}")
+    logger.debug(f"User dict: {user}")
     user["active"] = True
     user["email"] = profile["email"]
-    user_id = user["id"]
     session.post(f"{USER_API_URL}/{user_id}", json=user).raise_for_status()
