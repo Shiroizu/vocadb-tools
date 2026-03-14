@@ -318,5 +318,5 @@ def reactivate(session: requests.Session, username: str) -> None:
     user = fetch_json(f"{USER_API_URL}/{user_id}")
     logger.debug(f"User dict: {user}")
     user["active"] = True
-    user["email"] = profile["email"]
+    user["email"] = profile.get("email", "")
     session.post(f"{USER_API_URL}/{user_id}", json=user).raise_for_status()
