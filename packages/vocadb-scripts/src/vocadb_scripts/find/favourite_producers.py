@@ -16,6 +16,7 @@ from vdbpy.api.artists import (
 from vdbpy.api.songs import (
     get_cached_rated_songs_with_ratings,
     get_most_rated_song_by_artist_id_7d,
+    get_most_recent_song_by_artist_id_1d,
 )
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE
@@ -189,6 +190,7 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
             else 0
         )
         most_rated_song = get_most_rated_song_by_artist_id_7d(ar_id)
+        most_recent_song = get_most_recent_song_by_artist_id_1d(ar_id)
         line_to_print = (
             score,
             name,
@@ -202,7 +204,7 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
             f"{WEBSITE}/Ar/{ar_id}",
             get_youtube_link(artist_entry),
             f"{WEBSITE}/S/{most_rated_song.id}",
-            get_days_since_song_publish_date(most_rated_song, today),
+            get_days_since_song_publish_date(most_recent_song, today),
         )
         table_to_print.append(line_to_print)
 
