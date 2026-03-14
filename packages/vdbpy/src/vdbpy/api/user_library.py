@@ -212,7 +212,7 @@ def _update_albums(
     )
     lib.albums = get_albums_by_user_id(
         lib.user_id,
-        extra_params={"fields": "Artists"},
+        extra_params={"fields": "Artists,Tracks"},
         session=session,
     )
     lib.albums_last_id = lib.albums[0]["album"]["id"] if lib.albums else 0
