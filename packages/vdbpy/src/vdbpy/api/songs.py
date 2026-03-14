@@ -330,7 +330,7 @@ def get_cached_rated_songs_with_ratings(
 ) -> list[dict[Any, Any]]:
     """Return rated songs from the user library cache.
 
-    Each item has the shape: {song: dict, rating: "Favorite"|"Like"}
+    Each item has the shape: {song: dict, rating: "Favorite"|"Like", date: str}
     Uses the fixed field set {albums, artists, tags, cultureCodes}.
     """
     from vdbpy.api.user_library import get_user_library  # noqa: PLC0415
@@ -338,7 +338,10 @@ def get_cached_rated_songs_with_ratings(
     lib = get_user_library(
         user_id, collections=frozenset({"rated_songs"}), session=session
     )
-    return [{"song": e.song, "rating": e.rating} for e in lib.rated_songs.values()]
+    return [
+        {"song": e.song, "rating": e.rating, "date": e.date}
+        for e in lib.rated_songs.values()
+    ]
 
 
 def get_song_entries_by_songlist_id(
