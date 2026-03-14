@@ -5,7 +5,7 @@ from typing import Any
 import requests
 
 from vdbpy.api.edits import get_edits_by_entry
-from vdbpy.config import SONG_API_URL, SONGLIST_API_URL
+from vdbpy.config import SONG_API_URL, SONGLIST_API_URL, USER_API_URL
 from vdbpy.parsers.songs import parse_song
 from vdbpy.types.shared import (
     Service,
@@ -213,15 +213,20 @@ def get_random_song_id(song_search_params: SongSearchParams | None = None) -> in
     return get_songs(song_search_params=params)[0].id
 
 
+def get_song_ratings(
+    song_id: int, session: requests.Session | None = None
+) -> list[dict[Any, Any]]:
+    url = f"{SONG_API_URL}/{song_id}/ratings"
+    data = fetch_json(url, session=session)
+    return data if isinstance(data, list) else []
+
+
 def get_song_rater_ids_by_song_id(
     song_id: int, session: requests.Session | None = None
 ) -> list[int]:
-    """Fetch the IDs of users who rated a song."""
-    url = f"{SONG_API_URL}/{song_id}/ratings"
-    raters = fetch_json(url, session=session) if session else fetch_json(url)
-    rater_ids = [rater["user"]["id"] for rater in raters if "user" in rater]
-    logger.debug(f"Found {len(rater_ids)} rater IDs for song {song_id}: {rater_ids}")
-    return rater_ids
+    """Fetch the IDs of users who rated a song (only raters with public ratings)."""
+    ratings = get_song_ratings(song_id, session=session)
+    return [r["user"]["id"] for r in ratings if "user" in r]
 
 
 # TODO fix
@@ -297,6 +302,45 @@ def get_most_recent_song_by_artist_id_1d(artist_id: int) -> SongEntry:
 # ---------------------------------------------- #
 
 
+def get_rated_songs_with_ratings(
+    user_id: int,
+    fields: set[OptionalSongFieldName] | None = None,
+    max_results: int | None = None,
+    session: requests.Session | None = None,
+) -> list[dict[Any, Any]]:
+    """Fetch rated songs with rating values (Favorite/Like), sorted by rating date."""
+    url = f"{USER_API_URL}/{user_id}/ratedSongs"
+    params: dict[str, Any] = {"sort": "RatingDate", "groupByRating": False}
+    if fields:
+        params["fields"] = ",".join(sorted(fields))
+
+    items = fetch_json_items(
+        url,
+        params=params,
+        session=session,
+        limit=max_results,
+        suppress_total_count_warning=True,
+    )
+    logger.info(f"Fetched {len(items)} rated songs for user {user_id}")
+    return items
+
+
+def get_cached_rated_songs_with_ratings(
+    user_id: int, session: requests.Session | None = None
+) -> list[dict[Any, Any]]:
+    """Return rated songs from the user library cache.
+
+    Each item has the shape: {song: dict, rating: "Favorite"|"Like"}
+    Uses the fixed field set {albums, artists, tags, cultureCodes}.
+    """
+    from vdbpy.api.user_library import get_user_library  # noqa: PLC0415
+
+    lib = get_user_library(
+        user_id, collections=frozenset({"rated_songs"}), session=session
+    )
+    return [{"song": e.song, "rating": e.rating} for e in lib.rated_songs.values()]
+
+
 def get_song_entries_by_songlist_id(
     songlist_id: int, params: dict[Any, Any] | None = None
 ) -> list[dict[Any, Any]]:
@@ -304,18 +348,3 @@ def get_song_entries_by_songlist_id(
     params = {} if params is None else params
     url = f"{SONGLIST_API_URL}/{songlist_id}/songs"
     return fetch_json_items(url, params=params)
-
-
-@cache_with_expiration(days=7)
-def get_rated_songs_by_user_id_7d(
-    user_id: int, fields: set[OptionalSongFieldName] | None = None
-) -> list[SongEntry]:
-    logger.info(f"Fetching rated songs for user id {user_id}")
-    rated_songs = get_songs(
-        song_search_params=SongSearchParams(
-            user_collection_id=user_id,
-        ),
-        fields=fields,
-    )
-    logger.info(f"Found total of {len(rated_songs)} rated songs.")
-    return rated_songs

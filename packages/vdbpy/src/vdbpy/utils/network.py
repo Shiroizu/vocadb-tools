@@ -72,6 +72,7 @@ def fetch_with_retries(
         except (
             requests.exceptions.ConnectionError,
             requests.exceptions.ReadTimeout,
+            requests.exceptions.ChunkedEncodingError,
         ) as e:
             logger.warning(f"Connection issue: {e}")
 
@@ -132,6 +133,7 @@ def fetch_json_items_with_total_count(
     session: requests.Session | None = None,
     max_results: int = 10**9,
     limit: int | Callable[..., bool] | None = None,
+    suppress_total_count_warning: bool = False,
 ) -> tuple[list[Any], int]:
     if limit == 0:
         return [], 0
@@ -168,7 +170,8 @@ def fetch_json_items_with_total_count(
             logger.warning(
                 f"Total count {total_count} is higher than {TOTAL_COUNT_WARNING}!"
             )
-            _ = input("Press enter to continue...")
+            if not suppress_total_count_warning:
+                _ = input("Press enter to continue...")
             warned = True
 
         limit_reached = False
@@ -207,18 +210,23 @@ def fetch_json_items(
     session: requests.Session | None = None,
     max_results: int = 10**9,
     limit: int | Callable[..., bool] | None = None,
+    suppress_total_count_warning: bool = False,
 ) -> list[Any]:
-    return fetch_json_items_with_total_count(url, params, session, max_results, limit)[
-        0
-    ]
+    return fetch_json_items_with_total_count(
+        url, params, session, max_results, limit, suppress_total_count_warning
+    )[0]
 
 
-def fetch_total_count(api_url: str, params: dict[Any, Any] | None = None) -> int:
+def fetch_total_count(
+    api_url: str,
+    params: dict[Any, Any] | None = None,
+    session: Session | None = None,
+) -> int:
     logger.debug(f"Fetching total count for '{api_url} with params {params}'")
     params = params.copy() if params is not None else {}
     params["maxResults"] = 1
     params["getTotalCount"] = True
-    data = fetch_json(api_url, params=params)
+    data = fetch_json(api_url, params=params, session=session)
     if "totalCount" not in data:
         logger.warning(f"Total count not found in {data}")
         return 0

@@ -1,5 +1,7 @@
 from typing import Any
 
+import requests
+
 from vdbpy.config import ARTIST_API_URL, SONG_API_URL, USER_API_URL
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.logger import get_logger
@@ -48,7 +50,7 @@ def get_song_count_by_artist_id_1d(
     only_main_songs: bool = False,
     extra_params: dict[Any, Any] | None = None,
 ) -> int:
-    params = extra_params if extra_params else {}
+    params = extra_params or {}
     params["artistId[]"] = artist_id
     if only_main_songs:
         params["artistParticipationStatus"] = "OnlyMainAlbums"
@@ -73,12 +75,27 @@ def get_cached_base_voicebank_by_artist_id(artist_id: int, recursive: bool = Tru
     return get_base_voicebank_id_by_artist_id(artist_id, recursive)
 
 
-@cache_with_expiration(days=7)
-def get_followed_artists_by_user_id_7d(
-    user_id: int, extra_params: dict[Any, Any] | None = None
+def get_followed_artists_by_user_id(
+    user_id: int,
+    extra_params: dict[Any, Any] | None = None,
+    session: requests.Session | None = None,
 ) -> list[dict[Any, Any]]:
     api_url = f"{USER_API_URL}/{user_id}/followedArtists"
-    followed_artists = fetch_json_items(api_url, extra_params)
+    followed_artists = fetch_json_items(
+        api_url, params=extra_params, session=session
+    )
     if followed_artists:
         followed_artists = [ar["artist"] for ar in followed_artists]
     return followed_artists
+
+
+def get_cached_followed_artists_by_user_id(
+    user_id: int, session: requests.Session | None = None
+) -> list[dict[Any, Any]]:
+    """Return followed artists from the user library cache."""
+    from vdbpy.api.user_library import get_user_library  # noqa: PLC0415
+
+    lib = get_user_library(
+        user_id, collections=frozenset({"followed_artists"}), session=session
+    )
+    return lib.followed_artists

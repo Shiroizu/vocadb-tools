@@ -122,9 +122,43 @@ def get_user_profile_by_username_1d(username: str) -> dict[Any, Any]:  # TODO ty
     return fetch_json(api_url)
 
 
-def get_user_profile_by_id(user_id: int) -> dict[Any, Any]:  # TODO type
+def get_user_profile_by_username(username: str) -> dict[Any, Any]:  # TODO type
+    api_url = f"{WEBSITE}/api/profiles/{username}"
+    return fetch_json(api_url)
+
+
+@cache_with_expiration(days=1)
+def get_user_profile_by_id_1d(user_id: int) -> dict[Any, Any]:  # TODO type
     username = get_username_by_id(user_id)
     return get_user_profile_by_username_1d(username)
+
+
+def has_public_song_ratings(
+    user_id: int, session: requests.Session | None = None
+) -> bool | None:
+    """Check if the user's song ratings are public."""
+    from vdbpy.api.songs import (  # noqa: PLC0415
+        get_rated_songs_with_ratings,
+        get_song_ratings,
+    )
+
+    entries = get_rated_songs_with_ratings(user_id, max_results=1, session=session)
+    if not entries:
+        return None
+    song_id = entries[0]["song"]["id"]
+    ratings = get_song_ratings(song_id, session=session)
+    return any(
+        r.get("user", {}).get("id") == user_id
+        for r in ratings
+        if isinstance(r.get("user"), dict)
+    )
+
+
+def has_public_album_collection(user_id: int) -> bool:
+    """Check if the user's album collection is public."""
+    username = get_username_by_id(user_id)
+    profile = get_user_profile_by_username(username)
+    return bool(profile.get("publicAlbumCollection", False))
 
 
 @cache_with_expiration(days=1)
@@ -261,7 +295,7 @@ def get_cached_user_creation_date_by_user_id(user_id) -> datetime | None:
         return None
     return parse_date(creation_date)
 
-def get_user_account_age_by_user_id(user_id: int) -> int:
+def get_cached_user_account_age_by_user_id(user_id: int) -> int:
     """Get user account age in days."""
     creation_date = get_cached_user_creation_date_by_user_id(user_id)
     if not creation_date:
@@ -272,6 +306,7 @@ def get_user_account_age_by_user_id(user_id: int) -> int:
 
 def get_user_group_by_user_id(user_id: int) -> UserGroup:
     return fetch_json(f"{USER_API_URL}/{user_id}")["groupId"]
+
 
 def reactivate(session: requests.Session, username: str) -> None:
     """Reactivate a disabled user account by username."""
