@@ -15,3 +15,22 @@ def get_entry_reports(session: requests.Session) -> Any:
     logger.debug(f"Got reports: {len(entry_reports)}")
     logger.debug(f"First report: {entry_reports[0]}")
     return entry_reports
+
+
+def close_entry_report(session: requests.Session, report_id: int) -> bool:
+    """Close an entry report by ID."""
+    url = f"{ENTRY_REPORTS_URL}/{report_id}"
+    logger.info(f"Closing entry report {report_id} at {url}")
+    response = None
+    try:
+        response = session.delete(url)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        logger.warning(
+            f"Could not close report {report_id}: "
+            f"{response.status_code if response is not None else 'no response'} "
+            f"{response.text if response is not None else ''}"
+        )
+        return False
+    logger.info(f"Report {report_id} closed.")
+    return True
