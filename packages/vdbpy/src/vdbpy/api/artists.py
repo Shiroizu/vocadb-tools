@@ -24,8 +24,8 @@ def get_artist_by_id(artist_id: int, fields: list[str] | None = None) -> dict[An
     return fetch_json(f"{ARTIST_API_URL}/{artist_id}", params=params)
 
 
-@cache_with_expiration(days=1)
-def get_artist_by_id_1d(
+@cache_with_expiration(days=7)
+def get_artist_by_id_7d(
     artist_id: int, fields: list[str] | None = None
 ) -> dict[Any, Any]:
     return get_artist_by_id(artist_id, fields=fields)
@@ -44,8 +44,9 @@ def get_artists_by_tag_id(tag_id: int) -> list[dict[Any, Any]]:
     return get_artists(params=params)
 
 
-@cache_with_expiration(days=1)
-def get_song_count_by_artist_id_1d(
+
+@cache_with_expiration(days=30)
+def get_song_count_by_artist_id_30d(
     artist_id: int,
     only_main_songs: bool = False,
     extra_params: dict[Any, Any] | None = None,
