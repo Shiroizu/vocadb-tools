@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vocadb-scripts"
-version = "2.2.0"
+version = "2.4.0"
 description = "Collection of VocaDB related scripts"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["scripts", "scripts.graph", "scripts.artist_tags"]
+packages = ["scripts", "scripts.graph", "scripts.artist_tags", "scripts.find"]
 
 [tool.uv.sources]
 vdbpy = { git = "https://github.com/Shiroizu/VDBpy" }
