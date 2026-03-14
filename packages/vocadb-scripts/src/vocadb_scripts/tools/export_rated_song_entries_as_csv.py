@@ -1,6 +1,6 @@
 import argparse
 
-from vdbpy.api.songs import get_rated_songs_by_user_id_7d
+from vdbpy.api.songs import get_cached_rated_songs_with_ratings
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
@@ -34,18 +34,9 @@ if __name__ == "__main__":
     COLUMN_DELIMITER = ";"
     LIST_DELIMITER = ","
 
-    fields = [
-        "Albums",
-        "Artists",
-        "PVs",
-        "ReleaseEvent",
-        "Tags",
-        "WebLinks",
-        "CultureCodes",
-    ]
-
-    params = {"fields": ", ".join(fields)}
-    rated_songs = get_rated_songs_by_user_id_7d(user_id, params)
+    rated_songs = get_cached_rated_songs_with_ratings(
+        user_id,
+    )
 
     simple_columns = {
         "Song id": "id",
@@ -86,7 +77,7 @@ if __name__ == "__main__":
                 logger.info(f"{value} not found for {entry['id']}")
                 output_line.append("?")
 
-        output_line.append(song["date"])  # rating date
+        output_line.append(song.get("date", ""))  # rating date
 
         own_score = 3 if (song["rating"] == "Favorite") else 2
         output_line.append(str(own_score))
@@ -132,3 +123,5 @@ if __name__ == "__main__":
             _ = input("Press enter to continue")
 
         save_file(OUTPUT_FILE, COLUMN_DELIMITER.join(output_line), append=True)
+
+    logger.info(f"\nTable saved to '{OUTPUT_FILE}'")

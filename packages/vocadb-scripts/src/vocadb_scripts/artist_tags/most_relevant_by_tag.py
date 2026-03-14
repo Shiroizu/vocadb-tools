@@ -2,7 +2,7 @@ import argparse
 from typing import Any
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_artist_by_id_1d, get_song_count_by_artist_id_1d
+from vdbpy.api.artists import get_artist_by_id_7d, get_song_count_by_artist_id_30d
 from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
@@ -64,11 +64,11 @@ def get_relevant_tag_artists_table(
                 continue
 
             if artist_id not in song_counts:
-                songcount_by_artist = get_song_count_by_artist_id_1d(
+                songcount_by_artist = get_song_count_by_artist_id_30d(
                     artist_id, only_main_songs=skip_supporting_artists
                 )
 
-                artist_entry = get_artist_by_id_1d(artist_id, fields=["Tags"])
+                artist_entry = get_artist_by_id_7d(artist_id, fields=["Tags"])
                 artist_entry_tag_ids = [
                     tag["tag"]["id"] for tag in artist_entry["tags"]
                 ]

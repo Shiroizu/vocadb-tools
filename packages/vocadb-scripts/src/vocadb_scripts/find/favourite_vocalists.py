@@ -17,12 +17,17 @@ Table saved to 'output/favourite-vocalists-329.txt'
 """
 
 import argparse
+from datetime import UTC, datetime, timedelta
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_cached_base_voicebank_by_artist_id
-from vdbpy.api.songs import get_rated_songs_by_user_id_7d
+from vdbpy.api.artists import (
+    get_artist_by_id_7d,
+    get_cached_base_voicebank_by_artist_id,
+)
+from vdbpy.api.songs import get_cached_rated_songs_with_ratings
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE
+from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
@@ -51,39 +56,30 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
-    logger = get_logger("find_favourite_vocalists")
-    args = parse_args()
-    user_id = args.user_id
-    max_results = args.max_results
-    group_by_base_vb = not args.do_not_group_by_base_vb
+def main(user_id: int, max_results: int = 20, group_by_base_vb: bool = True) -> str:
+    output_path = get_vdbpy_cache_dir() / "favourite-vocalists" / f"{user_id}.txt"
+    if output_path.exists():
+        age = datetime.now(tz=UTC) - datetime.fromtimestamp(
+            output_path.stat().st_mtime, tz=UTC
+        )
+        if age < timedelta(days=7):
+            logger.info(
+                f"Cache hit: '{output_path}' is {age.days}d old, skipping rebuild"
+            )
+            return output_path.read_text(encoding="utf-8")
 
     username = get_username_by_id(user_id)
     logger.info(f"Searching favourite vocalists for user '{username}' ({user_id})")
 
-    OUTPUT_FILE = f"output/favourite-vocalists-{user_id}.txt"
-
     unique_vocalists = {}
 
-    fields = [
-        "Albums",
-        "Artists",
-        "PVs",
-        "ReleaseEvent",
-        "Tags",
-        "WebLinks",
-        "CultureCodes",
-    ]
-    params = {"fields": ", ".join(fields)}
-    rated_songs = get_rated_songs_by_user_id_7d(user_id, params)
+    rated_songs = get_cached_rated_songs_with_ratings(user_id)
 
     for song in rated_songs:
-        placeholder = ""
         rating = song["rating"]
         try:
             for artist in song["song"]["artists"]:
                 if "Vocalist" in artist["categories"]:
-                    placeholder = artist["name"]
                     artist_id = artist["artist"]["id"]
                     if artist_id in unique_vocalists:
                         if rating == "Favorite":
@@ -110,33 +106,34 @@ if __name__ == "__main__":
         unique_vocalists_with_score.append([name, favs, likes, score, ar_id])
 
     if group_by_base_vb:
-        score_by_base_vb = {}
-        # name: [favs, likes, score, id]
+        score_by_id: dict[int, list[int]] = {}
         for counter, vb in enumerate(unique_vocalists_with_score):
-            vb_name, favs, likes, score, vb_id = vb
-            base_vb = get_cached_base_voicebank_by_artist_id(vb_id)
-            base_name = base_vb["name"]
-            if vb_name != base_name:
+            _, favs, likes, score, vb_id = vb
+            base_vb_id = get_cached_base_voicebank_by_artist_id(vb_id)
+            if vb_id != base_vb_id:
                 logger.info(
-                    f"{counter + 1}/{len(unique_vocalists_with_score)} Base VB for "
-                    f"'{vb_name}' is '{base_name}'"
+                    f"{counter}/{len(unique_vocalists_with_score)} - "
+                    f"Base VB for Ar/{vb_id} is Ar/{base_vb_id}"
                 )
-            if base_name in score_by_base_vb:
-                score_by_base_vb[base_name][0] += favs
-                score_by_base_vb[base_name][1] += likes
-                score_by_base_vb[base_name][2] += score
+            if base_vb_id in score_by_id:
+                score_by_id[base_vb_id][0] += favs
+                score_by_id[base_vb_id][1] += likes
+                score_by_id[base_vb_id][2] += score
             else:
-                score_by_base_vb[base_name] = [favs, likes, score, base_vb["id"]]
-
+                score_by_id[base_vb_id] = [favs, likes, score]
+        sorted_ids = sorted(score_by_id, key=lambda i: score_by_id[i][2], reverse=True)
         unique_vocalists_with_score = [
-            [name, *stats] for name, stats in score_by_base_vb.items()
+            [get_artist_by_id_7d(ar_id)["name"], *score_by_id[ar_id], ar_id]
+            for ar_id in sorted_ids[:max_results]
         ]
-
-    unique_vocalists_with_score.sort(key=lambda x: x[3], reverse=True)
+    else:
+        unique_vocalists_with_score.sort(key=lambda x: x[3], reverse=True)
+        unique_vocalists_with_score = unique_vocalists_with_score[:max_results]
 
     table_to_print = []
-    for ar in unique_vocalists_with_score[:max_results]:
+    for ar in unique_vocalists_with_score:
         name, favs, likes, score, ar_id = ar
+        name = str(name)
         if name.lower().endswith(" (unknown)"):
             name = name[:-10]
         line_to_print = (favs, likes, name, f"{WEBSITE}/Ar/{ar_id}")
@@ -147,7 +144,13 @@ if __name__ == "__main__":
         headers=["Favs", "Likes", "Vocalist", "Entry"],
         tablefmt="github",
     )
-    logger.info(f"\n{table}")
+    save_file(output_path, table)
+    logger.info(f"\nTable saved to '{output_path}'")
+    return table
 
-    save_file(OUTPUT_FILE, table)
-    logger.info(f"\nTable saved to '{OUTPUT_FILE}'")
+
+if __name__ == "__main__":
+    logger = get_logger("find_favourite_vocalists")
+    args = parse_args()
+    result = main(args.user_id, args.max_results, not args.do_not_group_by_base_vb)
+    logger.info(f"\n{result}")

@@ -2,7 +2,7 @@ import argparse
 from typing import Any
 
 from tabulate import tabulate
-from vdbpy.api.artists import get_artist_by_id_1d
+from vdbpy.api.artists import get_artist_by_id_7d
 from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.utils.logger import get_logger
 
@@ -46,7 +46,7 @@ def get_artist_tag_table(
             else "OnlyMainAlbums",
             only_with_pvs=only_with_pvs,
             max_results=max_results,
-            sort="RatingScore"
+            sort="RatingScore",
         ),
     )
     truncated = bool(max_results and total_count > max_results)
@@ -65,7 +65,7 @@ def get_artist_tag_table(
             else:
                 tag_counts[tag.tag_id]["entry_count"] += 1
 
-    artist_entry = get_artist_by_id_1d(artist_id, fields=["tags"])
+    artist_entry = get_artist_by_id_7d(artist_id, fields=["tags"])
     artist_entry_tag_ids = [tag["tag"]["id"] for tag in artist_entry["tags"]]
     tags_to_print = tag_counts.values()
     sorted_by_entry_count = sorted(
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     logger = get_logger("artist_tags_by_songs")
     args = parse_args()
 
-    artist_name = get_artist_by_id_1d(args.artist_id)["name"]
+    artist_name = get_artist_by_id_7d(args.artist_id)["name"]
     table, truncated = get_artist_tag_table(
         args.artist_id,
         include_collabs=args.include_collabs,
