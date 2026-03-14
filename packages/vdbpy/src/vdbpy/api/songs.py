@@ -279,8 +279,8 @@ def get_relevant_user_ids_by_song_id(
     return list({*song_raters, entry_creator, *songlist_authors})
 
 
-@cache_with_expiration(days=1)
-def get_most_rated_song_by_artist_id_1d(
+@cache_with_expiration(days=7)
+def get_most_rated_song_by_artist_id_7d(
     artist_id: int,
 ) -> SongEntry:
     return get_songs(
