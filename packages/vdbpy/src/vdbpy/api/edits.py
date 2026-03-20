@@ -432,6 +432,17 @@ def get_edits_by_entry(
     )
 
 
+def get_deletion_edit(entry_type: EntryType, entry_id: int) -> UserEdit | None:
+    """Return the UserEdit for the Deleted event, or None if not found."""
+    edits = get_edits_by_entry(entry_type, entry_id, include_deleted=True)
+    logger.debug(f"Found {len(edits)} edits for {entry_type} {entry_id}")
+    for edit in edits:
+        if edit.edit_event == "Deleted":
+            return edit
+    logger.warning(f"No deletion edit found for {entry_type} {entry_id}")
+    return None
+
+
 @cache_without_expiration()
 def get_cached_edits_by_entry_before_version_id(
     entry_type: EntryType, entry_id: int, version_id: int, include_deleted: bool = False
