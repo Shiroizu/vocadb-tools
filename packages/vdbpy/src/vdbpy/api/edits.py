@@ -7,7 +7,7 @@ from vdbpy.api.entries import get_entry_link, get_versions_url, is_entry_deleted
 from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.parsers.edits import parse_edits, parse_edits_from_archived_versions
-from vdbpy.types.shared import EntryType, UserEdit, VersionTuple
+from vdbpy.types.shared import EditType, EntryType, UserEdit, VersionTuple
 from vdbpy.utils.cache import cache_without_expiration
 from vdbpy.utils.data import (
     UserEditJSONEncoder,
@@ -352,6 +352,20 @@ def get_edits_until_day(
         day_to_check -= timedelta(days=1)
 
     return all_edits
+
+
+def get_recent_activity_entries(
+    edit_event: EditType,
+    max_results: int = 50,
+) -> list[dict[Any, Any]]:
+    """Fetch recent activity entries with fields=entry only."""
+    params: dict[str, Any] = {
+        "editEvent": edit_event,
+        "fields": "entry",
+        "maxResults": max_results,
+    }
+    result = fetch_json(ACTIVITY_API_URL, params=params)
+    return result.get("items", [])
 
 
 def get_monthly_edit_count(year: int, month: int) -> int:

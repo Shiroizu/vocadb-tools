@@ -175,6 +175,19 @@ def delete_entry(
     return True
 
 
+def get_entry_creator_name(entry_type: EntryType, entry_id: int) -> str | None:
+    """Get the username of the original creator via version history."""
+    try:
+        url = get_versions_url(entry_type, entry_id)
+        data = fetch_json(url)
+        versions = data.get("archivedVersions", [])
+        if versions:
+            return versions[-1].get("author", {}).get("name")
+    except requests.exceptions.RequestException:
+        return None
+    return None
+
+
 def get_versions_url(entry_type: EntryType, entry_id: int) -> str:
     # TODO fix
     return f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
