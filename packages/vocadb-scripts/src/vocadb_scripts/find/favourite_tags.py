@@ -19,8 +19,8 @@ from vdbpy.utils.logger import get_logger
 tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
-GENRE_LIMIT = 10
-OTHER_LIMIT = 3
+GENRE_LIMIT = 20
+OTHER_LIMIT = 2
 
 
 def find_favourite_tags_by_user_id(user_id: int) -> str:
