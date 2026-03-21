@@ -31,6 +31,15 @@ def get_artist_by_id_7d(
     return get_artist_by_id(artist_id, fields=fields)
 
 
+def get_artist_details_by_id(artist_id: int) -> dict[Any, Any]:
+    return fetch_json(f"{ARTIST_API_URL}/{artist_id}/details")
+
+
+@cache_with_expiration(days=7)
+def get_artist_details_by_id_7d(artist_id: int) -> dict[Any, Any]:
+    return get_artist_details_by_id(artist_id)
+
+
 def get_json_artists_with_total_count(
     params: dict[Any, Any] | None, max_results: int = 10**9
 ) -> tuple[list[dict[Any, Any]], int]:
