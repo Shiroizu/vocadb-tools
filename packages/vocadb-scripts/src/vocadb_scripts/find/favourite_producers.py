@@ -10,8 +10,8 @@ import tabulate as tabulate_module
 from tabulate import tabulate
 from vdbpy.api.artists import (
     get_artist_by_id_7d,
+    get_artist_details_by_id_7d,
     get_cached_followed_artists_by_user_id,
-    get_song_count_by_artist_id_30d,
 )
 from vdbpy.api.songs import (
     get_cached_rated_songs_with_ratings,
@@ -112,14 +112,16 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
         "Days since last song",
     ]
     table_to_print = []
+    best_ratio = 0.0
+    best_gem: tuple[str, int, int, str] | None = None
     today = datetime.now(tz=UTC)
     for counter, ar in enumerate(unique_artists_with_score[:max_results], start=1):
         logger.info(f"Generating row for artist {counter}/{max_results}: {ar}...")
-        name, favs, likes, score, ar_id, album_count, album_track_count = ar
+        name, favs, likes, score, ar_id = ar
         artist_entry = get_artist_by_id_7d(ar_id, fields=["webLinks"])
-        songcount_by_artist = get_song_count_by_artist_id_30d(
-            ar_id, only_main_songs=True
-        )
+        details = get_artist_details_by_id_7d(ar_id)
+        shared_stats = details.get("sharedStats", {})
+        songcount_by_artist = shared_stats.get("songCount", 0)
         rated_songs_percentage = (
             round(((favs + likes) / songcount_by_artist * 100), 1)
             if songcount_by_artist
@@ -127,6 +129,9 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
         )
         most_rated_song = get_most_rated_song_by_artist_id_7d(ar_id)
         most_recent_song = get_most_recent_song_by_artist_id_1d(ar_id)
+        entry_url = f"{WEBSITE}/Ar/{ar_id}"
+        followers = shared_stats.get("followerCount", 0)
+        ratio = round(score / followers, 3) if followers else 0.0
         line_to_print = (
             score,
             name,
@@ -142,8 +147,11 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
             get_days_since_song_publish_date(most_recent_song, today),
         )
         table_to_print.append(line_to_print)
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_gem = (name, score, followers, entry_url)
 
-    return headers, table_to_print
+    return headers, table_to_print, best_gem
 
 
 def parse_args() -> argparse.Namespace:
@@ -174,10 +182,18 @@ def main(user_id: int, max_results: int = 20) -> str:
                 f"Cache hit: '{output_path}' is {age.days}d old, skipping rebuild"
             )
             return output_path.read_text(encoding="utf-8")
-    headers, producer_table = find_favourite_producers_by_user_id(user_id, max_results)
+    headers, producer_table, hidden_gem = find_favourite_producers_by_user_id(
+        user_id, max_results
+    )
     table = tabulate(
         producer_table, headers=headers, tablefmt="github", numalign="right"
     )
+    if hidden_gem:
+        name, score, followers, entry_url = hidden_gem
+        table += (
+            f"\n\nHidden gem: {name}"
+            f" (score {score}, {followers} followers, {entry_url})"
+        )
     save_file(output_path, table)
     logger.info(f"\nTable saved to '{output_path}'")
     return table
