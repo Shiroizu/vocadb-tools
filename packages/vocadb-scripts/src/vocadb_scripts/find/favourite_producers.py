@@ -8,7 +8,6 @@ from typing import Any
 
 import tabulate as tabulate_module
 from tabulate import tabulate
-from vdbpy.api.albums import get_cached_albums_by_user_id
 from vdbpy.api.artists import (
     get_artist_by_id_7d,
     get_cached_followed_artists_by_user_id,
@@ -77,84 +76,20 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
                         elif rating == "Like":
                             unique_artists[artist_id][2] += 1
                     elif rating == "Favorite":
-                        unique_artists[artist_id] = [
-                            artist["artist"]["name"],
-                            1,
-                            0,
-                            0,
-                            0,
-                        ]
+                        unique_artists[artist_id] = [artist["artist"]["name"], 1, 0]
                     elif rating == "Like":
-                        unique_artists[artist_id] = [
-                            artist["artist"]["name"],
-                            0,
-                            1,
-                            0,
-                            0,
-                        ]
+                        unique_artists[artist_id] = [artist["artist"]["name"], 0, 1]
 
         except KeyError:
             logger.debug(f"Custom artist '{placeholder}' on S/{song['song']['id']}")
             continue
 
-    albums = get_cached_albums_by_user_id(user_id)
-    for album in albums:
-        album_producers_ids_by_name = {
-            artist["artist"]["name"]: artist["artist"]["id"]
-            for artist in album["album"]["artists"]
-            if artist["categories"] == "Producer" and "artist" in artist
-        }
-        for artist in album["album"]["artists"]:
-            if "artist" not in artist:
-                continue
-            if artist["categories"] != "Producer" or artist["isSupport"]:
-                continue
-            if artist["artist"]["id"] in unique_artists:
-                unique_artists[artist["artist"]["id"]][3] += 1
-            else:
-                unique_artists[artist["artist"]["id"]] = [
-                    artist["artist"]["name"],
-                    0,
-                    0,
-                    1,
-                    0,
-                ]
-        if "tracks" not in album["album"]:
-            logger.warning(f"Album '{album['album']['name']}' has no tracks!")
-            continue
-        for track in album["album"]["tracks"]:
-            if "song" not in track:
-                continue
-            producer_string = track["song"]["artistString"].split(" feat. ")[0]
-            producer_names = [n.strip() for n in producer_string.split(", ")]
-            for producer_name in producer_names:
-                artist_id = album_producers_ids_by_name.get(producer_name, 0)
-                if artist_id in unique_artists:
-                    unique_artists[artist_id][4] += 1
-                elif artist_id:
-                    unique_artists[artist_id] = [producer_name, 0, 0, 0, 1]
-                else:
-                    logger.info(
-                        f"Album '{album['album']['name']}': Found an unknown tracklist"
-                        f" artist '{producer_name}'"
-                    )
-                    logger.info(f"Album producers: {album_producers_ids_by_name}")
-    logger.info(f"Analyzed {len(albums)} albums...")
     logger.info(f"Found {len(unique_artists)} unique artists...")
 
     unique_artists_with_score = []
-    for ar_id in unique_artists:
-        name, favs, likes, album_count, album_track_count = [
-            unique_artists[ar_id][0],
-            unique_artists[ar_id][1],
-            unique_artists[ar_id][2],
-            unique_artists[ar_id][3],
-            unique_artists[ar_id][4],
-        ]
-        score = favs * 3 + likes * 2 + 10 * album_count + album_track_count
-        unique_artists_with_score.append(
-            [name, favs, likes, score, ar_id, album_count, album_track_count]
-        )
+    for ar_id, (name, favs, likes) in unique_artists.items():
+        score = favs * 3 + likes * 2
+        unique_artists_with_score.append([name, favs, likes, score, ar_id])
 
     unique_artists_with_score.sort(key=lambda x: x[3], reverse=True)
 
@@ -169,8 +104,7 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
         "Likes",
         "Favs/Likes",
         "Rated %",
-        "Album count",
-        "Track count",
+        "Score/Followers",
         "Following",
         "Entry",
         "Youtube",
@@ -200,10 +134,9 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
             likes,
             round(favs / likes, 1) if likes else 0,
             rated_songs_percentage,
-            album_count,
-            album_track_count,
+            ratio,
             ar_id in followed_artists_ids,
-            f"{WEBSITE}/Ar/{ar_id}",
+            entry_url,
             get_youtube_link(artist_entry),
             f"{WEBSITE}/S/{most_rated_song.id}",
             get_days_since_song_publish_date(most_recent_song, today),
