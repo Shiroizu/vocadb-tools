@@ -4,6 +4,7 @@ import argparse
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import tabulate as tabulate_module
 from tabulate import tabulate
 from vdbpy.api.albums import get_cached_albums_by_user_id
 from vdbpy.api.songs import get_cached_rated_songs_with_ratings
@@ -14,6 +15,7 @@ from vdbpy.utils.data import truncate_string_with_ellipsis
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
+tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 

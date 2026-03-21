@@ -19,6 +19,7 @@ Table saved to 'output/favourite-vocalists-329.txt'
 import argparse
 from datetime import UTC, datetime, timedelta
 
+import tabulate as tabulate_module
 from tabulate import tabulate
 from vdbpy.api.artists import (
     get_artist_by_id_7d,
@@ -31,6 +32,7 @@ from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
+tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 

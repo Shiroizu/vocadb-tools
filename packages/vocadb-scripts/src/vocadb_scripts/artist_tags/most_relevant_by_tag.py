@@ -1,12 +1,14 @@
 import argparse
 from typing import Any
 
+import tabulate as tabulate_module
 from tabulate import tabulate
 from vdbpy.api.artists import get_artist_by_id_7d, get_song_count_by_artist_id_30d
 from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
 
+tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 MAX_SONGS = 50

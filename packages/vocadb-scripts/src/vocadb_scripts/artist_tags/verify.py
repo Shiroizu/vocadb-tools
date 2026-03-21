@@ -1,6 +1,7 @@
 import argparse
 from typing import Any
 
+import tabulate as tabulate_module
 from tabulate import tabulate
 from vdbpy.api.artists import (
     get_json_artists_with_total_count,
@@ -11,6 +12,7 @@ from vdbpy.utils.logger import get_logger
 
 MAX_ARTISTS = 50
 
+tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 
