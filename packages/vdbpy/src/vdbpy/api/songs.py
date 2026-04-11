@@ -39,6 +39,7 @@ def get_json_songs_with_total_count(
 def get_songs_with_total_count(
     fields: set[OptionalSongFieldName] | None = None,
     song_search_params: SongSearchParams | None = None,
+    session: requests.Session | None = None,
 ) -> tuple[list[SongEntry], int]:
     params: dict[str, str | int | list[str]] = {}
 
@@ -86,7 +87,7 @@ def get_songs_with_total_count(
     logger.debug(f"Query parameters: {params}")
 
     songs_to_parse, total_count = fetch_json_items_with_total_count(
-        SONG_API_URL, params=params
+        SONG_API_URL, params=params, session=session
     )
     logger.debug(f"Found {len(songs_to_parse)} songs to parse")
 
@@ -96,8 +97,9 @@ def get_songs_with_total_count(
 def get_songs(
     song_search_params: SongSearchParams | None = None,
     fields: set[OptionalSongFieldName] | None = None,
+    session: requests.Session | None = None,
 ) -> list[SongEntry]:
-    return get_songs_with_total_count(fields, song_search_params)[0]
+    return get_songs_with_total_count(fields, song_search_params, session=session)[0]
 
 
 def get_song_by_id(
