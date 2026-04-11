@@ -42,11 +42,12 @@ def create_or_update_songlist(
     title: str = "",
     description: str = "",
     category: SonglistCategory = "Nothing",
-) -> None:
+) -> int:
     """Create or update a songlist.
 
     Specfify songlist_id for updating a list.
     Omit songlist_id to create a new list.
+    Returns the songlist ID (new when creating, same as input when updating).
     """
     data: dict[Any, Any] = {
         "songLinks": [],
@@ -79,9 +80,26 @@ def create_or_update_songlist(
         logger.info(f"Updated songlist at {WEBSITE}/SongList/Details/{songlist_id}")
         logger.debug(f"DATA: {data}")
     else:
-        songlist_id = songlist_request.json()
+        raw_id = songlist_request.json()
+        if not isinstance(raw_id, int):
+            msg = f"Expected int response, got {type(raw_id).__name__}: {raw_id}"
+            raise TypeError(msg)
+        songlist_id = raw_id
         logger.info(f"Created songlist at {WEBSITE}/SongList/Details/{songlist_id}")
         logger.debug(f"DATA: {data}")
+    return songlist_id
+
+
+def delete_songlist(session: requests.Session, songlist_id: int) -> None:
+    url = f"{SONGLIST_API_URL}/{songlist_id}"
+    r = session.delete(url)
+    if r.status_code == 404:
+        logger.info(f"Songlist {songlist_id} already deleted or missing")
+        return
+    r.raise_for_status()
+    logger.info(
+        f"Deleted songlist ({WEBSITE}/SongList/Details/{songlist_id})"
+    )
 
 
 def create_songlists_with_size_limit(
