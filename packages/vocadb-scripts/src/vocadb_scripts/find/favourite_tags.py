@@ -23,15 +23,32 @@ GENRE_LIMIT = 20
 OTHER_LIMIT = 2
 
 
-def find_favourite_tags_by_user_id(user_id: int) -> str:
-    username = get_username_by_id(user_id)
-    logger.info(f"Searching favourite tags for user '{username}' ({user_id})")
+def build_top_favourite_genres(
+    rated_songs: list[dict[str, Any]],
+    tag_info: dict[int, tuple[str, str]],
+    limit: int = 50,
+) -> list[tuple[int, str, float]]:
+    """Genre tags only, raw fav/like score per tag (no parent propagation).
 
-    # tag_id -> [name, category, favs, likes]
+    Same scoring as the favourite-tags table: ``favs * 3 + likes * 2``. Sorted
+    descending for use by ``recommend_advanced`` (weighted picks from top ``limit``).
+    """
+    tag_map = build_tag_score_map(rated_songs)
+    rows: list[tuple[int, str, float]] = []
+    for tid, v in tag_map.items():
+        if tag_info.get(tid, ("", ""))[1] != "Genres":
+            continue
+        raw = float(v[2] * 3 + v[3] * 2)
+        if raw <= 0:
+            continue
+        rows.append((tid, str(v[0]), raw))
+    rows.sort(key=lambda x: x[2], reverse=True)
+    return rows[:limit]
+
+
+def build_tag_score_map(rated_songs: list[dict[str, Any]]) -> dict[int, list[Any]]:
+    """Return tag_id -> [name, categoryName, favs, likes] from rated songs."""
     unique_tags: dict[int, list[Any]] = {}
-
-    rated_songs = get_cached_rated_songs_with_ratings(user_id)
-
     for song in rated_songs:
         rating = song["rating"]
         for tag_entry in song["song"].get("tags", []):
@@ -46,6 +63,15 @@ def find_favourite_tags_by_user_id(user_id: int) -> str:
                 unique_tags[tag_id] = [tag["name"], tag["categoryName"], 1, 0]
             elif rating == "Like":
                 unique_tags[tag_id] = [tag["name"], tag["categoryName"], 0, 1]
+    return unique_tags
+
+
+def find_favourite_tags_by_user_id(user_id: int) -> str:
+    username = get_username_by_id(user_id)
+    logger.info(f"Searching favourite tags for user '{username}' ({user_id})")
+
+    rated_songs = get_cached_rated_songs_with_ratings(user_id)
+    unique_tags = build_tag_score_map(rated_songs)
 
     logger.info(f"Found {len(unique_tags)} unique tags, propagating to parent tags...")
     direct_parent_map = build_tag_direct_parent_map()
@@ -63,7 +89,12 @@ def find_favourite_tags_by_user_id(user_id: int) -> str:
             unique_tags[parent_id][3] += child_likes
         elif parent_id in tag_info_map:
             parent_name, parent_category = tag_info_map[parent_id]
-            unique_tags[parent_id] = [parent_name, parent_category, child_favs, child_likes]
+            unique_tags[parent_id] = [
+                parent_name,
+                parent_category,
+                child_favs,
+                child_likes,
+            ]
 
     # Group by category, sorted by score descending
     by_category: dict[str, list[tuple[int, int, str, int, int]]] = defaultdict(list)
@@ -104,7 +135,10 @@ def find_favourite_tags_by_user_id(user_id: int) -> str:
     result = "\n\n".join(output_parts)
     if best_gem:
         name, score, followers, entry_url = best_gem
-        result += f"\n\nHidden gem: {name} (score {score}, {followers} followers, {entry_url})"
+        result += (
+            f"\n\nHidden gem: {name} "
+            f"(score {score}, {followers} followers, {entry_url})"
+        )
     return result
 
 
