@@ -279,6 +279,16 @@ def get_user_library(
             )
             if force_refresh or rated_count != lib.rated_songs_count:
                 _update_rated_songs(lib, rated_count, force_refresh, session=session)
+            elif (
+                lib.rated_songs_count > 0
+                and len(lib.rated_songs) != lib.rated_songs_count
+            ):
+                logger.warning(
+                    f"Cached rated songs count ({lib.rated_songs_count})"
+                    f" != actual entries ({len(lib.rated_songs)})"
+                    f" for u/{user_id}. Forcing a full rebuild."
+                )
+                _update_rated_songs(lib, rated_count, force=True, session=session)
             else:
                 logger.info(
                     f"Rated songs up to date for u/{user_id} ({lib.rated_songs_count})"
