@@ -18,7 +18,13 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["scripts", "scripts.graph", "scripts.artist_tags", "scripts.find"]
+packages = [
+    "scripts", 
+    "scripts.graph", 
+    "scripts.artist_tags", 
+    "scripts.find", 
+    "scripts.recommend"
+]
 
 [tool.uv.sources]
 vdbpy = { git = "https://github.com/Shiroizu/VDBpy" }
