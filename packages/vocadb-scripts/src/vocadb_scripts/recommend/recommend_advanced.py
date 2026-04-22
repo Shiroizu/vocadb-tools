@@ -154,14 +154,21 @@ def _fetch_originals_by_tag_or_artist(
     sig: SearchSignal,
     max_results: int,
     session: requests.Session | None,
-) -> list[SongEntry]:
+    rng: random.Random | None = None,
+) -> tuple[list[SongEntry], int | None]:
+    year: int | None = None
     if sig.kind == "tag":
+        year = rng.randint(2007, datetime.now(tz=UTC).year) if rng is not None else None
         params = SongSearchParams(
             tag_ids={sig.id},
             song_types={"Original"},
             sort="RatingScore",
             max_results=max_results,
             only_with_pvs=True,
+            published_after_date=datetime(year, 1, 1, tzinfo=UTC) if year else None,
+            published_before_date=(
+                datetime(year + 1, 1, 1, tzinfo=UTC) if year else None
+            ),
         )
     elif sig.kind == "producer":
         params = SongSearchParams(
@@ -184,7 +191,7 @@ def _fetch_originals_by_tag_or_artist(
         f"page hits (totalCount={total})"
     )
     logger.debug(f"recommend_advanced search params: {params.to_url_params()}")
-    return songs
+    return songs, year
 
 
 def _first_unrated_unseen(
@@ -225,9 +232,11 @@ def _note_genre_pick(
     tag_id: int,
     tag_name: str,
     n_genres: int,
+    year: int | None = None,
 ) -> str:
+    year_part = f", {year}" if year is not None else ""
     return (
-        f"Via genre tag: {tag_name} (id {tag_id}), "
+        f"Via genre tag: {tag_name} (id {tag_id}){year_part}, "
         f"#{tag_rank}/{n_genres} in your top favourite genres"
     )
 
@@ -270,11 +279,13 @@ def _collect_weighted_side(
             break
         eid, ename, rank = picked
         sig = SearchSignal(kind, eid)
-        songs = _fetch_originals_by_tag_or_artist(sig, PER_SLOT_MAX_RESULTS, session)
+        songs, year = _fetch_originals_by_tag_or_artist(
+            sig, PER_SLOT_MAX_RESULTS, session, rng if kind == "tag" else None
+        )
         hit = _first_unrated_unseen(songs, rated_song_ids, seen_ids, run_seen)
         if hit is not None:
             if kind == "tag":
-                note = _note_genre_pick(rank, eid, ename, n_genres)
+                note = _note_genre_pick(rank, eid, ename, n_genres, year)
             else:
                 note = _note_producer_pick(rank, eid, ename, n_producers)
             out.append((hit, note))
@@ -403,7 +414,7 @@ def main(
 
     seen_ids = get_seen_song_ids(user_id, state_dir)
     rng = random.Random()
-    rng.seed(user_id * 1_000_003 + datetime.now(tz=UTC).toordinal())
+    rng.seed(user_id * 1_000_003 + int(datetime.now(tz=UTC).timestamp()))
 
     pairs = _select_songs_split(
         genre_rows,
