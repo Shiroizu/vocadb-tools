@@ -59,14 +59,16 @@ def main(
     name2 = get_username_by_id(user_id_2)
 
     lines = [
-        f"Rating overlap: {name1} vs {name2}",
+        "Rating overlap:",
         "",
-        f"Rated songs: {PROFILE_URL}{name1}: {total1} | {PROFILE_URL}{name2}: {total2}",
+        f"- {PROFILE_URL}{name1} - {total1} rated songs",
+        f"- {PROFILE_URL}{name2} - {total2} rated songs",
+        "",
         f"Shared: {shared} ({overlap_pct:.1f}%)",
-        f"Only in {name1}: {len(ids1 - ids2)}",
-        f"Only in {name2}: {len(ids2 - ids1)}",
+        f"Only for {name1}: {len(ids1 - ids2)}",
+        f"Only for {name2}: {len(ids2 - ids1)}",
         "",
-        "Among shared songs:",
+        f"Among shared songs ({shared}):",
         f"  Both Favorite: {both_fav} ({agree_fav_pct:.1f}%)",
         f"  Favorite for {name1} only: {u1_fav_only}",
         f"  Favorite for {name2} only: {u2_fav_only}",
