@@ -254,6 +254,7 @@ def get_user_library(
     force_refresh: bool = False,
     collections: frozenset[str] | None = None,
     session: requests.Session | None = None,
+    check_only_if_public: bool = True,
 ) -> UserLibrary:
     if collections is None:
         collections = ALL_COLLECTIONS
@@ -266,7 +267,7 @@ def get_user_library(
     )
 
     if "rated_songs" in collections:
-        if has_public_song_ratings(user_id, session) is False:
+        if check_only_if_public and has_public_song_ratings(user_id, session) is False:
             logger.warning(
                 f"User {user_id} has private song ratings. "
                 "Skipping rated songs refresh.",
