@@ -3,7 +3,7 @@
 import argparse
 
 import requests
-from vdbpy.api.songs import get_rated_songs_with_ratings
+from vdbpy.api.user_library import get_user_library
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
@@ -14,8 +14,13 @@ logger = get_logger()
 
 
 def _fetch(user_id: int, session: requests.Session | None = None) -> dict[int, str]:
-    entries = get_rated_songs_with_ratings(user_id, session=session)
-    return {e["song"]["id"]: e["rating"] for e in entries}
+    lib = get_user_library(
+        user_id,
+        collections=frozenset({"rated_songs"}),
+        session=session,
+        check_only_if_public=session is None,
+    )
+    return {sid: e.rating for sid, e in lib.rated_songs.items()}
 
 
 def main(
