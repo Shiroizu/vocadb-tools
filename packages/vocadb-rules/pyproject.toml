@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rule-modules"
+version = "0.1.0"
+description = "VocaDB rule check modules"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Shiroizu" }]
+requires-python = ">=3.14"
+dependencies = [
+    "bs4>=0.0.2",
+    "requests>=2.32.4",
+    "vdbpy",
+]
+
+[project.urls]
+Repository = "https://github.com/Shiroizu/rule_modules"
+Issues = "https://github.com/Shiroizu/rule_modules/issues"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15.2",
+    "ty>=0.0.18",
+]
+
+[tool.uv.sources]
+vdbpy = { git = "https://github.com/Shiroizu/VDBpy" }
+
+[tool.setuptools.packages.find]
+include = ["rule_modules*"]
+
+[tool.setuptools.package-data]
+"rule_modules.modules" = ["*.py"]
+
+[tool.ruff]
+target-version = "py314"
+exclude = ["WIP", ".venv"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN", # Missing return/type annotations x18
+    "ARG001", # Unused function argument x9
+    "C901", # Function too complex x3
+    "D100", # Missing docstring in public module x24
+    "D101", # Missing docstring in public class x2
+    "D102", # Missing docstring in public method x3
+    "D103", # Missing docstring in public function x76
+    "D104", # Missing docstring in public package x2
+    "D203", # incompatible with D211
+    "D213", # incompatible with D212
+    "E501", # Line too long x2
+    "EM101", # Exception must not use a string literal x4
+    "EM102", # Exception must not use an f-string literal x2
+    "ERA001", # Commented-out code x31
+    "FBT001", # Boolean-typed positional argument in function definition x13
+    "FBT002", # Boolean default positional argument in function definition x9
+    "FIX002", # Line contains x12
+    "G004", # Logging statement uses f-string x30
+    "N999", # Invalid module name x44
+    "PERF401", # Replace for loop with extend / list comprehension x4
+    "PLR0911", # Too many return statements x5
+    "PLR0912", # Too many branches x3
+    "PLR2004", # Magic values x2
+    "S101", # Use of `assert` detected x6
+    "SIM102", # Use a single `if` statement instead of nested `if` statements x6
+    "TC001", # Move application import into type-checking block x76
+    "TC002", # Move third-party import into type-checking block x89
+    "TC003", # Move standard library import into type-checking block x9
+    "TD", # Missing issue link for TODO x34
+    "TRY003", # Long messages outside the exception class x6
+]
