@@ -165,6 +165,18 @@ def get_tag_voters_by_song_id_and_tag_ids(
     return tag_votes
 
 
+def get_tag_usage_id_by_song_and_tag(
+    song_id: int, tag_id: int, session: requests.Session
+) -> int | None:
+    """Return the tag usage id for a tag on a song, or None if not tagged."""
+    url = f"{SONG_API_URL}/{song_id}/tagUsages"
+    taggings = fetch_json(url, session=session)
+    for tagging in taggings.get("tagUsages", []):
+        if tagging["tag"]["id"] == tag_id:
+            return tagging["id"]
+    return None
+
+
 def get_random_rated_song_id_by_user(user: tuple[str, int]) -> int:
     username, user_id = user
     params = {

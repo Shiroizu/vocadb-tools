@@ -93,6 +93,29 @@ def _replace_artist_in_entry_data(
     return {}
 
 
+def _add_language_codes_to_entry_data(
+    data: dict[Any, Any],
+    base_update_note: str,  # noqa: ARG001
+    codes_to_add: list[str],
+) -> dict[Any, Any]:
+    existing: list[str] = list(data.get("cultureCodes") or [])
+    extra = [code for code in existing if code not in codes_to_add]
+    if extra:
+        logger.warning(f"Entry already has unexpected language code(s): {extra}")
+    added: list[str] = []
+    for code in codes_to_add:
+        if code and code not in existing and code not in added:
+            added.append(code)
+    if not added:
+        logger.info("All language codes already present.")
+        return {}
+    update_notes = f"Added language code(s): {', '.join(added)}"
+    logger.debug(f"Update_notes = {update_notes}")
+    data["cultureCodes"] = existing + added
+    data["updateNotes"] = update_notes
+    return data
+
+
 def _mark_pvs_unavailable_in_entry_data(
     data: dict[Any, Any],
     base_update_note: str,  # noqa: ARG001
@@ -212,5 +235,20 @@ def add_event_to_entry(
         entry=entry,
         edit_function=_add_event_id_to_entry_data,
         args=event_id,
+        prompt=prompt,
+    )
+
+
+def add_language_codes_to_entry(
+    session: requests.Session,
+    entry: EntryTuple,
+    codes_to_add: list[str],
+    prompt: bool = True,
+) -> bool:
+    return edit_entry(
+        session=session,
+        entry=entry,
+        edit_function=_add_language_codes_to_entry_data,
+        args=codes_to_add,
         prompt=prompt,
     )

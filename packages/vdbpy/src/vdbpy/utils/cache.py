@@ -34,7 +34,7 @@ cache = dc.Cache(str(get_vdbpy_cache_dir()))
 logger = get_logger()
 
 
-def cache_with_expiration(days: int = 1) -> Any:
+def cache_with_expiration(days: float = 1, *, hours: float | None = None) -> Any:
     def decorator(func: Callable[..., Any]) -> Any:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Ignore session parameter:
@@ -54,7 +54,11 @@ def cache_with_expiration(days: int = 1) -> Any:
 
             # Use original args/kwargs to call the function
             result = func(*args, **kwargs)
-            cache.set(key, result, expire=timedelta(days=days).total_seconds())
+            if hours is not None:
+                expire_seconds = timedelta(hours=hours).total_seconds()
+            else:
+                expire_seconds = timedelta(days=days).total_seconds()
+            cache.set(key, result, expire=expire_seconds)
             return result
 
         return wrapper
