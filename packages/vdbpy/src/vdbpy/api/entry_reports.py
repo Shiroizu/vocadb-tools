@@ -3,10 +3,13 @@ from typing import Any
 import requests
 
 from vdbpy.config import ENTRY_REPORTS_URL
+from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json
 
 logger = get_logger()
+
+OPEN_ENTRY_REPORTS_URL = f"{ENTRY_REPORTS_URL}?status=Open"
 
 
 def get_entry_reports(session: requests.Session) -> Any:
@@ -15,6 +18,21 @@ def get_entry_reports(session: requests.Session) -> Any:
     logger.debug(f"Got reports: {len(entry_reports)}")
     logger.debug(f"First report: {entry_reports[0]}")
     return entry_reports
+
+
+def get_open_entry_reports(session: requests.Session) -> Any:
+    """Get open entry reports from the admin API."""
+    entry_reports = fetch_json(OPEN_ENTRY_REPORTS_URL, session=session)
+    logger.debug(f"Got open reports: {len(entry_reports)}")
+    if entry_reports:
+        logger.debug(f"First open report: {entry_reports[0]}")
+    return entry_reports
+
+
+@cache_with_expiration(hours=1)
+def get_cached_open_entry_reports_1h(session: requests.Session) -> Any:
+    """Get open entry reports, cached for one hour."""
+    return get_open_entry_reports(session)
 
 
 def close_entry_report(session: requests.Session, report_id: int) -> bool:

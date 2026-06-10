@@ -7,7 +7,7 @@ where = ["."]
 
 [project]
 name = "vdbpy"
-version = "20.8.3"
+version = "20.9.0"
 description = "Base library for working with https://github.com/VocaDB/vocadb"
 readme = "README.md"
 requires-python = ">=3.13"
