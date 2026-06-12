@@ -1,11 +1,30 @@
-"""Utilities for working with the VocaDB data dump."""
+"""Utilities for working with the VocaDB data dump.
+
+The dump is a flat archive of six folders, one per entry type:
+
+- Artists/ Albums/ Songs/ EventSeries/ Events/ Tags/
+
+- Each folder holds chunk files named ``{n}.json``
+
+- Every file is a JSON array of up to 1000 entries
+"""
 
 import json
 import zipfile
+from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 
 import requests
 
+from vdbpy.types.dump import (
+    DumpAlbum,
+    DumpArtist,
+    DumpEvent,
+    DumpEventSeries,
+    DumpSong,
+    DumpTag,
+)
 from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.logger import get_logger
 
@@ -26,6 +45,41 @@ def get_dump_path() -> Path:
                 f.write(chunk)
         logger.info(f"Dump saved to '{dump_path}'")
     return dump_path
+
+
+@dataclass
+class Dump:
+    """Typed accessor, lazy yielding to keep the memory low."""
+
+    path: Path
+
+    @classmethod
+    def load(cls, dump_path: Path | None = None) -> "Dump":
+        return cls(dump_path or get_dump_path())
+
+    def _iter(self, folder: str) -> Iterator[dict]:
+        with zipfile.ZipFile(self.path) as z:
+            for name in sorted(z.namelist()):
+                if name.startswith(f"{folder}/") and name.endswith(".json"):
+                    yield from json.loads(z.read(name))
+
+    def artists(self) -> Iterator[DumpArtist]:
+        return (DumpArtist.from_dict(e) for e in self._iter("Artists"))
+
+    def albums(self) -> Iterator[DumpAlbum]:
+        return (DumpAlbum.from_dict(e) for e in self._iter("Albums"))
+
+    def songs(self) -> Iterator[DumpSong]:
+        return (DumpSong.from_dict(e) for e in self._iter("Songs"))
+
+    def event_series(self) -> Iterator[DumpEventSeries]:
+        return (DumpEventSeries.from_dict(e) for e in self._iter("EventSeries"))
+
+    def events(self) -> Iterator[DumpEvent]:
+        return (DumpEvent.from_dict(e) for e in self._iter("Events"))
+
+    def tags(self) -> Iterator[DumpTag]:
+        return (DumpTag.from_dict(e) for e in self._iter("Tags"))
 
 
 def _load_cache(cache_path: Path, dump_mtime: float) -> dict | None:
@@ -75,14 +129,9 @@ def build_base_voicebank_map(dump_path: Path | None = None) -> dict[int, int]:
 
     logger.info("Building base voicebank map from dump...")
     direct_parent: dict[int, int] = {}
-    with zipfile.ZipFile(dump_path) as z:
-        for name in z.namelist():
-            if not name.startswith("Artists/") or not name.endswith(".json"):
-                continue
-            for entry in json.loads(z.read(name)):
-                base = entry.get("baseVoicebank")
-                if base:
-                    direct_parent[entry["id"]] = base["id"]
+    for artist in Dump.load(dump_path).artists():
+        if artist.base_voicebank:
+            direct_parent[artist.id] = artist.base_voicebank.id
 
     result = _resolve_parents(direct_parent)
     _save_cache(cache_path, result, dump_mtime)
@@ -106,14 +155,9 @@ def build_tag_parent_map(dump_path: Path | None = None) -> dict[int, int]:
 
     logger.info("Building tag parent map from dump...")
     direct_parent: dict[int, int] = {}
-    with zipfile.ZipFile(dump_path) as z:
-        for name in z.namelist():
-            if not name.startswith("Tags/") or not name.endswith(".json"):
-                continue
-            for entry in json.loads(z.read(name)):
-                parent = entry.get("parent")
-                if parent:
-                    direct_parent[entry["id"]] = parent["id"]
+    for tag in Dump.load(dump_path).tags():
+        if tag.parent:
+            direct_parent[tag.id] = tag.parent.id
 
     result = _resolve_parents(direct_parent)
     _save_cache(cache_path, result, dump_mtime)
@@ -137,14 +181,9 @@ def build_tag_direct_parent_map(dump_path: Path | None = None) -> dict[int, int]
 
     logger.info("Building tag direct parent map from dump...")
     result: dict[int, int] = {}
-    with zipfile.ZipFile(dump_path) as z:
-        for name in z.namelist():
-            if not name.startswith("Tags/") or not name.endswith(".json"):
-                continue
-            for entry in json.loads(z.read(name)):
-                parent = entry.get("parent")
-                if parent:
-                    result[entry["id"]] = parent["id"]
+    for tag in Dump.load(dump_path).tags():
+        if tag.parent:
+            result[tag.id] = tag.parent.id
 
     _save_cache(cache_path, result, dump_mtime)
     return result
@@ -167,18 +206,12 @@ def build_tag_info_map(dump_path: Path | None = None) -> dict[int, tuple[str, st
 
     logger.info("Building tag info map from dump...")
     result: dict[int, tuple[str, str]] = {}
-    with zipfile.ZipFile(dump_path) as z:
-        for name in z.namelist():
-            if not name.startswith("Tags/") or not name.endswith(".json"):
-                continue
-            for entry in json.loads(z.read(name)):
-                translated = entry.get("translatedName", {})
-                tag_name = (
-                    translated.get("english")
-                    or translated.get("romaji")
-                    or translated.get("japanese", "")
-                )
-                result[entry["id"]] = (tag_name, entry.get("categoryName", ""))
+    for tag in Dump.load(dump_path).tags():
+        name = tag.translated_name
+        tag_name = ""
+        if name:
+            tag_name = name.english or name.romaji or name.japanese
+        result[tag.id] = (tag_name, tag.category_name)
 
     _save_cache(cache_path, {k: list(v) for k, v in result.items()}, dump_mtime)
     return result

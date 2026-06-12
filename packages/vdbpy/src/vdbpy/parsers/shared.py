@@ -96,7 +96,9 @@ def parse_pvs(data: dict[Any, Any]) -> list[PV]:
             pv_id=pv["pvId"],
             pv_service=pv["service"],
             pv_type=pv["pvType"],
-            publish_date=parse_date(pv["publishDate"]) if "publishDate" in pv else None,
+            publish_date=(
+                parse_date(pv["publishDate"]) if pv.get("publishDate") else None
+            ),
         )
         for pv in data
     ]
