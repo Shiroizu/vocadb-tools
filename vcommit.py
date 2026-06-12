@@ -18,6 +18,10 @@ def main() -> None:
 
     bump, message = sys.argv[1], " ".join(sys.argv[2:])
 
+    if not run(["git", "diff", "--cached", "--name-only"]):
+        print("No staged files. Stage changes before committing.")  # noqa: T201
+        sys.exit(1)
+
     run(["uv", "version", "--bump", bump])
     version = run(["uv", "version"])
     run(["git", "add", "pyproject.toml"])
