@@ -90,10 +90,14 @@ def validate_rule_module(module: ModuleType, rulefile: Path) -> bool:
         )
         return False
 
-    if hasattr(module, "TAG_ID") and not isinstance(module, TaggedRuleModule):
+    if (
+        hasattr(module, "TAG_ID")
+        and not isinstance(module, TaggedRuleModule)
+        and not isinstance(module, DumpRuleModule)
+    ):
         logger.warning(
             f"Rule check module {rulefile} with TAG_ID={module.TAG_ID} "
-            "requires 'find_relevant_entries()'",
+            "requires 'find_relevant_entries()' or 'analyze_dump()'",
         )
         return False
 
