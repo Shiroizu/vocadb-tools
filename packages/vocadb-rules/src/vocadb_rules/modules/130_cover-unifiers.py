@@ -1,15 +1,10 @@
-from pathlib import Path
-from typing import Literal
+from __future__ import annotations
 
-from vdbpy.api.entries import (
-    get_saved_entry_search,
-    is_entry_tagged_1d,
-)
+from typing import TYPE_CHECKING, Literal
+
+from vdbpy.api.entries import is_entry_tagged_1d
 from vdbpy.api.songs import get_songs
-from vdbpy.config import SONG_API_URL
-from vdbpy.types.changed_fields import (
-    ChangedFields,
-)
+from vdbpy.types.changed_fields import ChangedFields
 from vdbpy.types.shared import (
     BaseEntryVersion,
     EntryTuple,
@@ -18,6 +13,9 @@ from vdbpy.types.shared import (
 from vdbpy.types.songs import SongSearchParams, SongVersion
 from vdbpy.utils.cache import cache_conditionally
 from vdbpy.utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from vdbpy.utils.dump import Dump
 
 from rule_modules.mod_types import (
     CorrectEditCheckTestResult,
@@ -35,14 +33,24 @@ COMPLETE = True
 AUTOMATICALLY_FIXED: bool | Literal["Partially"] = False
 TAG_ID = 6751
 
-def find_relevant_entries(save_dir: Path) -> set[EntryTuple]:
-    return set(
-        get_saved_entry_search(
-            save_dir / "cover_unifier_entries.csv",
-            SONG_API_URL,
-            {"tagId[]": TAG_ID},
-        )[0],
-    )
+def analyze_dump(dump: Dump) -> set[EntryTuple]:
+    cover_unifier_ids = {
+        song.id
+        for song in dump.songs()
+        if any(usage.tag and usage.tag.id == TAG_ID for usage in song.tags)
+    }
+
+    derived_counts: dict[int, int] = {}
+    for song in dump.songs():
+        if song.original_version:
+            orig_id = song.original_version.id
+            derived_counts[orig_id] = derived_counts.get(orig_id, 0) + 1
+
+    return {
+        ("Song", song_id)
+        for song_id in cover_unifier_ids
+        if derived_counts.get(song_id, 0) < 5
+    }
 
 
 @cache_conditionally(days=0.1)
