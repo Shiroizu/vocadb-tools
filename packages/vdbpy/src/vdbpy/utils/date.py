@@ -113,8 +113,6 @@ def get_last_month_strings(year: int = 0, month: int = 0) -> tuple[str, str]:
     ('2024-04-01', '2024-05-01')
     >>> get_last_month_strings(2024, 12)
     ('2024-11-01', '2024-12-01')
-    >>> get_last_month_strings()
-    ('2025-08-01', '2025-09-01')
     """
     if not year or not month:
         now = datetime.now(tz=UTC)

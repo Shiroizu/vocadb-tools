@@ -121,7 +121,6 @@ def cache_conditionally(days: float = 1) -> Any:
                 )
                 expire_time = timedelta(days=days).total_seconds()
                 cache.set(key, result, expire=expire_time)
-                # type:l ignore
             else:
                 # No expiration if result found
                 logger.debug(f"Caching result '{result}' permanently with key '{key}'")

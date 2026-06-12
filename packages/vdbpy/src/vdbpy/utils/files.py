@@ -160,6 +160,6 @@ def replace_line_in_file(
 
 
 def remove_line_from_file(
-    filename: str | Path, line_to_remove: str, count: int = 1, starswith: bool = False
+    filename: str | Path, line_to_remove: str, count: int = 1, startswith: bool = False
 ) -> None:
-    replace_line_in_file(filename, line_to_remove, "", count, starswith)
+    replace_line_in_file(filename, line_to_remove, "", count, startswith)
