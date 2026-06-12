@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from types import ModuleType
-from typing import Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 # TODO: move to VDBPY
 from vdbpy.types.changed_fields import ChangedFields
@@ -22,10 +24,18 @@ from vdbpy.types.shared import (
 )
 from vdbpy.types.venues import VenueVersion
 
+if TYPE_CHECKING:
+    from vdbpy.utils.dump import Dump
+
 type RuleId = int
 type ReportId = int
 type ReportType = Literal[
-    "InvalidInfo", "Duplicate", "Inappropriate", "Other", "InvalidTag", "BrokenPV",
+    "InvalidInfo",
+    "Duplicate",
+    "Inappropriate",
+    "Other",
+    "InvalidTag",
+    "BrokenPV",
 ]
 
 
@@ -52,14 +62,20 @@ class EntryReport:
 
 
 SavedEditCheckResult = Literal[
-    "Valid", "Not applicable", "Rule violation", "Possible rule violation",
+    "Valid",
+    "Not applicable",
+    "Rule violation",
+    "Possible rule violation",
 ]
 EditCheckResult = Literal[SavedEditCheckResult, "Unrelated fields", "No data"]
 
 RuleModuleResult = Literal[SavedEditCheckResult, "Wrong entry type"]
 
 SavedEntryCheckResult = Literal[
-    SavedEditCheckResult, "Deleted", "Too old", "No autofix",
+    SavedEditCheckResult,
+    "Deleted",
+    "Too old",
+    "No autofix",
 ]
 type CheckResult = Literal[SavedEntryCheckResult, "Wrong entry type", "No data"]
 
@@ -67,7 +83,9 @@ type EntryWithVersionIds = tuple[EntryTuple, VersionId, VersionId]
 type RuleModules = dict[RuleId, tuple[str, ModuleType]]
 
 type ReportWithVersionIdAndRelevantEntries = tuple[
-    EntryReport, VersionId, list[EntryTuple],
+    EntryReport,
+    VersionId,
+    list[EntryTuple],
 ]
 type ParsedReports = list[ReportWithVersionIdAndRelevantEntries]
 type ParsedReportsByRuleId = dict[RuleId, ParsedReports]
@@ -87,12 +105,17 @@ type EntryCheckMemory = dict[
 
 type CorrectEditCheckTestResult = dict[RuleModuleResult, list[VersionTuple]]
 type CorrectEntryCheckTestResult = dict[
-    CheckResult, list[tuple[VersionId, UserId, VersionTuple]],
+    CheckResult,
+    list[tuple[VersionId, UserId, VersionTuple]],
 ]
 type CorrectTestResults = tuple[CorrectEditCheckTestResult, CorrectEntryCheckTestResult]
 
 StatColumns = Literal[
-    "Valid", "Rule violation", "Possible rule violation", "Not applicable", "No autofix",
+    "Valid",
+    "Rule violation",
+    "Possible rule violation",
+    "Not applicable",
+    "No autofix",
 ]
 type EntryCheckStatsByRuleId = dict[RuleId, dict[EntryTuple, StatColumns]]
 type EditByEntryTypeAndId = dict[EntryType, dict[EntryId, UserEdit]]
@@ -113,7 +136,8 @@ class RuleModule(Protocol):
     AUTOMATICALLY_FIXED: bool | Literal["Partially"]
 
     def check_entry_version_for_rule(
-        self, version_data: BaseEntryVersion,
+        self,
+        version_data: BaseEntryVersion,
     ) -> RuleModuleResult: ...
 
     def test(self) -> CorrectTestResults: ...
@@ -133,3 +157,15 @@ class TaggedRuleModule(RuleModule, Protocol):
     TAG_ID: int
 
     def find_relevant_entries(self, save_dir: Path) -> set[EntryTuple]: ...
+
+
+@runtime_checkable
+class DumpRuleModule(Protocol):
+    MSG: str
+    ENTRY_TYPES: list[EntryType] | Literal["All"]
+    COMPLETE: bool
+    AUTOMATICALLY_FIXED: bool | Literal["Partially"]
+
+    def analyze_dump(self, dump: Dump) -> set[EntryTuple]: ...
+
+    def test(self) -> CorrectTestResults: ...

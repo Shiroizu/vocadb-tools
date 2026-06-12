@@ -12,6 +12,7 @@ from vdbpy.utils.network import fetch_text
 
 from .mod_types import (
     AutofixableRuleModule,
+    DumpRuleModule,
     RuleModule,
     RuleModules,
     RuleTableRow,
@@ -59,18 +60,29 @@ def topo_sort_graph(graph: dict[int, list[int]], all_rules: set[int]) -> list[in
 
 
 def validate_rule_module(module: ModuleType, rulefile: Path) -> bool:
-    if not isinstance(module, RuleModule):
+    if not isinstance(module, RuleModule) and not isinstance(module, DumpRuleModule):
         missing = [
             attr
-            for attr in ("MSG", "FIELDS", "ENTRY_TYPES", "COMPLETE", "AUTOMATICALLY_FIXED",
-                         "check_entry_version_for_rule", "test")
+            for attr in (
+                "MSG",
+                "ENTRY_TYPES",
+                "COMPLETE",
+                "AUTOMATICALLY_FIXED",
+                "test",
+            )
             if not hasattr(module, attr)
         ]
+        if not hasattr(module, "check_entry_version_for_rule") and not hasattr(
+            module,
+            "analyze_dump",
+        ):
+            missing.append("check_entry_version_for_rule() or analyze_dump()")
         logger.warning(f"Rule check module {rulefile} is missing: {missing}")
         return False
 
     if module.AUTOMATICALLY_FIXED in (True, "Partially") and not isinstance(
-        module, AutofixableRuleModule,
+        module,
+        AutofixableRuleModule,
     ):
         logger.warning(
             f"Rule check module {rulefile} with AUTOMATICALLY_FIXED="
@@ -108,7 +120,8 @@ def get_bundled_modules_dir() -> Path:
 
 
 def get_rule_modules_by_id(
-    path: Path | None = None, selected_rule_id: int = 0,
+    path: Path | None = None,
+    selected_rule_id: int = 0,
 ) -> RuleModules:
     if path is None:
         path = get_bundled_modules_dir()
