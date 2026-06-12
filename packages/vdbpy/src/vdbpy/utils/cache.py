@@ -34,15 +34,30 @@ cache = dc.Cache(str(get_vdbpy_cache_dir()))
 logger = get_logger()
 
 
+def _normalize(value: Any) -> Any:
+    if isinstance(value, set | frozenset):
+        return sorted((_normalize(v) for v in value), key=repr)
+    if isinstance(value, dict):
+        return sorted(((k, _normalize(v)) for k, v in value.items()), key=repr)
+    if isinstance(value, list | tuple):
+        return [_normalize(v) for v in value]
+    return value
+
+
+def _make_cache_key(
+    func_name: str, args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> str:
+    cache_args = [_normalize(a) for a in args if not isinstance(a, Session)]
+    cache_kwargs = sorted(
+        (k, _normalize(v)) for k, v in kwargs.items() if not isinstance(v, Session)
+    )
+    return f"{func_name}_{cache_args}_{cache_kwargs}"
+
+
 def cache_with_expiration(days: float = 1, *, hours: float | None = None) -> Any:
     def decorator(func: Callable[..., Any]) -> Any:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Ignore session parameter:
-            cache_args = [a for a in args if not isinstance(a, Session)]
-            cache_kwargs = {
-                k: v for k, v in kwargs.items() if not isinstance(v, Session)
-            }
-            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"  # ty:ignore[unresolved-attribute]
+            key = _make_cache_key(func.__name__, args, kwargs)  # ty:ignore[unresolved-attribute]
 
             try:
                 if key in cache:
@@ -69,12 +84,7 @@ def cache_with_expiration(days: float = 1, *, hours: float | None = None) -> Any
 def cache_without_expiration() -> Any:
     def decorator(func: Callable[..., Any]) -> Any:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Ignore session parameter:
-            cache_args = [a for a in args if not isinstance(a, Session)]
-            cache_kwargs = {
-                k: v for k, v in kwargs.items() if not isinstance(v, Session)
-            }
-            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"  # ty:ignore[unresolved-attribute]
+            key = _make_cache_key(func.__name__, args, kwargs)  # ty:ignore[unresolved-attribute]
 
             try:
                 if key in cache:
@@ -99,12 +109,7 @@ def cache_conditionally(days: float = 1) -> Any:
     # Falsy values are cached for the specified amount
     def decorator(func: Callable[..., Any]) -> Any:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Ignore session parameter:
-            cache_args = [a for a in args if not isinstance(a, Session)]
-            cache_kwargs = {
-                k: v for k, v in kwargs.items() if not isinstance(v, Session)
-            }
-            key = f"{func.__name__}_{cache_args}_{cache_kwargs}"  # ty:ignore[unresolved-attribute]
+            key = _make_cache_key(func.__name__, args, kwargs)  # ty:ignore[unresolved-attribute]
             try:
                 if key in cache:
                     return cache[key]
