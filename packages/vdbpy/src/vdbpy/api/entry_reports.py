@@ -10,6 +10,7 @@ from vdbpy.utils.network import fetch_json
 logger = get_logger()
 
 OPEN_ENTRY_REPORTS_URL = f"{ENTRY_REPORTS_URL}?status=Open"
+CLOSED_ENTRY_REPORTS_URL = f"{ENTRY_REPORTS_URL}?status=Closed"
 
 
 def get_entry_reports(session: requests.Session) -> Any:
@@ -26,6 +27,13 @@ def get_open_entry_reports(session: requests.Session) -> Any:
     logger.debug(f"Got open reports: {len(entry_reports)}")
     if entry_reports:
         logger.debug(f"First open report: {entry_reports[0]}")
+    return entry_reports
+
+
+def get_closed_entry_reports(session: requests.Session) -> Any:
+    """Get closed entry reports from the admin API."""
+    entry_reports = fetch_json(CLOSED_ENTRY_REPORTS_URL, session=session)
+    logger.debug(f"Got closed reports: {len(entry_reports)}")
     return entry_reports
 
 
