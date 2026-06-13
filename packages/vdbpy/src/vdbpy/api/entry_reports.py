@@ -9,32 +9,22 @@ from vdbpy.utils.network import fetch_json
 
 logger = get_logger()
 
-OPEN_ENTRY_REPORTS_URL = f"{ENTRY_REPORTS_URL}?status=Open"
-CLOSED_ENTRY_REPORTS_URL = f"{ENTRY_REPORTS_URL}?status=Closed"
 
-
-def get_entry_reports(session: requests.Session) -> Any:
-    """Get entry reports from the admin API."""
-    entry_reports = fetch_json(ENTRY_REPORTS_URL, session=session)
-    logger.debug(f"Got reports: {len(entry_reports)}")
-    logger.debug(f"First report: {entry_reports[0]}")
+def _get_reports(session: requests.Session, status: str) -> Any:
+    url = f"{ENTRY_REPORTS_URL}?status={status}"
+    entry_reports = fetch_json(url, session=session)
+    logger.debug(f"Got {len(entry_reports)} {status.lower()} reports")
     return entry_reports
 
 
 def get_open_entry_reports(session: requests.Session) -> Any:
     """Get open entry reports from the admin API."""
-    entry_reports = fetch_json(OPEN_ENTRY_REPORTS_URL, session=session)
-    logger.debug(f"Got open reports: {len(entry_reports)}")
-    if entry_reports:
-        logger.debug(f"First open report: {entry_reports[0]}")
-    return entry_reports
+    return _get_reports(session, "Open")
 
 
 def get_closed_entry_reports(session: requests.Session) -> Any:
     """Get closed entry reports from the admin API."""
-    entry_reports = fetch_json(CLOSED_ENTRY_REPORTS_URL, session=session)
-    logger.debug(f"Got closed reports: {len(entry_reports)}")
-    return entry_reports
+    return _get_reports(session, "Closed")
 
 
 @cache_with_expiration(hours=1)
