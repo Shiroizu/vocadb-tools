@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
+import orjson
 import requests
 
 from vdbpy.types.dump import (
@@ -61,7 +62,7 @@ class Dump:
         with zipfile.ZipFile(self.path) as z:
             for name in sorted(z.namelist()):
                 if name.startswith(f"{folder}/") and name.endswith(".json"):
-                    yield from json.loads(z.read(name))
+                    yield from orjson.loads(z.read(name))
 
     def artists(self) -> Iterator[DumpArtist]:
         return (DumpArtist.from_dict(e) for e in self._iter("Artists"))
