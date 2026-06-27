@@ -12,6 +12,17 @@ def parse_date(
     short_date_format: str = "%Y-%m-%d",
 ) -> datetime:
     """Parse various date formats and return datetime with UTC timezone."""
+    # Fast path: ISO-8601 fromisoformat is faster than strptime
+    if "/" not in date_to_parse:
+        try:
+            parsed_iso = datetime.fromisoformat(date_to_parse.strip())
+        except ValueError:
+            pass
+        else:
+            if parsed_iso.tzinfo is None:
+                return parsed_iso.replace(tzinfo=UTC)
+            return parsed_iso.astimezone(UTC)
+
     if "/" in date_to_parse:
         # 01/25/2024 03:45 PM
         return datetime.strptime(date_to_parse.strip(), "%m/%d/%Y %I:%M %p").replace(
