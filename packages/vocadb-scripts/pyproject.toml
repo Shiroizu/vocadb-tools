@@ -27,7 +27,7 @@ packages = [
 ]
 
 [tool.uv.sources]
-vdbpy = { git = "https://github.com/Shiroizu/VDBpy" }
+vdbpy = { git = "https://github.com/Shiroizu/vdbpy" }
 
 [tool.ruff]
 target-version = "py313"

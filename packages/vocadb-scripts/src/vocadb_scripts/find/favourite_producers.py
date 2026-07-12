@@ -170,7 +170,7 @@ def find_favourite_producers_by_user_id(user_id: int, max_results: int):
         table_to_print.append(line_to_print)
         if ratio > best_ratio:
             best_ratio = ratio
-            best_gem = (name, score, followers, entry_url)
+            best_gem = (str(name), int(score), int(followers), entry_url)
 
     return headers, table_to_print, best_gem
 
