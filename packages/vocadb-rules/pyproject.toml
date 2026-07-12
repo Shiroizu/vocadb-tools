@@ -28,7 +28,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-vdbpy = { git = "https://github.com/Shiroizu/VDBpy" }
+vdbpy = { git = "https://github.com/Shiroizu/vdbpy" }
 
 [tool.setuptools.packages.find]
 include = ["rule_modules*"]

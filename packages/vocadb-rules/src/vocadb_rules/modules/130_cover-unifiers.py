@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
+from sqlalchemy import func, select
 from vdbpy.api.entries import is_entry_tagged_1d
 from vdbpy.api.songs import get_songs
 from vdbpy.types.changed_fields import ChangedFields
@@ -15,7 +16,7 @@ from vdbpy.utils.cache import cache_conditionally
 from vdbpy.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from vdbpy.utils.dump import Dump
+    from vdbpy.utils.dump_sql import DumpDB
 
 from rule_modules.mod_types import (
     CorrectEditCheckTestResult,
@@ -33,24 +34,23 @@ COMPLETE = True
 AUTOMATICALLY_FIXED: bool | Literal["Partially"] = False
 TAG_ID = 6751
 
-def analyze_dump(dump: Dump) -> set[EntryTuple]:
-    cover_unifier_ids = {
-        song.id
-        for song in dump.songs()
-        if any(usage.tag and usage.tag.id == TAG_ID for usage in song.tags)
-    }
-
-    derived_counts: dict[int, int] = {}
-    for song in dump.songs():
-        if song.original_version:
-            orig_id = song.original_version.id
-            derived_counts[orig_id] = derived_counts.get(orig_id, 0) + 1
-
-    return {
-        ("Song", song_id)
-        for song_id in cover_unifier_ids
-        if derived_counts.get(song_id, 0) < 5
-    }
+def analyze_sql_dump(db: DumpDB) -> set[EntryTuple]:
+    derived = (
+        select(db.Song.original_id.label("oid"), func.count().label("c"))
+        .where(db.Song.original_id.is_not(None))
+        .group_by(db.Song.original_id)
+        .subquery()
+    )
+    unifiers = select(db.EntryTag.entry_id).where(
+        db.EntryTag.entry_type == "Song",
+        db.EntryTag.tag_id == TAG_ID,
+    )
+    stmt = (
+        select(db.Song.id)
+        .outerjoin(derived, derived.c.oid == db.Song.id)
+        .where(db.Song.id.in_(unifiers), func.coalesce(derived.c.c, 0) < 5)
+    )
+    return {("Song", song_id) for song_id in db.scalars(stmt)}
 
 
 @cache_conditionally(days=0.1)

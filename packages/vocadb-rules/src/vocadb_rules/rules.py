@@ -12,7 +12,7 @@ from vdbpy.utils.network import fetch_text
 
 from .mod_types import (
     AutofixableRuleModule,
-    DumpRuleModule,
+    DumpSqlRuleModule,
     RuleModule,
     RuleModules,
     RuleTableRow,
@@ -60,7 +60,10 @@ def topo_sort_graph(graph: dict[int, list[int]], all_rules: set[int]) -> list[in
 
 
 def validate_rule_module(module: ModuleType, rulefile: Path) -> bool:
-    if not isinstance(module, RuleModule) and not isinstance(module, DumpRuleModule):
+    if not isinstance(module, RuleModule) and not isinstance(
+        module,
+        DumpSqlRuleModule,
+    ):
         missing = [
             attr
             for attr in (
@@ -72,11 +75,16 @@ def validate_rule_module(module: ModuleType, rulefile: Path) -> bool:
             )
             if not hasattr(module, attr)
         ]
-        if not hasattr(module, "check_entry_version_for_rule") and not hasattr(
-            module,
-            "analyze_dump",
+        if not any(
+            hasattr(module, checker)
+            for checker in (
+                "check_entry_version_for_rule",
+                "analyze_sql_dump",
+            )
         ):
-            missing.append("check_entry_version_for_rule() or analyze_dump()")
+            missing.append(
+                "check_entry_version_for_rule() or analyze_sql_dump()",
+            )
         logger.warning(f"Rule check module {rulefile} is missing: {missing}")
         return False
 
@@ -93,11 +101,11 @@ def validate_rule_module(module: ModuleType, rulefile: Path) -> bool:
     if (
         hasattr(module, "TAG_ID")
         and not isinstance(module, TaggedRuleModule)
-        and not isinstance(module, DumpRuleModule)
+        and not isinstance(module, DumpSqlRuleModule)
     ):
         logger.warning(
             f"Rule check module {rulefile} with TAG_ID={module.TAG_ID} "
-            "requires 'find_relevant_entries()' or 'analyze_dump()'",
+            "requires 'find_relevant_entries()' or 'analyze_sql_dump()'",
         )
         return False
 

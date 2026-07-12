@@ -25,7 +25,7 @@ from vdbpy.types.shared import (
 from vdbpy.types.venues import VenueVersion
 
 if TYPE_CHECKING:
-    from vdbpy.utils.dump import Dump
+    from vdbpy.utils.dump_sql import DumpDB
 
 type RuleId = int
 type ReportId = int
@@ -160,12 +160,12 @@ class TaggedRuleModule(RuleModule, Protocol):
 
 
 @runtime_checkable
-class DumpRuleModule(Protocol):
+class DumpSqlRuleModule(Protocol):
     MSG: str
     ENTRY_TYPES: list[EntryType] | Literal["All"]
     COMPLETE: bool
     AUTOMATICALLY_FIXED: bool | Literal["Partially"]
 
-    def analyze_dump(self, dump: Dump) -> set[EntryTuple]: ...
+    def analyze_sql_dump(self, db: DumpDB) -> set[EntryTuple]: ...
 
     def test(self) -> CorrectTestResults: ...
