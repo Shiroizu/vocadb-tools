@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import orjson
-from sqlalchemy import Row, create_engine, select
+from sqlalchemy import Row, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from vdbpy.utils.dump import get_dump_path
@@ -26,6 +26,8 @@ _Row = TypeVar("_Row", bound=tuple)
 _T = TypeVar("_T")
 
 logger = get_logger()
+
+ENTRY_TABLES = ("songs", "albums", "artists", "events", "event_series", "tags")
 
 _READONLY_ACTIONS = frozenset({
     sqlite3.SQLITE_SELECT,
@@ -1009,6 +1011,27 @@ class DumpDB:
     def schema_sql(self) -> str:
         with self.engine.connect() as conn:
             return _format_schema(conn)
+
+    def max_entry_ids(self) -> dict[str, int]:
+        with self.engine.connect() as conn:
+            return {
+                table: conn.execute(
+                    text(f"SELECT COALESCE(MAX(id), 0) FROM {table}"),  # noqa: S608
+                ).scalar_one()
+                for table in ENTRY_TABLES
+            }
+
+    def count_ids_above(self, maxima: dict[str, int]) -> dict[str, int]:
+        # Used to report how many entries are new compared to an older dump.
+        with self.engine.connect() as conn:
+            return {
+                table: conn.execute(
+                    text(f"SELECT COUNT(*) FROM {table} WHERE id > :max_id"),  # noqa: S608
+                    {"max_id": maxima[table]},
+                ).scalar_one()
+                for table in ENTRY_TABLES
+                if table in maxima
+            }
 
     def run_readonly_select(
         self,

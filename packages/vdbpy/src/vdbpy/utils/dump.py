@@ -10,14 +10,18 @@ The dump is a flat archive of six folders, one per entry type:
 """
 
 import json
+import os
 import zipfile
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import orjson
 import requests
 
+from vdbpy.config import WEBSITE
 from vdbpy.types.dump import (
     DumpAlbum,
     DumpArtist,
@@ -31,21 +35,133 @@ from vdbpy.utils.logger import get_logger
 
 DUMP_URL = "https://vocaloid.eu/vocadb/dump.zip"
 
+DUMP_REFRESH_URL = f"{WEBSITE}/Admin/CreateJsonDump"
+
+_DENIAL_REDIRECTS = ("login", "denied", "error", "forbidden", "unauthorized")
+
 logger = get_logger()
+
+
+class DumpRefreshError(Exception):
+    """Raised when the dump refresh could not be triggered."""
+
+
+@dataclass
+class RemoteDumpInfo:
+    last_modified: datetime | None
+    content_length: int | None
+
+    def is_newer_than(self, other: "RemoteDumpInfo") -> bool:
+        """Return True if this looks like a different (newer) dump than `other`."""
+        if self.last_modified and other.last_modified:
+            return self.last_modified > other.last_modified
+        if self.content_length is not None and other.content_length is not None:
+            return self.content_length != other.content_length
+        return False
+
+
+def trigger_dump_refresh(session: requests.Session, timeout: int = 30) -> None:
+    """Regenerate dump.zip.
+
+    Read timeout is the expected outcome and means "accepted".
+    """
+    logger.info(f"Triggering dump refresh via {DUMP_REFRESH_URL}")
+    try:
+        response = session.get(
+            DUMP_REFRESH_URL, timeout=timeout, allow_redirects=False
+        )
+    except requests.Timeout:
+        logger.info("Dump refresh request timed out (expected): dump is being built")
+        return
+
+    if response.status_code in (401, 403):
+        raise DumpRefreshError(
+            f"HTTP {response.status_code} from {DUMP_REFRESH_URL}."
+            " The account lacks the CreateDatabaseDump permission."
+        )
+    location = response.headers.get("Location", "")
+    if response.is_redirect:
+        lowered = location.lower()
+        if any(word in lowered for word in _DENIAL_REDIRECTS):
+            raise DumpRefreshError(
+                f"Redirected to '{location}': the account is not logged in, or"
+                " lacks the CreateDatabaseDump permission."
+            )
+        logger.info(f"Dump refresh triggered (HTTP 302 to '{location}')")
+        return
+
+    response.raise_for_status()
+    logger.info(f"Dump refresh triggered (HTTP {response.status_code})")
+
+
+def get_remote_dump_info(timeout: int = 60) -> RemoteDumpInfo:
+    """Return Last-Modified / Content-Length of the published dump.zip."""
+    response = requests.head(DUMP_URL, timeout=timeout, allow_redirects=True)
+    response.raise_for_status()
+
+    last_modified = None
+    raw_date = response.headers.get("Last-Modified")
+    if raw_date:
+        try:
+            last_modified = parsedate_to_datetime(raw_date)
+        except (TypeError, ValueError):
+            logger.warning(f"Could not parse Last-Modified header: {raw_date!r}")
+
+    content_length = None
+    raw_length = response.headers.get("Content-Length")
+    if raw_length and raw_length.isdigit():
+        content_length = int(raw_length)
+
+    return RemoteDumpInfo(last_modified=last_modified, content_length=content_length)
+
+
+def download_dump(dest: Path | None = None, timeout: int = 300) -> Path:
+    """Download dump.zip, replacing any existing copy."""
+    dump_path = dest or (get_vdbpy_cache_dir() / "dump.zip")
+    part_path = dump_path.with_suffix(dump_path.suffix + ".part")
+    logger.info(f"Downloading dump from {DUMP_URL}...")
+    response = requests.get(DUMP_URL, stream=True, timeout=timeout)
+    response.raise_for_status()
+    try:
+        with part_path.open("wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        os.replace(part_path, dump_path)
+    except BaseException:
+        part_path.unlink(missing_ok=True)
+        raise
+    logger.info(f"Dump saved to '{dump_path}'")
+    return dump_path
 
 
 def get_dump_path() -> Path:
     """Return the path to dump.zip, downloading it if not present."""
     dump_path = get_vdbpy_cache_dir() / "dump.zip"
     if not dump_path.exists():
-        logger.info(f"Downloading dump from {DUMP_URL}...")
-        response = requests.get(DUMP_URL, stream=True, timeout=300)
-        response.raise_for_status()
-        with dump_path.open("wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        logger.info(f"Dump saved to '{dump_path}'")
+        return download_dump(dump_path)
     return dump_path
+
+
+def get_dump_date(dump_path: Path) -> date | None:
+    """Return the creation date of the dump, read from the zip entry headers."""
+    try:
+        with zipfile.ZipFile(dump_path) as zf:
+            infos = zf.infolist()
+    except (OSError, zipfile.BadZipFile):
+        logger.warning(f"Could not read dump date from {dump_path}")
+        return None
+    if not infos:
+        return None
+    year, month, day = infos[0].date_time[:3]
+    return date(year, month, day)
+
+
+def get_dump_age_days(dump_path: Path) -> tuple[date | None, int | None]:
+    """Return the dump's date and how many days old it is."""
+    dump_date = get_dump_date(dump_path)
+    if dump_date is None:
+        return None, None
+    return dump_date, (datetime.now(tz=UTC).date() - dump_date).days
 
 
 @dataclass
