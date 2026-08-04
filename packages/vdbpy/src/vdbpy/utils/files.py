@@ -19,7 +19,6 @@ def verify_file(filename: str | Path) -> Path:
 
 def get_text(filename: str | Path) -> str:
     """Safely read lines from a file. Create the missing path if necessary."""
-    logger.debug(f"Fetching lines from file '{filename}'")
     path = verify_file(filename)
     with Path.open(path, encoding="utf8") as f:
         return f.read()
@@ -29,7 +28,6 @@ def get_lines(filename: str | Path) -> list[str]:
     """Safely read lines from a file. Create the missing path if necessary."""
     path = verify_file(filename)
 
-    logger.debug(f"Fetching lines from file '{filename}'")
     with Path.open(path, encoding="utf8") as f:
         return f.read().splitlines()
 
@@ -118,8 +116,6 @@ def save_file(
             f.write("\n")
         f.write(content_to_write)
 
-    logger.debug(f"File saved: '{filepath}'")
-
 
 def clear_file(filepath: str | Path) -> None:
     """Clear file if it exists."""
@@ -141,9 +137,6 @@ def replace_line_in_file(
     count: int = 1,
     startswith: bool = False,
 ) -> None:
-    logger.debug(f"Replacing line on file '{filename}'")
-    logger.debug(f"Old line: {old_line}")
-    logger.debug(f"New line: {new_line}")
     lines = get_lines(filename)
     counter = count
     new_lines: list[str] = []

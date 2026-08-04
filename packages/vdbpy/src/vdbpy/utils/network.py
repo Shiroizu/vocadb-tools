@@ -31,27 +31,21 @@ def fetch_with_retries(
     max_retries: int = RETRY_COUNT,
 ) -> Response:
     """Fetch a URL with automatic retries on connection errors."""
-    logger.debug(f"Fetching ({verb.upper()}) from url '{url}' with params {params}")
-
     r: Response | None = None
     for attempt in range(1, max_retries + 1):
         try:
             # Execute the request
             if session:
-                logger.debug("Re-using session")
                 r = getattr(session, verb)(
                     url, params=params, timeout=BASE_TIMEOUT, data=post_data
                 )
             else:
-                logger.debug("No previous session found")
                 r = getattr(requests, verb)(
                     url, params=params, timeout=BASE_TIMEOUT, data=post_data
                 )
 
             assert isinstance(r, Response)  # noqa: S101
-            logger.debug(f"{r.status_code=}")
-            logger.debug(f"{r.reason=}")
-            logger.debug(f"Parsed URL: {r.url}")
+            logger.debug(f"{verb.upper()} {r.status_code} {r.reason} {r.url}")
 
             r.raise_for_status()
 
@@ -140,13 +134,11 @@ def fetch_json_items_with_total_count(
     page_size: int = 50
     params = params.copy() if params is not None else {}
     logger.debug(f"Fetching all items based on '{url}' with params {params}")
-    logger.debug(f"Using limit: {limit}")
     if "maxResults" in params:
         if max_results != 10**9:
             logger.warning("Duplicate max result argument provided!")
             logger.warning(f"({params['maxResults'] and max_results})")
         max_results = params["maxResults"]
-        logger.debug(f"  Stopping after {max_results} results")
     if url == ACTIVITY_API_URL:
         logger.warning(f"Start param not supported for '{ACTIVITY_API_URL}'!")
         logger.warning("Use fetch_all_items_between_dates instead.")
@@ -199,7 +191,7 @@ def fetch_json_items_with_total_count(
             break
         if len(items) < page_size:
             break
-        logger.info(f"  Page {page}/{1 + (total_count // page_size)}")
+        logger.debug(f"  Page {page}/{1 + (total_count // page_size)}")
         page += 1
     return all_items[:max_results], total_count
 
@@ -277,14 +269,13 @@ def fetch_all_items_between_dates(
 
     all_items: list[Any] = []
 
-    logger.debug(f"Fetching all '{api_url}' items from '{since}' to '{before}'...")
-    logger.debug(f"Using limit: {limit}")
+    logger.debug(
+        f"Fetching all '{api_url}' items from '{since}' to '{before}'"
+        f" with limit {limit}..."
+    )
 
     limit_reached = False
     while True:
-        logger.debug(
-            f"Fetching items from '{params['since']}' to '{params['before']}'..."
-        )
         json = fetch_json(api_url, params=params)
         if "items" not in json:
             logger.warning(f"Items not found in json: {json}")
