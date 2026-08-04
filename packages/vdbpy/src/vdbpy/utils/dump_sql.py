@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import resource
 import sqlite3
+import sys
 import time
 import zipfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import orjson
@@ -17,7 +20,6 @@ from vdbpy.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
-    from pathlib import Path
 
     from sqlalchemy import Engine
     from sqlalchemy.sql import Select
@@ -759,15 +761,25 @@ class DumpDB:
             if cls._stored_mtime(engine) == dump_mtime:
                 logger.info("Loaded preprocessed dump database from cache.")
                 return cls(engine, db_path)
+            logger.info(
+                f"Discarding the stale dump database at '{db_path}'"
+                " (it does not match the current dump)"
+            )
             engine.dispose()
             db_path.unlink()
 
-        logger.info("Building preprocessed dump database...")
+        logger.info(
+            f"Building preprocessed dump database from '{dump_path}'"
+            f" ({dump_path.stat().st_size / 1024 / 1024:.0f} MB){_memory_note()}"
+        )
         start = time.monotonic()
         engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(engine)
         cls._ingest(engine, dump_path, dump_mtime)
-        logger.info(f"Built dump database in {time.monotonic() - start:.1f}s.")
+        logger.info(
+            f"Built dump database in {time.monotonic() - start:.1f}s:"
+            f" {db_path.stat().st_size / 1024 / 1024:.0f} MB{_memory_note()}"
+        )
         return cls(engine, db_path)
 
     @staticmethod
@@ -789,28 +801,10 @@ class DumpDB:
             cur.execute("PRAGMA journal_mode=OFF")
             cur.execute("PRAGMA synchronous=OFF")
 
+            # Keyed off the column map so a new child table cannot be buffered
+            # without a matching INSERT, or flushed without a buffer.
             buffers: dict[str, list] = {
-                "entry_names": [],
-                "entry_translated_names": [],
-                "entry_culture_codes": [],
-                "entry_tags": [],
-                "entry_web_links": [],
-                "song_artists": [],
-                "song_pvs": [],
-                "song_events": [],
-                "song_albums": [],
-                "album_artists": [],
-                "album_songs": [],
-                "album_discs": [],
-                "album_pvs": [],
-                "album_identifiers": [],
-                "album_events": [],
-                "artist_groups": [],
-                "artist_members": [],
-                "event_artists": [],
-                "event_pvs": [],
-                "tag_related_tags": [],
-                "tag_new_targets": [],
+                table: [] for table in _CHILD_TABLE_COLUMNS
             }
 
             def _song_children(e: dict) -> None:
@@ -926,72 +920,11 @@ class DumpDB:
                     child_cbs.get(spec.folder),
                 )
 
-            _bulk_insert(cur, "entry_names",
-                         "entry_type,entry_id,language,value",
-                         buffers["entry_names"])
-            _bulk_insert(cur, "entry_translated_names",
-                         "entry_type,entry_id,japanese,romaji,english,default_name,default_language",
-                         buffers["entry_translated_names"])
-            _bulk_insert(cur, "entry_culture_codes",
-                         "entry_type,entry_id,code",
-                         buffers["entry_culture_codes"])
-            _bulk_insert(cur, "entry_tags",
-                         "entry_type,entry_id,tag_id,count,tag_name_hint",
-                         buffers["entry_tags"])
-            _bulk_insert(cur, "entry_web_links",
-                         "entry_type,entry_id,category,description,url,disabled",
-                         buffers["entry_web_links"])
-            _bulk_insert(cur, "song_artists",
-                         "song_id,artist_id,roles,is_support,name_hint",
-                         buffers["song_artists"])
-            _bulk_insert(cur, "song_pvs",
-                         "song_id,service,pv_type,pv_id,name,author,description,"
-                         "length,publish_date,thumb_url,disabled,extended_metadata_json",
-                         buffers["song_pvs"])
-            _bulk_insert(cur, "song_events",
-                         "song_id,event_id,name_hint",
-                         buffers["song_events"])
-            _bulk_insert(cur, "song_albums",
-                         "song_id,album_id,disc_number,track_number,name_hint",
-                         buffers["song_albums"])
-            _bulk_insert(cur, "album_artists",
-                         "album_id,artist_id,roles,is_support,name_hint",
-                         buffers["album_artists"])
-            _bulk_insert(cur, "album_songs",
-                         "album_id,song_id,disc_number,track_number,name_hint",
-                         buffers["album_songs"])
-            _bulk_insert(cur, "album_discs",
-                         "album_id,disc_number,disc_id,media_type,name",
-                         buffers["album_discs"])
-            _bulk_insert(cur, "album_pvs",
-                         "album_id,service,pv_type,pv_id,name,author,description,"
-                         "length,publish_date,thumb_url,disabled,extended_metadata_json",
-                         buffers["album_pvs"])
-            _bulk_insert(cur, "album_identifiers",
-                         "album_id,value",
-                         buffers["album_identifiers"])
-            _bulk_insert(cur, "album_events",
-                         "album_id,event_id,name_hint",
-                         buffers["album_events"])
-            _bulk_insert(cur, "artist_groups",
-                         "artist_id,linked_artist_id,link_type,name_hint",
-                         buffers["artist_groups"])
-            _bulk_insert(cur, "artist_members",
-                         "artist_id,member_artist_id,name_hint",
-                         buffers["artist_members"])
-            _bulk_insert(cur, "event_artists",
-                         "event_id,artist_id,roles,is_support,name_hint",
-                         buffers["event_artists"])
-            _bulk_insert(cur, "event_pvs",
-                         "event_id,service,pv_type,pv_id,name,author,description,"
-                         "length,publish_date,thumb_url,disabled,extended_metadata_json",
-                         buffers["event_pvs"])
-            _bulk_insert(cur, "tag_related_tags",
-                         "tag_id,related_tag_id,name_hint",
-                         buffers["tag_related_tags"])
-            _bulk_insert(cur, "tag_new_targets",
-                         "tag_id,target",
-                         buffers["tag_new_targets"])
+            remaining = _flush_buffers(cur, buffers, threshold=1)
+            logger.info(
+                f"dump_sql: flushed the last {remaining:,} child rows,"
+                f" creating indexes{_memory_note()}"
+            )
 
             _create_indexes(cur)
             cur.execute(
@@ -1078,6 +1011,63 @@ def _readonly_authorizer(action: int, *_args: object) -> int:
     return sqlite3.SQLITE_OK if action in _READONLY_ACTIONS else sqlite3.SQLITE_DENY
 
 
+_CHILD_TABLE_COLUMNS: dict[str, str] = {
+    "entry_names": "entry_type,entry_id,language,value",
+    "entry_translated_names": (
+        "entry_type,entry_id,japanese,romaji,english,default_name,default_language"
+    ),
+    "entry_culture_codes": "entry_type,entry_id,code",
+    "entry_tags": "entry_type,entry_id,tag_id,count,tag_name_hint",
+    "entry_web_links": "entry_type,entry_id,category,description,url,disabled",
+    "song_artists": "song_id,artist_id,roles,is_support,name_hint",
+    "song_pvs": (
+        "song_id,service,pv_type,pv_id,name,author,description,"
+        "length,publish_date,thumb_url,disabled,extended_metadata_json"
+    ),
+    "song_events": "song_id,event_id,name_hint",
+    "song_albums": "song_id,album_id,disc_number,track_number,name_hint",
+    "album_artists": "album_id,artist_id,roles,is_support,name_hint",
+    "album_songs": "album_id,song_id,disc_number,track_number,name_hint",
+    "album_discs": "album_id,disc_number,disc_id,media_type,name",
+    "album_pvs": (
+        "album_id,service,pv_type,pv_id,name,author,description,"
+        "length,publish_date,thumb_url,disabled,extended_metadata_json"
+    ),
+    "album_identifiers": "album_id,value",
+    "album_events": "album_id,event_id,name_hint",
+    "artist_groups": "artist_id,linked_artist_id,link_type,name_hint",
+    "artist_members": "artist_id,member_artist_id,name_hint",
+    "event_artists": "event_id,artist_id,roles,is_support,name_hint",
+    "event_pvs": (
+        "event_id,service,pv_type,pv_id,name,author,description,"
+        "length,publish_date,thumb_url,disabled,extended_metadata_json"
+    ),
+    "tag_related_tags": "tag_id,related_tag_id,name_hint",
+    "tag_new_targets": "tag_id,target",
+}
+
+_FLUSH_ROWS = 50_000
+
+_LOG_EVERY = 25_000
+
+
+def _rss_mb() -> float | None:
+    """Return resident memory in MB, or None if it cannot be read."""
+    statm = Path("/proc/self/statm")
+    if statm.exists():
+        try:
+            return int(statm.read_text(encoding="utf-8").split()[1]) * 4096 / 1024**2
+        except (OSError, IndexError, ValueError):
+            return None
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak / 1024**2 if sys.platform == "darwin" else peak / 1024
+
+
+def _memory_note() -> str:
+    rss = _rss_mb()
+    return f", {rss:.0f} MB in use" if rss is not None else ""
+
+
 def _bulk_insert(cur: Any, table: str, columns: str, rows: list) -> None:
     if not rows:
         return
@@ -1086,6 +1076,17 @@ def _bulk_insert(cur: Any, table: str, columns: str, rows: list) -> None:
         f"INSERT INTO {table}({columns}) VALUES({placeholders})",
         rows,
     )
+
+
+def _flush_buffers(cur: Any, buffers: dict[str, list], *, threshold: int) -> int:
+    written = 0
+    for table, rows in buffers.items():
+        if len(rows) < threshold:
+            continue
+        _bulk_insert(cur, table, _CHILD_TABLE_COLUMNS[table], rows)
+        written += len(rows)
+        rows.clear()
+    return written
 
 
 def _ingest_entity(
@@ -1097,7 +1098,15 @@ def _ingest_entity(
 ) -> None:
     column_names = [col.name for col in spec.columns]
     placeholders = ",".join("?" * len(column_names))
+    insert = (
+        f"INSERT INTO {spec.table}({','.join(column_names)}) VALUES({placeholders})"
+    )
+    logger.info(f"dump_sql: ingesting {spec.folder}{_memory_note()}")
+
+    started = time.monotonic()
     rows: list[tuple] = []
+    entries = 0
+    child_rows = 0
     for e in _iter_raw(dump_path, spec.folder):
         rows.append(tuple(col.extract(e) for col in spec.columns))
         buffers["entry_names"].extend(_name_rows(spec.entry_type, e))
@@ -1109,10 +1118,25 @@ def _ingest_entity(
         buffers["entry_web_links"].extend(_weblink_rows(spec.entry_type, e))
         if child_cb is not None:
             child_cb(e)
-    cur.executemany(
-        f"INSERT INTO {spec.table}({','.join(column_names)}) "
-        f"VALUES({placeholders})",
-        rows,
+
+        entries += 1
+        if len(rows) >= _FLUSH_ROWS:
+            cur.executemany(insert, rows)
+            rows.clear()
+        child_rows += _flush_buffers(cur, buffers, threshold=_FLUSH_ROWS)
+        if entries % _LOG_EVERY == 0:
+            logger.info(
+                f"dump_sql: {spec.folder} {entries:,} entries,"
+                f" {child_rows:,} child rows written,"
+                f" {time.monotonic() - started:.0f}s{_memory_note()}"
+            )
+
+    if rows:
+        cur.executemany(insert, rows)
+        rows.clear()
+    logger.info(
+        f"dump_sql: {spec.folder} done: {entries:,} entries in"
+        f" {time.monotonic() - started:.0f}s{_memory_note()}"
     )
 
 
