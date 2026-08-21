@@ -1,4 +1,7 @@
+import fcntl
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +9,19 @@ from vdbpy.utils.console import get_credentials_from_console, prompt_choice
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
+
+
+@contextmanager
+def file_lock(filepath: str | Path) -> Iterator[None]:
+    path = Path(filepath)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_suffix(path.suffix + ".lock")
+    with lock_path.open("a+", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def verify_file(filename: str | Path) -> Path:
