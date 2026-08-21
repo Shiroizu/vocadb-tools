@@ -37,6 +37,10 @@ DUMP_URL = "https://vocaloid.eu/vocadb/dump.zip"
 
 DUMP_REFRESH_URL = f"{WEBSITE}/Admin/CreateJsonDump"
 
+DUMP_FOLDERS = ("Albums", "Artists", "EventSeries", "Events", "Songs", "Tags")
+
+MIN_CHUNK_RATIO = 0.9
+
 _DENIAL_REDIRECTS = ("login", "denied", "error", "forbidden", "unauthorized")
 
 logger = get_logger()
@@ -115,6 +119,73 @@ def get_remote_dump_info(timeout: int = 60) -> RemoteDumpInfo:
     return RemoteDumpInfo(last_modified=last_modified, content_length=content_length)
 
 
+class IncompleteDumpError(Exception):
+    """Raised when a dump is incomplete."""
+
+
+def _chunk_indexes(path: Path) -> dict[str, list[int]]:
+    """Map each dump folder to the chunk numbers present in the archive."""
+    with zipfile.ZipFile(path) as zf:
+        names = zf.namelist()
+
+    chunks: dict[str, list[int]] = {}
+    for name in names:
+        folder, _, filename = name.partition("/")
+        if not filename.endswith(".json"):
+            continue
+        stem = filename.removesuffix(".json")
+        if stem.isdigit():
+            chunks.setdefault(folder, []).append(int(stem))
+    return chunks
+
+
+def _verify_dump_archive(path: Path, previous: Path | None = None) -> None:
+    chunks = _chunk_indexes(path)
+    if not chunks:
+        msg = f"Dump archive '{path}' has no chunk files"
+        raise IncompleteDumpError(msg)
+
+    missing = [folder for folder in DUMP_FOLDERS if folder not in chunks]
+    if missing:
+        msg = f"Dump archive '{path}' is missing folders: {', '.join(missing)}"
+        raise IncompleteDumpError(msg)
+
+    for folder, indexes in sorted(chunks.items()):
+        expected = max(indexes) // 1000 + 1
+        if len(indexes) != expected:
+            msg = (
+                f"Dump archive '{path}' is incomplete: {folder}/ has"
+                f" {len(indexes)} chunks but should have {expected}"
+            )
+            raise IncompleteDumpError(msg)
+
+    if previous is None or not previous.exists():
+        return
+    try:
+        old_chunks = _chunk_indexes(previous)
+    except (OSError, zipfile.BadZipFile):
+        logger.warning(f"Could not compare against the existing dump '{previous}'")
+        return
+
+    for folder, old_indexes in sorted(old_chunks.items()):
+        floor = len(old_indexes) * MIN_CHUNK_RATIO
+        if len(chunks.get(folder, [])) < floor:
+            msg = (
+                f"Dump archive '{path}' shrank: {folder}/ has"
+                f" {len(chunks.get(folder, []))} chunks, down from"
+                f" {len(old_indexes)} in the dump it would replace"
+            )
+            raise IncompleteDumpError(msg)
+
+
+def _check_download_size(written: int, expected: str | None) -> None:
+    """Raise if fewer bytes arrived than the response promised."""
+    if expected is None or written == int(expected):
+        return
+    msg = f"Truncated download: got {written:,} bytes, expected {int(expected):,}"
+    raise IncompleteDumpError(msg)
+
+
 def download_dump(dest: Path | None = None, timeout: int = 300) -> Path:
     """Download dump.zip, replacing any existing copy."""
     dump_path = dest or (get_vdbpy_cache_dir() / "dump.zip")
@@ -122,10 +193,14 @@ def download_dump(dest: Path | None = None, timeout: int = 300) -> Path:
     logger.info(f"Downloading dump from {DUMP_URL}...")
     response = requests.get(DUMP_URL, stream=True, timeout=timeout)
     response.raise_for_status()
+    expected = response.headers.get("Content-Length")
     try:
+        written = 0
         with part_path.open("wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+                written += f.write(chunk)
+        _check_download_size(written, expected)
+        _verify_dump_archive(part_path, previous=dump_path)
         os.replace(part_path, dump_path)
     except BaseException:
         part_path.unlink(missing_ok=True)
