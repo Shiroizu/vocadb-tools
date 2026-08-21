@@ -15,7 +15,7 @@ from vdbpy.utils.data import (
     user_edit_from_dict,
 )
 from vdbpy.utils.date import parse_date
-from vdbpy.utils.files import get_text, save_file
+from vdbpy.utils.files import file_lock, get_text, save_file
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_all_items_between_dates, fetch_json
 
@@ -181,11 +181,13 @@ def _get_edits_by_current_day(
 
     combined_edits = _merge_edit_lists(new_edits, previous_edits)
 
-    if partial_filename:
+    if not partial_filename:
+        logger.debug("Not saving partial edit data.")
+    elif len(combined_edits) == len(previous_edits):
+        logger.debug("No new edits.")
+    else:
         logger.debug(f"Saving partial edit data to {partial_filename}.")
         _save_user_edits(partial_filename, combined_edits)
-    else:
-        logger.debug("Not saving partial edit data.")
 
     if limit is None:
         return combined_edits, False
@@ -206,18 +208,20 @@ def _get_edits_by_past_day(
 
     assert not (previous_partial_edits and previous_full_edits)  # noqa: S101
 
-    edits_to_return: list[UserEdit] = []
     if previous_full_edits:
-        edits_to_return = previous_full_edits
-    else:
-        since_date = (
-            previous_partial_edits[0].edit_date if previous_partial_edits else date
+        logger.debug(f"Using cached edit data from {filename}.")
+        return (
+            (previous_full_edits, False)
+            if limit is None
+            else _filter_edits(previous_full_edits, limit)
         )
-        new_edits, limit_reached = _get_edits_with_limit(since_date, limit)
-        logger.debug(f"Found {len(new_edits)} new edits, {limit_reached=}")
-        if limit_reached:
-            return new_edits, limit_reached
-        edits_to_return = _merge_edit_lists(new_edits, previous_partial_edits)
+
+    since_date = previous_partial_edits[0].edit_date if previous_partial_edits else date
+    new_edits, limit_reached = _get_edits_with_limit(since_date, limit)
+    logger.debug(f"Found {len(new_edits)} new edits, {limit_reached=}")
+    if limit_reached:
+        return new_edits, limit_reached
+    edits_to_return = _merge_edit_lists(new_edits, previous_partial_edits)
 
     if filename:
         logger.debug(f"Saving edit data to {filename}.")
@@ -262,12 +266,18 @@ def get_edits_by_day(
         logger.info("Ignoring 'limit' date because it is not on this date")
         limit = None
 
-    if date.date() == today.date():
-        return _get_edits_by_current_day(date, limit, partial_filename)
+    def fetch() -> tuple[list[UserEdit], bool]:
+        if date.date() == today.date():
+            return _get_edits_by_current_day(date, limit, partial_filename)
+        return _get_edits_by_past_day(
+            date=date, limit=limit, filename=filename, partial_filename=partial_filename
+        )
 
-    return _get_edits_by_past_day(
-        date=date, limit=limit, filename=filename, partial_filename=partial_filename
-    )
+    if filename is None:
+        return fetch()
+
+    with file_lock(filename):
+        return fetch()
 
 
 def get_edits_by_month(
