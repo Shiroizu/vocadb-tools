@@ -15,7 +15,7 @@ import orjson
 from sqlalchemy import Row, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from vdbpy.utils.dump import get_dump_path
+from vdbpy.utils.dump import IncompleteDumpError, get_dump_path
 from vdbpy.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -368,7 +368,9 @@ class Meta(Base):
 # -------- dump helpers -------- #
 
 
-def _iter_raw(dump_path: Path, folder: str) -> Iterator[dict]:
+def _iter_raw(
+    dump_path: Path, folder: str, skipped: list[str] | None = None
+) -> Iterator[dict[str, Any]]:
     with zipfile.ZipFile(dump_path) as z:
         for name in sorted(z.namelist()):
             if name.startswith(f"{folder}/") and name.endswith(".json"):
@@ -376,6 +378,8 @@ def _iter_raw(dump_path: Path, folder: str) -> Iterator[dict]:
                     yield from orjson.loads(z.read(name))
                 except orjson.JSONDecodeError:
                     logger.warning("dump_sql: skipping corrupt chunk %s", name)
+                    if skipped is not None:
+                        skipped.append(name)
 
 
 def inventory_dump_keys(dump_path: Path) -> dict[str, set[str]]:
@@ -775,7 +779,12 @@ class DumpDB:
         start = time.monotonic()
         engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(engine)
-        cls._ingest(engine, dump_path, dump_mtime)
+        try:
+            cls._ingest(engine, dump_path, dump_mtime)
+        except BaseException:
+            engine.dispose()
+            db_path.unlink(missing_ok=True)
+            raise
         logger.info(
             f"Built dump database in {time.monotonic() - start:.1f}s:"
             f" {db_path.stat().st_size / 1024 / 1024:.0f} MB{_memory_note()}"
@@ -911,6 +920,7 @@ class DumpDB:
                 "Tags": _tag_children,
             }
 
+            skipped: list[str] = []
             for spec in _ENTITY_SPECS:
                 _ingest_entity(
                     cur,
@@ -918,6 +928,7 @@ class DumpDB:
                     spec,
                     buffers,
                     child_cbs.get(spec.folder),
+                    skipped,
                 )
 
             remaining = _flush_buffers(cur, buffers, threshold=1)
@@ -927,6 +938,13 @@ class DumpDB:
             )
 
             _create_indexes(cur)
+            if skipped:
+                msg = (
+                    f"Ingest skipped {len(skipped)} unreadable chunk(s):"
+                    f" {', '.join(skipped[:5])}"
+                    f"{'...' if len(skipped) > 5 else ''}"
+                )
+                raise IncompleteDumpError(msg)
             cur.execute(
                 "INSERT INTO meta(key,value) VALUES('dump_mtime',?)", (dump_mtime,))
             raw.commit()
@@ -1095,6 +1113,7 @@ def _ingest_entity(
     spec: _EntitySpec,
     buffers: dict[str, list],
     child_cb: Callable[[dict], None] | None,
+    skipped: list[str],
 ) -> None:
     column_names = [col.name for col in spec.columns]
     placeholders = ",".join("?" * len(column_names))
@@ -1107,7 +1126,7 @@ def _ingest_entity(
     rows: list[tuple] = []
     entries = 0
     child_rows = 0
-    for e in _iter_raw(dump_path, spec.folder):
+    for e in _iter_raw(dump_path, spec.folder, skipped):
         rows.append(tuple(col.extract(e) for col in spec.columns))
         buffers["entry_names"].extend(_name_rows(spec.entry_type, e))
         tn = _translated_name_row(spec.entry_type, e)
