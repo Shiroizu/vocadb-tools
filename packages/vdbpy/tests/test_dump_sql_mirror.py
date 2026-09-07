@@ -26,8 +26,6 @@ _EXPECTED_TABLES = {
     "song_pvs",
     "song_events",
     "song_albums",
-    "song_lyrics",
-    "song_lyric_culture_codes",
     "album_artists",
     "album_songs",
     "album_discs",
@@ -216,7 +214,6 @@ def test_build_creates_full_mirror_schema() -> None:
             assert _EXPECTED_TABLES.issubset(tables)
 
             assert conn.execute("SELECT count(*) FROM song_pvs").fetchone()[0] == 1
-            assert conn.execute("SELECT count(*) FROM song_lyrics").fetchone()[0] == 1
             assert conn.execute("SELECT count(*) FROM album_discs").fetchone()[0] == 1
             assert conn.execute("SELECT count(*) FROM artist_groups").fetchone()[0] == 1
             members = conn.execute(

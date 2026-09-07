@@ -25,10 +25,3 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-markers = [
-    "integration: requires live VocaDB API",
-    "slow: takes more than 10 seconds",
-]

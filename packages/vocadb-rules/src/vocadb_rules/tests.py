@@ -1,4 +1,4 @@
-# ruff: noqa: T201, FURB171
+# ruff: noqa: T201
 
 import argparse
 import logging
@@ -24,7 +24,6 @@ from vdbpy.utils.files import get_lines
 from vdbpy.utils.logger import get_logger
 from vocadb_rules.mod_types import (
     CheckResult,
-    CorrectTestResults,
     RuleModuleResult,
     RuleModules,
     RuleTableRow,
@@ -91,6 +90,241 @@ def flatten_literals(tp: Any) -> set[str]:
     return values
 
 
+SKIPPED_RULE_IDS = [94]  # TODO fix
+MISSING_EDIT_CHECK_TEST_WHITELIST = [8, 7] # TODO fix
+DERIVED_TEST_WHITELIST = [97] # TODO fix
+
+DERIVED_FIELDS: dict[EntryType, tuple[list[ChangedFields], str]] = {
+    "Song": (["Lyrics"], "original_version_id"),
+    "ReleaseEvent": (["OriginalName", "Names", "Category"], "series"),
+    "Artist": (["BaseVoicebank"], "vb_base_id"),
+}
+
+
+def check_rule_module_structure(
+    rule_id: int,
+    rule_name: str,
+    rule_module: Any,
+    rule_module_dir: Path,
+    rule_modules_by_rule_id: RuleModules,
+) -> set[RuleModuleResult]:
+    """Check one rule module for static consistency."""
+    # Verify matching rule entry status if rule deps
+    # ASSUME_VALID_FOR_RULE_ID: list[int] = [24, 25]
+    if hasattr(rule_module, "ASSUME_VALID_FOR_RULE_ID"):
+        rule_entry_status = get_rule_entry_status(rule_id, rule_name, rule_module_dir)
+        for dep_rule_id in rule_module.ASSUME_VALID_FOR_RULE_ID:
+            dep_rule_name, _ = rule_modules_by_rule_id[dep_rule_id]
+            dep_rule_entry_status = get_rule_entry_status(
+                dep_rule_id,
+                dep_rule_name,
+                rule_module_dir,
+            )
+            if rule_entry_status == "Approved":
+                continue
+            if rule_entry_status == "Finished" and dep_rule_entry_status == "Draft":
+                continue
+            assert rule_entry_status == dep_rule_entry_status, (
+                f"Rule {rule_id}-{rule_name} dep {dep_rule_id}-{dep_rule_name}"
+                f" has a lower rule entry status:"
+                f" {rule_entry_status} < {dep_rule_entry_status}"
+            )
+
+    edit_check_tests, _entry_check_tests = rule_module.test()
+    assert edit_check_tests, f"No edit check tests for {rule_id}-{rule_name}"
+
+    possible_rule_module_return_values: set[RuleModuleResult] = set()
+    code = get_lines(rule_module_dir / f"{rule_id}_{rule_name}.py")
+    functions = extract_function_lines(code)
+    rule_check_function_lines = functions["check_entry_version_for_rule"]
+
+    # Check for matching changed fields
+    entry_type: EntryType | Literal["Shared"]
+    if len(rule_module.ENTRY_TYPES) == 1:
+        entry_type = rule_module.ENTRY_TYPES[0]
+    else:
+        entry_type = "Shared"
+    logger.debug(f"{rule_module.ENTRY_TYPES=} -> Using entry type {entry_type}")
+    accessed_fields: set[str] = set()
+    for line in rule_check_function_lines:
+        words = line.strip().split()
+        for word in words:
+            r_stripped = word.lstrip("({")
+            if r_stripped.startswith("version_data."):
+                field = r_stripped.split(".")[1].rstrip(",:)}")
+                logger.debug(f"Found field 'version_data.{field}'")
+                if field not in ["entry_id", "version_id"]:
+                    accessed_fields.add(field)
+    as_changed_fields: set[str] = set()
+    for field in accessed_fields:
+        logger.debug(f"Processing field {field}")
+        if field in cast("Any", field_mapping)[entry_type]:
+            mapped_field = cast("Any", field_mapping)[entry_type][field]
+            logger.debug(f"Renamed field: {mapped_field}")
+        elif field == "pvs":
+            mapped_field = "PVs"
+        elif field in cast("Any", field_mapping)["Shared"]:
+            mapped_field = cast("Any", field_mapping)["Shared"][field]
+            logger.debug(f"Renamed shared field: {mapped_field}")
+        else:
+            mapped_field = snake_case_to_pascal_case(field)
+            logger.debug(f"Converted field: {mapped_field}")
+            if mapped_field != "Status":
+                assert mapped_field in flatten_literals(ChangedFields), (
+                    f"Unknown field '{mapped_field}' for {rule_id}_{rule_name}"
+                )
+        as_changed_fields.add(mapped_field)
+
+    # Check for valid changed fields (correct entry type)
+    if len(rule_module.ENTRY_TYPES) > 0:
+        for field in rule_module.FIELDS:
+            if field == "Status":
+                continue
+            own: set[ChangedFields] = set()
+            for module_entry_type in rule_module.ENTRY_TYPES:
+                own.update(get_args(changed_fields_by_entry_type[module_entry_type]))
+            shared = get_args(changed_fields_by_entry_type["Shared"])
+            assert field in own or field in shared, (
+                f"Unknown field '{field}' for {rule_module.ENTRY_TYPES}"
+                f" (R{rule_id}), \n{own=}, \n{shared=}"
+            )
+
+    assert set(rule_module.FIELDS) == as_changed_fields, (
+        f"Rule module (R{rule_id}) fields do not match code fields: "
+        f"{rule_module.FIELDS} != {as_changed_fields}"
+    )
+    logger.info(
+        f"R{rule_id}: rule module fields {set(rule_module.FIELDS)} match"
+        f" with the code {accessed_fields}",
+    )
+
+    # Check for missing tests (1 rule violation test case for each entry type)
+    required_test_entry_types = (
+        get_args(VersionedEntryType)
+        if not rule_module.ENTRY_TYPES
+        else rule_module.ENTRY_TYPES
+    )
+    rule_violation_entry_types = {t[0] for t in edit_check_tests["Rule violation"]}
+
+    for required_entry_type in required_test_entry_types:
+        if rule_id in MISSING_EDIT_CHECK_TEST_WHITELIST:
+            continue
+        assert required_entry_type in rule_violation_entry_types, (
+            f"Missing rule violation edit check test for {required_entry_type}"
+            f" (R{rule_id})"
+        )
+
+    # Check for missing tests (based on possible rule module outputs)
+    for line in rule_check_function_lines:
+        stripped = line.strip()
+        if stripped.startswith("return"):
+            assert stripped.count('"') == 2, (
+                f"Keep 'return's on separate lines: {stripped}"
+            )
+            return_value: RuleModuleResult = cast(
+                "RuleModuleResult",
+                stripped.split('"')[1],
+            )
+            assert return_value in get_args(RuleModuleResult), return_value
+            if return_value == "Wrong entry type":
+                continue
+            possible_rule_module_return_values.add(return_value)
+
+    return possible_rule_module_return_values
+
+
+def check_rule_derived_field_tests(rule_id: int, rule_module: Any) -> None:
+    """Verify derived-field edit tests exist. Fetches entry versions (network)."""
+    if rule_id in DERIVED_TEST_WHITELIST:
+        return
+    edit_check_tests, _ = rule_module.test()
+    changed_fields: ChangedFields = rule_module.FIELDS
+
+    for entry_type, (derived_field_list, version_key) in DERIVED_FIELDS.items():
+        if entry_type not in rule_module.ENTRY_TYPES:
+            continue
+        for derived_field in derived_field_list:
+            if derived_field not in changed_fields:
+                continue
+            derived_field_test_found = False
+            non_derived_test_found = False
+            rule_violation_version_tests = edit_check_tests["Rule violation"]
+            for test in rule_violation_version_tests:
+                logger.info(
+                    f"Number of 'Rule Violation' version tests:"
+                    f" {len(rule_violation_version_tests)}",
+                )
+                if test[0] != entry_type:
+                    continue
+                version_id = test[2]
+                version_data = get_cached_entry_version(entry_type, version_id)
+                assert version_data
+                derived = version_data.__dict__[version_key]
+                if derived:
+                    derived_field_test_found = True
+                    logger.info(
+                        f"Found derived field tests v{version_id}:"
+                        f" {entry_type}, {derived_field}({version_key})",
+                    )
+                non_derived_test_found = True
+                logger.info(
+                    f"Found non-derived field tests for v{version_id}:"
+                    f" {entry_type}, {derived_field}({version_key})",
+                )
+
+            assert derived_field_test_found, (
+                f"Missing derived field EDIT test for {entry_type}."
+                f"{derived_field}({version_key}) (R{rule_id})"
+            )
+            assert non_derived_test_found, (
+                f"Missing non-derived field EDIT test for {entry_type}."
+                f"{derived_field}({version_key}) (R{rule_id})"
+            )
+
+
+def run_rule_edit_check_tests(rule_id: int, rule_name: str, rule_module: Any) -> None:
+    """Run one rule's edit-check tests against real entry versions (network)."""
+    edit_check_tests, _ = rule_module.test()
+    edit_test_count = sum(len(v) for v in edit_check_tests.values())
+    logger.info(
+        f"  Running {edit_test_count} edit-check version test(s)"
+        f" for R{rule_id} {rule_name}...",
+    )
+    edit_test_index = 0
+    for correct_check_result, version_tuples in edit_check_tests.items():
+        for entry_type, entry_id, version_id in version_tuples:
+            edit_test_index += 1
+            # verify correct version id
+            logger.info(
+                f"    [{edit_test_index}/{edit_test_count}]"
+                f" v{version_id} {get_entry_link(entry_type, entry_id)}"
+                f" -> expect '{correct_check_result}'",
+            )
+            version_ids: list[int] = [
+                edit.version_id
+                for edit in get_cached_edits_by_entry_before_version_id(
+                    entry_type,
+                    entry_id,
+                    version_id,
+                    include_deleted=True,
+                )
+            ]
+            assert version_id in version_ids
+
+            entry_version_data = get_cached_entry_version(entry_type, version_id)
+            test_check_result: RuleModuleResult = (
+                rule_module.check_entry_version_for_rule(entry_version_data)
+            )
+            assert test_check_result == correct_check_result, (
+                f"Test failed for {rule_id}_{rule_name}"
+                f" {WEBSITE}/api/{add_s(str(entry_type).lower())}"
+                f"/versions/{version_id} :\n"
+                f"  Expected: {correct_check_result}\n"
+                f"  Actual:   {test_check_result}\n"
+                f"  Entry version data: {entry_version_data}"
+            )
+
+
 def run_edit_and_entry_tests(
     check_function: Callable[..., tuple[int, str, int, int]] | None,
     rule_modules_by_rule_id: RuleModules,
@@ -121,137 +355,21 @@ def run_edit_and_entry_tests(
         logger.info(
             f"\n[{rule_index}/{total_rules}] === R{rule_id} {rule_name} ===",
         )
-        # Verify matching rule entry status if rule deps
-        # ASSUME_VALID_FOR_RULE_ID: list[int] = [24, 25]
-        if hasattr(rule_module, "ASSUME_VALID_FOR_RULE_ID"):
-            rule_entry_status = get_rule_entry_status(
-                rule_id,
-                rule_name,
-                rule_module_dir,
-            )
-            for dep_rule_id in rule_module.ASSUME_VALID_FOR_RULE_ID:
-                dep_rule_name, _ = rule_modules_by_rule_id[dep_rule_id]
-                dep_rule_entry_status = get_rule_entry_status(
-                    dep_rule_id,
-                    dep_rule_name,
-                    rule_module_dir,
-                )
-                if rule_entry_status == "Approved":
-                    continue
-                if rule_entry_status == "Finished" and dep_rule_entry_status == "Draft":
-                    continue
-                assert rule_entry_status == dep_rule_entry_status, (
-                    f"Rule {rule_id}-{rule_name} dep {dep_rule_id}-{dep_rule_name}"
-                    f" has a lower rule entry status:"
-                    f" {rule_entry_status} < {dep_rule_entry_status}"
-                )
+        if rule_id in SKIPPED_RULE_IDS:
+            continue
 
-        tests: CorrectTestResults = rule_module.test()
-        edit_check_tests, entry_check_tests = tests
-
-        if rule_id in [94]:
-            continue  # TODO fix
-        assert edit_check_tests, f"No edit check tests for {rule_id}-{rule_name}"
-
-        possible_rule_module_return_values: set[RuleModuleResult] = set()
-        code = get_lines(rule_module_dir / f"{rule_id}_{rule_name}.py")
-        functions = extract_function_lines(code)
-        rule_check_function_lines = functions["check_entry_version_for_rule"]
-
-        # Check for matching changed fields
-        entry_type: EntryType | Literal["Shared"]
-        if len(rule_module.ENTRY_TYPES) == 1:
-            entry_type = rule_module.ENTRY_TYPES[0]
-        else:
-            entry_type = "Shared"
-        logger.debug(f"{rule_module.ENTRY_TYPES=} -> Using entry type {entry_type}")
-        accessed_fields: set[str] = set()
-        for line in rule_check_function_lines:
-            words = line.strip().split()
-            for word in words:
-                r_stripped = word.lstrip("({")
-                if r_stripped.startswith("version_data."):
-                    field = r_stripped.split(".")[1].rstrip(",:)}")
-                    logger.debug(f"Found field 'version_data.{field}'")
-                    if field not in ["entry_id", "version_id"]:
-                        accessed_fields.add(field)
-        as_changed_fields: set[str] = set()
-        for field in accessed_fields:
-            logger.debug(f"Processing field {field}")
-            if field in cast("Any", field_mapping)[entry_type]:
-                mapped_field = cast("Any", field_mapping)[entry_type][field]
-                logger.debug(f"Renamed field: {mapped_field}")
-            elif field == "pvs":
-                mapped_field = "PVs"
-            elif field in cast("Any", field_mapping)["Shared"]:
-                mapped_field = cast("Any", field_mapping)["Shared"][field]
-                logger.debug(f"Renamed shared field: {mapped_field}")
-            else:
-                mapped_field = snake_case_to_pascal_case(field)
-                logger.debug(f"Converted field: {mapped_field}")
-                if mapped_field != "Status":
-                    assert mapped_field in flatten_literals(ChangedFields), (
-                        f"Unknown field '{mapped_field}' for {rule_id}_{rule_name}"
-                    )
-            as_changed_fields.add(mapped_field)
-
-        # Check for valid changed fields (correct entry type)
-        if len(rule_module.ENTRY_TYPES) > 0:
-            for field in rule_module.FIELDS:
-                if field == "Status":
-                    continue
-                own: set[ChangedFields] = set()
-                for entry_type in rule_module.ENTRY_TYPES:
-                    own.update(get_args(changed_fields_by_entry_type[entry_type]))
-                shared = get_args(changed_fields_by_entry_type["Shared"])
-                assert field in own or field in shared, (
-                    f"Unknown field '{field}' for {rule_module.ENTRY_TYPES}"
-                    f" (R{rule_id}), \n{own=}, \n{shared=}"
-                )
-
-        assert set(rule_module.FIELDS) == as_changed_fields, (
-            f"Rule module (R{rule_id}) fields do not match code fields: "
-            f"{rule_module.FIELDS} != {as_changed_fields}"
-        )
-        logger.info(
-            f"R{rule_id}: rule module fields {set(rule_module.FIELDS)} match"
-            f" with the code {accessed_fields}",
+        possible_rule_module_return_values = check_rule_module_structure(
+            rule_id,
+            rule_name,
+            rule_module,
+            rule_module_dir,
+            rule_modules_by_rule_id,
         )
 
-        # Check for missing tests (1 rule violation test case for each entry type)
-        required_test_entry_types = (
-            get_args(VersionedEntryType)
-            if not rule_module.ENTRY_TYPES
-            else rule_module.ENTRY_TYPES
-        )
-        rule_violation_entry_types = {t[0] for t in edit_check_tests["Rule violation"]}
-
-        missing_edit_check_test_whitelist = [8]
-        for entry_type in required_test_entry_types:
-            if rule_id in missing_edit_check_test_whitelist:
-                continue
-            assert entry_type in rule_violation_entry_types, (
-                f"Missing rule violation edit check test for {entry_type} (R{rule_id})"
-            )
-
-        # Check for missing tests (based on possible rule module outputs)
-        for line in rule_check_function_lines:
-            stripped = line.strip()
-            if stripped.startswith("return"):
-                assert stripped.count('"') == 2, (
-                    f"Keep 'return's on separate lines: {stripped}"
-                )
-                return_value: RuleModuleResult = cast(
-                    "RuleModuleResult",
-                    stripped.split('"')[1],
-                )
-                assert return_value in get_args(RuleModuleResult), return_value
-                if return_value == "Wrong entry type":
-                    continue
-                possible_rule_module_return_values.add(return_value)
+        _edit_check_tests, entry_check_tests = rule_module.test()
 
         for possible_return_value in possible_rule_module_return_values:
-            if possible_return_value not in edit_check_tests:
+            if possible_return_value not in _edit_check_tests:
                 logger.warning(
                     f"R{rule_id} missing edit check test for {possible_return_value}",
                 )
@@ -276,103 +394,8 @@ def run_edit_and_entry_tests(
         ):
             missing_entry_check_tests.setdefault(rule_id, []).append("Wrong entry type")
 
-        # Check for derived field tests
-        changed_fields: ChangedFields = rule_module.FIELDS
-        derived_fields: dict[EntryType, tuple[list[ChangedFields], str]] = {
-            "Song": (["Lyrics"], "original_version_id"),
-            "ReleaseEvent": (["OriginalName", "Names", "Category"], "series"),
-            "Artist": (["BaseVoicebank"], "vb_base_id"),
-        }
-
-        derived_test_whitelist: list[int] = [97]
-        for entry_type, (derived_field_list, version_key) in derived_fields.items():
-            if entry_type in rule_module.ENTRY_TYPES:
-                for derived_field in derived_field_list:
-                    if derived_field in changed_fields:
-                        derived_field_test_found = False
-                        non_derived_test_found = False
-                        rule_violation_version_tests = edit_check_tests[
-                            "Rule violation"
-                        ]
-                        for test in rule_violation_version_tests:
-                            logger.info(
-                                f"Number of 'Rule Violation' version tests:"
-                                f" {len(rule_violation_version_tests)}",
-                            )
-                            if test[0] == entry_type:
-                                version_id = test[2]
-                                version_data = get_cached_entry_version(
-                                    entry_type,
-                                    version_id,
-                                )
-                                assert version_data
-                                derived = version_data.__dict__[version_key]
-                                if derived:
-                                    derived_field_test_found = True
-                                    logger.info(
-                                        f"Found derived field tests v{version_id}:"
-                                        f" {entry_type}, {derived_field}({version_key})",
-                                    )
-                                non_derived_test_found = True
-                                logger.info(
-                                    f"Found non-derived field tests for v{version_id}:"
-                                    f" {entry_type}, {derived_field}({version_key})",
-                                )
-                        if rule_id in derived_test_whitelist:
-                            continue
-
-                        assert derived_field_test_found, (
-                            f"Missing derived field EDIT test for {entry_type}."
-                            f"{derived_field}({version_key}) (R{rule_id})"
-                        )
-                        assert non_derived_test_found, (
-                            f"Missing non-derived field EDIT test for {entry_type}."
-                            f"{derived_field}({version_key}) (R{rule_id})"
-                        )
-
-        # Run edit check tests
-        edit_test_count = sum(len(v) for v in edit_check_tests.values())
-        logger.info(
-            f"  Running {edit_test_count} edit-check version test(s)"
-            f" for R{rule_id} {rule_name}...",
-        )
-        edit_test_index = 0
-        for correct_check_result, version_tuples in edit_check_tests.items():
-            for entry_type, entry_id, version_id in version_tuples:
-                edit_test_index += 1
-                # verify correct version id
-                logger.info(
-                    f"    [{edit_test_index}/{edit_test_count}]"
-                    f" v{version_id} {get_entry_link(entry_type, entry_id)}"
-                    f" -> expect '{correct_check_result}'",
-                )
-                version_ids: list[int] = [
-                    edit.version_id
-                    for edit in get_cached_edits_by_entry_before_version_id(
-                        entry_type,
-                        entry_id,
-                        version_id,
-                        include_deleted=True,
-                    )
-                ]
-                assert version_id in version_ids
-
-                entry_version_data = get_cached_entry_version(entry_type, version_id)
-                test_check_result: RuleModuleResult = (
-                    rule_module.check_entry_version_for_rule(entry_version_data)
-                )
-                if test_check_result != correct_check_result:
-                    version_url = (
-                        f"{WEBSITE}/api/{add_s(str(entry_type).lower())}"
-                        f"/versions/{version_id}"
-                    )
-                    logger.warning(
-                        f"Test failed for for {rule_id}_{rule_name}"
-                        f" {version_url} :\n"
-                        f"  Expected: {correct_check_result}\n"
-                        f"  Actual:   {test_check_result}",
-                    )
-                    raise Exception(f"  Entry version data: {entry_version_data}")
+        check_rule_derived_field_tests(rule_id, rule_module)
+        run_rule_edit_check_tests(rule_id, rule_name, rule_module)
 
         # Run entry check tests
         if check_function is None:

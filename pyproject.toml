@@ -6,6 +6,15 @@ vdbpy = { workspace = true }
 vocadb-rules = { workspace = true }
 vocadb-scripts = { workspace = true }
 
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+addopts = "-m 'not integration and not slow and not rules'"
+markers = [
+    "integration: requires live VocaDB API",
+    "slow: takes more than 10 seconds",
+    "rules: rule-module checks against live entry versions",
+]
+
 [dependency-groups]
 dev = [
     "coverage>=7.13.4",

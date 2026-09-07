@@ -1,7 +1,7 @@
 # vocadb-tools
 
 Python tooling for [VocaDB](https://vocadb.net/), as a single [uv](https://docs.astral.sh/uv/)
-workspace.
+workspace (3 separate repos previously).
 
 | Package | Import | Description |
 |---|---|---|
@@ -15,10 +15,28 @@ depends on all three.
 ## Usage
 
 ```
-uv sync                 
+uv sync
 uv run ruff check
 uv run ty check
 uv run pytest
+```
+
+## Testing
+
+```
+uv run pytest                   # < 1 sec
+uv run pytest -m integration    # live VocaDB API
+uv run pytest -m slow           # needs dump.zip
+uv run pytest -m rules          # rule modules vs live entry versions
+uv run pytest -m ""             # everything
+```
+
+The rule-module checks have additional CLI tests:
+
+```
+uv run python -m vocadb_rules.tests            # all rules + wiki crosscheck
+uv run python -m vocadb_rules.tests --rule 55  # one rule + its dependencies
+uv run python -m vocadb_rules.tests --debug
 ```
 
 ## Tools

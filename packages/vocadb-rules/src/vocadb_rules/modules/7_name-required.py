@@ -26,7 +26,7 @@ from vocadb_rules.mod_types import (
 )
 
 MSG = "All entries require a name, unless tagged with untitled."
-FIELDS: list[ChangedFields] = ["Names", "Status"]
+FIELDS: list[ChangedFields] = ["Names"]
 ENTRY_TYPES: list[EntryType] = []
 COMPLETE = True
 AUTOMATICALLY_FIXED: bool | Literal["Partially"] = False
