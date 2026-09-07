@@ -1,0 +1,18 @@
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+vdbpy = { workspace = true }
+vocadb-rules = { workspace = true }
+vocadb-scripts = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "coverage>=7.13.4",
+    "genbadge>=1.1.2",
+    "pydeps>=3.0.1",
+    "pytest>=8",
+    "pytest-mock>=3",
+    "ruff>=0.15.2",
+    "ty>=0.0.18",
+]
