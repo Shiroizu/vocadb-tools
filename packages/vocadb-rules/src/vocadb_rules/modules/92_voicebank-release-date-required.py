@@ -7,7 +7,7 @@ from vdbpy.types.changed_fields import (
 from vdbpy.types.shared import BaseEntryVersion, EntryType
 from vdbpy.utils.logger import get_logger
 
-from rule_modules.mod_types import (
+from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,
     CorrectTestResults,

@@ -128,7 +128,7 @@ def get_all_dependencies(
 
 
 def get_bundled_modules_dir() -> Path:
-    return Path(str(files("rule_modules").joinpath("modules")))
+    return Path(str(files("vocadb_rules").joinpath("modules")))
 
 
 def get_rule_modules_by_id(

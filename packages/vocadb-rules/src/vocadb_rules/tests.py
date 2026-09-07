@@ -23,14 +23,14 @@ from vdbpy.utils.data import add_s
 from vdbpy.utils.files import get_lines
 from vdbpy.utils.logger import get_logger
 
-from rule_modules.mod_types import (
+from vocadb_rules.mod_types import (
     CheckResult,
     CorrectTestResults,
     RuleModuleResult,
     RuleModules,
     RuleTableRow,
 )
-from rule_modules.rules import (
+from vocadb_rules.rules import (
     get_bundled_modules_dir,
     get_rule_modules_by_id,
     get_rule_table,

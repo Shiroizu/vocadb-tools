@@ -3,7 +3,7 @@
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.utils.data import get_monthly_count
 
-from scripts.graph.graph_utils import build_figure, collect_monthly_data
+from vocadb_scripts.graph.graph_utils import build_figure, collect_monthly_data
 
 
 def _count_fn(year: int, month: int) -> int:

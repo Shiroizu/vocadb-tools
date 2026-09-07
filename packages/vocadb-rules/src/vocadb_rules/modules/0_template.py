@@ -13,7 +13,7 @@ from vdbpy.types.songs import SongVersion
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.logger import get_logger
 
-from rule_modules.mod_types import (
+from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,
     CorrectTestResults,

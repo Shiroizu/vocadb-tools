@@ -9,7 +9,7 @@ from vdbpy.types.tags import TagVersion
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json
 
-from rule_modules.mod_types import (
+from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,
     CorrectTestResults,

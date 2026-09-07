@@ -18,7 +18,7 @@ from vdbpy.utils.logger import get_logger
 if TYPE_CHECKING:
     from vdbpy.utils.dump_sql import DumpDB
 
-from rule_modules.mod_types import (
+from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,
     CorrectTestResults,

@@ -2,7 +2,7 @@
 
 from vdbpy.api.users import get_monthly_user_count
 
-from scripts.graph.graph_utils import build_figure, collect_monthly_data
+from vocadb_scripts.graph.graph_utils import build_figure, collect_monthly_data
 
 
 def _figure():

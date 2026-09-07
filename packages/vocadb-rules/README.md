@@ -5,7 +5,7 @@ Each rule encapsulates one wiki rule from <https://wiki.vocadb.net/rules>
 ## Usage
 
 ```python
-from rule_modules import get_rule_modules_by_id
+from vocadb_rules import get_rule_modules_by_id
 
 rule_modules = get_rule_modules_by_id()
 
@@ -21,6 +21,6 @@ for rule_id, (rule_name, module) in rule_modules.items():
 ### Testing
 
 ```sh
-uv run python -m rule_modules.tests              
-uv run python -m rule_modules.tests --rule 8
+uv run python -m vocadb_rules.tests              
+uv run python -m vocadb_rules.tests --rule 8
 ```

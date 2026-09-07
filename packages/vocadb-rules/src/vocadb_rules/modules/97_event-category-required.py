@@ -9,7 +9,7 @@ from vdbpy.types.shared import (
     EntryType,
 )
 
-from rule_modules.mod_types import (
+from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,
     CorrectTestResults,

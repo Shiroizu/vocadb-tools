@@ -36,8 +36,8 @@ from vdbpy.utils.files import (
 )
 from vdbpy.utils.logger import get_logger
 
-from scripts.find.favourite_producers import build_top_favourite_producers
-from scripts.find.favourite_tags import build_top_favourite_genres
+from vocadb_scripts.find.favourite_producers import build_top_favourite_producers
+from vocadb_scripts.find.favourite_tags import build_top_favourite_genres
 
 logger = get_logger()
 
