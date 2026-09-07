@@ -1,4 +1,3 @@
-
 from typing import Any, Literal
 
 import requests
@@ -96,7 +95,9 @@ def autofix(
 
 
 def remove_duplicate_names(
-    data: dict[Any, Any], base_update_note: str = "", args: Any = None,
+    data: dict[Any, Any],
+    base_update_note: str = "",
+    args: Any = None,
 ) -> dict[Any, Any]:
     # TODO full tests
     # "defaultNameLanguage":"Japanese",

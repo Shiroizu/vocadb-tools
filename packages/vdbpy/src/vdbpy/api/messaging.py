@@ -62,9 +62,7 @@ def get_user_messages(
             "maxResults": str(max_results),
         }
         result = session.get(url, params=params).json()
-        mod_messages.extend(
-            _parse_mod_message(item, inbox) for item in result["items"]
-        )
+        mod_messages.extend(_parse_mod_message(item, inbox) for item in result["items"])
 
     mod_messages.sort(key=lambda x: x.id)
     return mod_messages

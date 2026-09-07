@@ -39,8 +39,7 @@ def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleRe
 def test() -> CorrectTestResults:
     edit_check_tests: CorrectEditCheckTestResult = {
         "Valid": [("Artist", 61973, 147929)],
-        "Rule violation": [("Artist",135608, 421184)],
+        "Rule violation": [("Artist", 135608, 421184)],
     }
-    entry_check_tests: CorrectEntryCheckTestResult = {
-    }
+    entry_check_tests: CorrectEntryCheckTestResult = {}
     return edit_check_tests, entry_check_tests

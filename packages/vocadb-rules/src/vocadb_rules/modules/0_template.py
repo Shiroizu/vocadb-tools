@@ -30,9 +30,10 @@ COMPLETE = True  # whether the rule check is complete/exhaustive or not
 AUTOMATICALLY_FIXED: bool | Literal["Partially"] = "Partially"
 ASSUME_VALID_FOR_RULE_ID: list[int] = []
 
-TAG_ID = 0 # Use this in conjunction with find_relevant_entries()
-           # and add 'is_relevant_entry: bool | None = None'
-           # to 'check_entry_version_for_rule()'
+TAG_ID = 0  # Use this in conjunction with find_relevant_entries()
+# and add 'is_relevant_entry: bool | None = None'
+# to 'check_entry_version_for_rule()'
+
 
 def find_relevant_entries(save_dir: Path) -> set[EntryTuple]:
     # Use this for improved performance whenever possible
@@ -103,7 +104,9 @@ def autofix(
 
 
 def my_edit_function(
-    data: dict[Any, Any], base_update_note: str, arg: Any,
+    data: dict[Any, Any],
+    base_update_note: str,
+    arg: Any,
 ) -> dict[Any, Any]:
     if not arg:
         return {}

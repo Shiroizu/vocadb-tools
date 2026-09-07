@@ -1,4 +1,3 @@
-
 from typing import Any, Literal, get_args
 
 import requests
@@ -94,7 +93,9 @@ def autofix(
 
 
 def remove_redundant_character_designer_credit(
-    data: dict[Any, Any], base_update_note: str, args: Any = None,
+    data: dict[Any, Any],
+    base_update_note: str,
+    args: Any = None,
 ) -> dict[Any, Any]:
     update_notes: str = "Removed redundant character designer credit"
 

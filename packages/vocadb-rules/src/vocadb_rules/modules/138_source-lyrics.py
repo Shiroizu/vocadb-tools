@@ -89,7 +89,9 @@ def autofix(
 
 
 def add_verified_artist_as_the_lyrics_source(
-    data: dict[Any, Any], base_update_note: str, relevant_user_id: int,
+    data: dict[Any, Any],
+    base_update_note: str,
+    relevant_user_id: int,
 ) -> dict[Any, Any]:
     if not relevant_user_id:
         logger.warning("Relevant user id required! Edit too old?")

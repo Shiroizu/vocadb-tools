@@ -295,6 +295,7 @@ def get_cached_user_creation_date_by_user_id(user_id) -> datetime | None:
         return None
     return parse_date(creation_date)
 
+
 def get_cached_user_account_age_by_user_id(user_id: int) -> int:
     """Get user account age in days."""
     creation_date = get_cached_user_creation_date_by_user_id(user_id)

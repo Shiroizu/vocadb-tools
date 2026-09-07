@@ -1,4 +1,3 @@
-
 from typing import Any, Literal
 
 import requests
@@ -160,7 +159,9 @@ def autofix(
 
 
 def fix_default_name_language(
-    data: dict[Any, Any], base_update_note: str = "", args: Any = None,
+    data: dict[Any, Any],
+    base_update_note: str = "",
+    args: Any = None,
 ) -> dict[Any, Any]:
     # TODO full tests
     # not supported for ReleaseEvents

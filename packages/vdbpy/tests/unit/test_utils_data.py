@@ -1,7 +1,6 @@
 # ruff: noqa: S101
 
 
-
 from vdbpy.types.shared import UserEdit
 from vdbpy.utils.data import (
     add_s,

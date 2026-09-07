@@ -78,9 +78,11 @@ class ReleaseEvent:
     venue_name: str
     version_count: int
 
+
 @dataclass
 class OptionalReleaseEventFields:
     pass  # TODO implement
+
 
 @dataclass
 class ReleaseEventEntry(BaseEntry, OptionalReleaseEventFields):

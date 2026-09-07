@@ -61,14 +61,12 @@ def find_relevant_entries(save_dir: Path) -> set[EntryTuple]:
     return {
         (entry[0], entry[1])
         for entry in finished_entries_with_no_cover_art_advanced_filter
-    } - {
-        (entry[0], entry[1])
-        for entry in finished_entries_tagged_with_no_cover_art
-    }
+    } - {(entry[0], entry[1]) for entry in finished_entries_tagged_with_no_cover_art}
 
 
 def check_entry_version_for_rule(
-    version_data: BaseEntryVersion, is_relevant_entry: bool | None = None,
+    version_data: BaseEntryVersion,
+    is_relevant_entry: bool | None = None,
 ) -> RuleModuleResult:
     if not isinstance(version_data, AlbumVersion):
         return "Wrong entry type"

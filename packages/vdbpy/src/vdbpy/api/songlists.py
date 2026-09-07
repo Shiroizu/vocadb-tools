@@ -97,9 +97,7 @@ def delete_songlist(session: requests.Session, songlist_id: int) -> None:
         logger.info(f"Songlist {songlist_id} already deleted or missing")
         return
     r.raise_for_status()
-    logger.info(
-        f"Deleted songlist ({WEBSITE}/SongList/Details/{songlist_id})"
-    )
+    logger.info(f"Deleted songlist ({WEBSITE}/SongList/Details/{songlist_id})")
 
 
 def create_songlists_with_size_limit(

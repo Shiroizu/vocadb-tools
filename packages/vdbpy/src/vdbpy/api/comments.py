@@ -67,7 +67,7 @@ def get_the_oldest_comment_by_user_id(user_id: int = 0) -> Comment:
 
 def get_recent_comments_by_user_id(
     user_id: int, max_results: int = 50
-    ) -> list[Comment]:
+) -> list[Comment]:
     params = {
         "userId": user_id,
         "sortRule": "CreateDateDescending",

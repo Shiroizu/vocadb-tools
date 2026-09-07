@@ -32,6 +32,7 @@ from vdbpy.utils.network import fetch_json
 tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
+
 def get_youtube_link(artist_entry: dict[Any, Any]) -> str:
     if "webLinks" not in artist_entry:
         logger.warning("Artist entry does not include any external links!")
@@ -193,7 +194,7 @@ def _get_rated_song_ids_for_artist(
                     if pv_services and pv_services != "Nothing":
                         rated_with_pvs += 1
                     break
-            except (KeyError, TypeError):
+            except KeyError, TypeError:
                 continue
     return rated_ids, rated_with_pvs
 
@@ -228,9 +229,7 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
     artist_entry = get_artist_by_id_7d(artist_id)
     artist_name = artist_entry.get("name", f"Artist {artist_id}")
     if artist_entry.get("artistType") != "Producer":
-        raise ValueError(
-            f"{artist_name} (Ar/{artist_id}) is not a Producer."
-        )
+        raise ValueError(f"{artist_name} (Ar/{artist_id}) is not a Producer.")
 
     # Total song count
     _, total_songs = get_songs_with_total_count(
@@ -240,7 +239,9 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
     # Songs with PVs count
     _, total_with_pvs = get_songs_with_total_count(
         song_search_params=SongSearchParams(
-            artist_ids={artist_id}, only_with_pvs=True, max_results=1,
+            artist_ids={artist_id},
+            only_with_pvs=True,
+            max_results=1,
         ),
     )
 
@@ -249,7 +250,9 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
     if total_songs > 0:
         newest, _ = get_songs_with_total_count(
             song_search_params=SongSearchParams(
-                artist_ids={artist_id}, sort="PublishDate", max_results=1,
+                artist_ids={artist_id},
+                sort="PublishDate",
+                max_results=1,
             ),
         )
         # fetch_json_items_with_total_count always resets start=0, so use fetch_json
@@ -278,12 +281,15 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
     top_songs, _ = get_songs_with_total_count(
         fields={"artists"},
         song_search_params=SongSearchParams(
-            artist_ids={artist_id}, only_with_pvs=True,
-            sort="RatingScore", max_results=100,
+            artist_ids={artist_id},
+            only_with_pvs=True,
+            sort="RatingScore",
+            max_results=100,
         ),
     )
     top_unrated = [
-        s for s in top_songs
+        s
+        for s in top_songs
         if s.id not in rated_ids
         and _has_producer_role(s, artist_id)
         and s.song_type != "Instrumental"
@@ -293,12 +299,15 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
     recent_songs, _ = get_songs_with_total_count(
         fields={"artists"},
         song_search_params=SongSearchParams(
-            artist_ids={artist_id}, only_with_pvs=True,
-            sort="PublishDate", max_results=100,
+            artist_ids={artist_id},
+            only_with_pvs=True,
+            sort="PublishDate",
+            max_results=100,
         ),
     )
     recent_unrated = [
-        s for s in recent_songs
+        s
+        for s in recent_songs
         if s.id not in rated_ids
         and _has_producer_role(s, artist_id)
         and s.song_type != "Instrumental"
@@ -314,10 +323,7 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
         f"Songs: {total_songs}{date_range}",
         f"With PVs: {total_with_pvs} / {total_songs} ({pv_pct})",
         f"Rated: {rated_count} / {total_songs} ({rated_pct})",
-        (
-            f"Rated (PVs only): {rated_with_pvs} / {total_with_pvs}"
-            f" ({rated_pv_pct})"
-        ),
+        (f"Rated (PVs only): {rated_with_pvs} / {total_with_pvs} ({rated_pv_pct})"),
     ]
 
     if top_unrated:
@@ -326,18 +332,14 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
         for i, s in enumerate(top_unrated, 1):
             emoji = _score_emoji(s.rating_score)
             score_str = f"{emoji} {s.rating_score}" if emoji else str(s.rating_score)
-            lines.append(
-                f"{i}. {s.default_name} {score_str} <{WEBSITE}/S/{s.id}>"
-            )
+            lines.append(f"{i}. {s.default_name} {score_str} <{WEBSITE}/S/{s.id}>")
 
     if recent_unrated:
         lines.append("")
         lines.append("**Most recent unrated** (PVs only):")
         for i, s in enumerate(recent_unrated, 1):
             date_str = s.publish_date.strftime("%Y-%m-%d") if s.publish_date else "?"
-            lines.append(
-                f"{i}. {s.default_name} [{date_str}] <{WEBSITE}/S/{s.id}>"
-            )
+            lines.append(f"{i}. {s.default_name} [{date_str}] <{WEBSITE}/S/{s.id}>")
 
     return "\n".join(lines)
 

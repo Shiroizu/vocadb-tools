@@ -50,7 +50,8 @@ def find_relevant_entries(save_dir: Path) -> set[EntryTuple]:
 
 
 def check_entry_version_for_rule(
-    version_data: BaseEntryVersion, is_relevant_entry: bool | None = None,
+    version_data: BaseEntryVersion,
+    is_relevant_entry: bool | None = None,
 ) -> CheckResult:
     if not isinstance(version_data, SongVersion):
         return "Wrong entry type"

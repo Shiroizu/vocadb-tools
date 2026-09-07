@@ -43,15 +43,18 @@ def main(
     overlap_pct = (shared / smaller * 100) if smaller > 0 else 0.0
 
     both_fav = sum(
-        1 for sid in shared_ids
+        1
+        for sid in shared_ids
         if songs1[sid] == "Favorite" and songs2[sid] == "Favorite"
     )
     u1_fav_only = sum(
-        1 for sid in shared_ids
+        1
+        for sid in shared_ids
         if songs1[sid] == "Favorite" and songs2[sid] != "Favorite"
     )
     u2_fav_only = sum(
-        1 for sid in shared_ids
+        1
+        for sid in shared_ids
         if songs2[sid] == "Favorite" and songs1[sid] != "Favorite"
     )
     agree_fav_pct = (both_fav / shared * 100) if shared > 0 else 0.0

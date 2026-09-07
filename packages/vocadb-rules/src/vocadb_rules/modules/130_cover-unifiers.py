@@ -35,6 +35,7 @@ COMPLETE = True
 AUTOMATICALLY_FIXED: bool | Literal["Partially"] = False
 TAG_ID = 6751
 
+
 def analyze_sql_dump(db: DumpDB) -> set[EntryTuple]:
     derived = (
         select(db.Song.original_id.label("oid"), func.count().label("c"))
@@ -66,7 +67,8 @@ def has_more_than_5_derived_versions(entry_id: int) -> bool:
 
 
 def check_entry_version_for_rule(
-    version_data: BaseEntryVersion, is_relevant_entry: bool | None = None,
+    version_data: BaseEntryVersion,
+    is_relevant_entry: bool | None = None,
 ) -> RuleModuleResult:
     if not isinstance(version_data, SongVersion):
         return "Wrong entry type"

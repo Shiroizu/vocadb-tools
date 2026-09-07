@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 EDITS_SAVE_DIR = Path("edits_by_date")
 
+
 @pytest.mark.integration
 def test_future_edit() -> None:
     edits, _ = get_edits_by_day(2100, 11, 11, limit=None, save_dir=EDITS_SAVE_DIR)

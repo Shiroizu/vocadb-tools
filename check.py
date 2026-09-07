@@ -4,6 +4,7 @@ import subprocess
 import sys
 
 COMMANDS = (
+    ["ruff", "format", "--check"],  # run `uv run ruff format` to fix
     ["ruff", "check"],
     ["ty", "check"],
     ["pytest"],

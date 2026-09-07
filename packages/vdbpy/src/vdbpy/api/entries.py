@@ -134,9 +134,7 @@ def get_cached_entry_count_by_entry_type(entry_type: EntryType) -> int:
 def get_random_entry(
     entry_type: EntryType | None = None,
 ) -> dict[Any, Any]:  # TODO type
-    selected_entry_type: EntryType = (
-        entry_type or random.choice(get_args(EntryType))
-    )
+    selected_entry_type: EntryType = entry_type or random.choice(get_args(EntryType))
     total = get_cached_entry_count_by_entry_type(selected_entry_type)
     random_index = random.randint(1, total)
     url = f"{WEBSITE}/api/{add_s(str(selected_entry_type))}"

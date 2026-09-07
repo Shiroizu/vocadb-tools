@@ -95,8 +95,8 @@ def flatten_literals(tp: Any) -> set[str]:
 
 
 SKIPPED_RULE_IDS = [94]  # TODO fix
-MISSING_EDIT_CHECK_TEST_WHITELIST = [8, 7] # TODO fix
-DERIVED_TEST_WHITELIST = [97] # TODO fix
+MISSING_EDIT_CHECK_TEST_WHITELIST = [8, 7]  # TODO fix
+DERIVED_TEST_WHITELIST = [97]  # TODO fix
 
 DERIVED_FIELDS: dict[EntryType, tuple[list[ChangedFields], str]] = {
     "Song": (["Lyrics"], "original_version_id"),

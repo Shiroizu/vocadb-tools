@@ -124,7 +124,7 @@ def _load_last_songlist_id(state_dir: Path, user_id: int) -> int | None:
         return None
     try:
         n = int(raw[key])
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     else:
         return n if n > 0 else None
@@ -400,14 +400,11 @@ def main(
         raise ValueError(f"No rated songs found for user {user_id}")
 
     tag_info = build_tag_info_map()
-    genre_rows = build_top_favourite_genres(
-        rated_songs, tag_info, limit=TOP_FAVOURITES
-    )
+    genre_rows = build_top_favourite_genres(rated_songs, tag_info, limit=TOP_FAVOURITES)
     producer_rows = build_top_favourite_producers(rated_songs, limit=TOP_FAVOURITES)
     logger.info(f"Top genres (id, name, raw): {[(t[0], t[1]) for t in genre_rows[:5]]}")
     logger.info(
-        "Top producers (id, name, raw): "
-        f"{[(t[0], t[1]) for t in producer_rows[:5]]}"
+        f"Top producers (id, name, raw): {[(t[0], t[1]) for t in producer_rows[:5]]}"
     )
 
     if not genre_rows and not producer_rows:
@@ -457,9 +454,7 @@ def main(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Create a VocaDB recommendation songlist from a taste profile."
-        ),
+        description=("Create a VocaDB recommendation songlist from a taste profile."),
     )
     parser.add_argument("username", type=str, help="VocaDB username")
     parser.add_argument(

@@ -57,27 +57,27 @@ def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleRe
 def test() -> CorrectTestResults:
     edit_check_tests: CorrectEditCheckTestResult = {
         "Valid": [
-            ("Song", 889898, 3020461), # External link
-            ("Song", 889898, 3034077), # Lyrics
+            ("Song", 889898, 3020461),  # External link
+            ("Song", 889898, 3034077),  # Lyrics
             ("Album", 51672, 271686),
-            ("Artist", 72959, 598870), # Regular artist
-            ("Artist", 72959, 598874), # Original voicebank
-            ("Artist", 72959, 598880), # Derived voicebank
-            ("ReleaseEvent", 9772, 41635), # Standalone event
-            ("ReleaseEvent", 9772, 41639), # Series event
+            ("Artist", 72959, 598870),  # Regular artist
+            ("Artist", 72959, 598874),  # Original voicebank
+            ("Artist", 72959, 598880),  # Derived voicebank
+            ("ReleaseEvent", 9772, 41635),  # Standalone event
+            ("ReleaseEvent", 9772, 41639),  # Series event
             ("ReleaseEventSeries", 1041, 3837),
             ("Tag", 6366, 57269),
             ("Venue", 433, 1115),
         ],
         "Rule violation": [
-            ("Song", 889898, 3034099), # External link
-            ("Song", 889898, 3020446), # Lyrics
+            ("Song", 889898, 3034099),  # External link
+            ("Song", 889898, 3020446),  # Lyrics
             ("Album", 51672, 271684),
-            ("Artist", 72959, 598868), # Regular artist
-            ("Artist", 72959, 598872), # Original voicebank
-            ("Artist", 72959, 598878), # Derived voicebank
-            ("ReleaseEvent", 9772, 41633), # Standalone event
-            ("ReleaseEvent", 9772, 41637), # Series event
+            ("Artist", 72959, 598868),  # Regular artist
+            ("Artist", 72959, 598872),  # Original voicebank
+            ("Artist", 72959, 598878),  # Derived voicebank
+            ("ReleaseEvent", 9772, 41633),  # Standalone event
+            ("ReleaseEvent", 9772, 41637),  # Series event
             ("ReleaseEventSeries", 1041, 3835),
             ("Tag", 6366, 57267),
             ("Venue", 433, 1116),
@@ -85,11 +85,11 @@ def test() -> CorrectTestResults:
         "Not applicable": [
             ("Song", 889898, 3020191),
             ("Album", 51672, 271685),
-            ("Artist", 72959, 598869), # Regular artist
-            ("Artist", 72959, 598873), # Original voicebank
-            ("Artist", 72959, 598879), # Derived voicebank
-            ("ReleaseEvent", 9772, 41634), # Standalone event
-            ("ReleaseEvent", 9772, 41638), # Series event
+            ("Artist", 72959, 598869),  # Regular artist
+            ("Artist", 72959, 598873),  # Original voicebank
+            ("Artist", 72959, 598879),  # Derived voicebank
+            ("ReleaseEvent", 9772, 41634),  # Standalone event
+            ("ReleaseEvent", 9772, 41638),  # Series event
             ("ReleaseEventSeries", 1041, 3836),
             ("Tag", 6366, 57268),
             ("Venue", 433, 1106),
@@ -121,7 +121,7 @@ def test() -> CorrectTestResults:
             (41638, 31074, ("ReleaseEvent", 9772, 41638)),
             (3836, 31074, ("ReleaseEventSeries", 1041, 3836)),
             (57268, 31074, ("Tag", 6366, 57268)),
-            (1106, 31074,("Venue", 433, 1106)),
+            (1106, 31074, ("Venue", 433, 1106)),
         ],
     }
     return edit_check_tests, entry_check_tests

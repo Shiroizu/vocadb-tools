@@ -70,9 +70,7 @@ def trigger_dump_refresh(session: requests.Session, timeout: int = 30) -> None:
     """
     logger.info(f"Triggering dump refresh via {DUMP_REFRESH_URL}")
     try:
-        response = session.get(
-            DUMP_REFRESH_URL, timeout=timeout, allow_redirects=False
-        )
+        response = session.get(DUMP_REFRESH_URL, timeout=timeout, allow_redirects=False)
     except requests.Timeout:
         logger.info("Dump refresh request timed out (expected): dump is being built")
         return
@@ -107,7 +105,7 @@ def get_remote_dump_info(timeout: int = 60) -> RemoteDumpInfo:
     if raw_date:
         try:
             last_modified = parsedate_to_datetime(raw_date)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             logger.warning(f"Could not parse Last-Modified header: {raw_date!r}")
 
     content_length = None
@@ -162,7 +160,7 @@ def _verify_dump_archive(path: Path, previous: Path | None = None) -> None:
         return
     try:
         old_chunks = _chunk_indexes(previous)
-    except (OSError, zipfile.BadZipFile):
+    except OSError, zipfile.BadZipFile:
         logger.warning(f"Could not compare against the existing dump '{previous}'")
         return
 
@@ -221,7 +219,7 @@ def get_dump_date(dump_path: Path) -> date | None:
     try:
         with zipfile.ZipFile(dump_path) as zf:
             infos = zf.infolist()
-    except (OSError, zipfile.BadZipFile):
+    except OSError, zipfile.BadZipFile:
         logger.warning(f"Could not read dump date from {dump_path}")
         return None
     if not infos:

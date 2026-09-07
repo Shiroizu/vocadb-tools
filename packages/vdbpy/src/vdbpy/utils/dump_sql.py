@@ -31,12 +31,14 @@ logger = get_logger()
 
 ENTRY_TABLES = ("songs", "albums", "artists", "events", "event_series", "tags")
 
-_READONLY_ACTIONS = frozenset({
-    sqlite3.SQLITE_SELECT,
-    sqlite3.SQLITE_READ,
-    sqlite3.SQLITE_FUNCTION,
-    sqlite3.SQLITE_RECURSIVE,
-})
+_READONLY_ACTIONS = frozenset(
+    {
+        sqlite3.SQLITE_SELECT,
+        sqlite3.SQLITE_READ,
+        sqlite3.SQLITE_FUNCTION,
+        sqlite3.SQLITE_RECURSIVE,
+    }
+)
 
 
 class SqlError(Exception):
@@ -562,7 +564,9 @@ class _EntitySpec:
 
 _ENTITY_SPECS: list[_EntitySpec] = [
     _EntitySpec(
-        "Songs", "songs", "Song",
+        "Songs",
+        "songs",
+        "Song",
         columns=[
             _Col("id", lambda e: e["id"]),
             _Col("song_type", lambda e: e.get("songType", "Unspecified")),
@@ -578,7 +582,9 @@ _ENTITY_SPECS: list[_EntitySpec] = [
         ],
     ),
     _EntitySpec(
-        "Albums", "albums", "Album",
+        "Albums",
+        "albums",
+        "Album",
         columns=[
             _Col("id", lambda e: e["id"]),
             _Col("disc_type", lambda e: e.get("discType", "Unknown")),
@@ -597,7 +603,9 @@ _ENTITY_SPECS: list[_EntitySpec] = [
         ],
     ),
     _EntitySpec(
-        "Artists", "artists", "Artist",
+        "Artists",
+        "artists",
+        "Artist",
         columns=[
             _Col("id", lambda e: e["id"]),
             _Col("artist_type", lambda e: e.get("artistType", "Unknown")),
@@ -610,7 +618,9 @@ _ENTITY_SPECS: list[_EntitySpec] = [
         ],
     ),
     _EntitySpec(
-        "Events", "events", "ReleaseEvent",
+        "Events",
+        "events",
+        "ReleaseEvent",
         columns=[
             _Col("id", lambda e: e["id"]),
             _Col("category", lambda e: e.get("category", "Unspecified")),
@@ -627,7 +637,9 @@ _ENTITY_SPECS: list[_EntitySpec] = [
         ],
     ),
     _EntitySpec(
-        "EventSeries", "event_series", "ReleaseEventSeries",
+        "EventSeries",
+        "event_series",
+        "ReleaseEventSeries",
         columns=[
             _Col("id", lambda e: e["id"]),
             _Col("category", lambda e: e.get("category", "Unspecified")),
@@ -637,7 +649,9 @@ _ENTITY_SPECS: list[_EntitySpec] = [
         ],
     ),
     _EntitySpec(
-        "Tags", "tags", "Tag",
+        "Tags",
+        "tags",
+        "Tag",
         columns=[
             _Col("id", lambda e: e["id"]),
             _Col("category_name", lambda e: e.get("categoryName") or ""),
@@ -703,8 +717,7 @@ def _format_indexes(conn: Any, table: str) -> str | None:
         if origin == "pk":
             continue
         columns = [
-            row[2]
-            for row in conn.exec_driver_sql(f'PRAGMA index_info("{name}")').all()
+            row[2] for row in conn.exec_driver_sql(f'PRAGMA index_info("{name}")').all()
         ]
         if columns:
             prefix = "unique " if unique else ""
@@ -813,15 +826,14 @@ class DumpDB:
 
             # Keyed off the column map so a new child table cannot be buffered
             # without a matching INSERT, or flushed without a buffer.
-            buffers: dict[str, list] = {
-                table: [] for table in _CHILD_TABLE_COLUMNS
-            }
+            buffers: dict[str, list] = {table: [] for table in _CHILD_TABLE_COLUMNS}
 
             def _song_children(e: dict) -> None:
                 buffers["song_artists"].extend(_credit_rows(e["id"], e.get("artists")))
                 buffers["song_pvs"].extend(_pv_rows(e["id"], e.get("pvs")))
                 for _, event_id, name_hint in _ref_rows(
-                    e["id"], e.get("releaseEvents"),
+                    e["id"],
+                    e.get("releaseEvents"),
                 ):
                     buffers["song_events"].append((e["id"], event_id, name_hint))
                 release_event = e.get("releaseEvent")
@@ -829,45 +841,54 @@ class DumpDB:
                     isinstance(release_event, dict)
                     and release_event.get("id") is not None
                 ):
-                    buffers["song_events"].append((
-                        e["id"],
-                        release_event["id"],
-                        release_event.get("nameHint") or None,
-                    ))
+                    buffers["song_events"].append(
+                        (
+                            e["id"],
+                            release_event["id"],
+                            release_event.get("nameHint") or None,
+                        )
+                    )
                 for album in e.get("albums") or []:
-                    buffers["song_albums"].append((
-                        e["id"],
-                        album["id"],
-                        album.get("discNumber"),
-                        album.get("trackNumber"),
-                        album.get("nameHint") or None,
-                    ))
+                    buffers["song_albums"].append(
+                        (
+                            e["id"],
+                            album["id"],
+                            album.get("discNumber"),
+                            album.get("trackNumber"),
+                            album.get("nameHint") or None,
+                        )
+                    )
 
             def _album_children(e: dict) -> None:
                 buffers["album_artists"].extend(_credit_rows(e["id"], e.get("artists")))
                 for track in e.get("songs") or []:
-                    buffers["album_songs"].append((
-                        e["id"],
-                        track["id"],
-                        track.get("discNumber"),
-                        track.get("trackNumber"),
-                        track.get("nameHint") or None,
-                    ))
+                    buffers["album_songs"].append(
+                        (
+                            e["id"],
+                            track["id"],
+                            track.get("discNumber"),
+                            track.get("trackNumber"),
+                            track.get("nameHint") or None,
+                        )
+                    )
                 for disc in e.get("discs") or []:
-                    buffers["album_discs"].append((
-                        e["id"],
-                        disc.get("discNumber"),
-                        disc.get("id"),
-                        disc.get("mediaType") or None,
-                        disc.get("name") or None,
-                    ))
+                    buffers["album_discs"].append(
+                        (
+                            e["id"],
+                            disc.get("discNumber"),
+                            disc.get("id"),
+                            disc.get("mediaType") or None,
+                            disc.get("name") or None,
+                        )
+                    )
                 buffers["album_pvs"].extend(_pv_rows(e["id"], e.get("pvs")))
                 for ident in e.get("identifiers") or []:
                     value = ident["value"] if isinstance(ident, dict) else str(ident)
                     buffers["album_identifiers"].append((e["id"], value))
                 rel = e.get("originalRelease") or {}
                 for _, event_id, name_hint in _ref_rows(
-                    e["id"], rel.get("releaseEvents"),
+                    e["id"],
+                    rel.get("releaseEvents"),
                 ):
                     buffers["album_events"].append((e["id"], event_id, name_hint))
                 release_event = rel.get("releaseEvent")
@@ -875,28 +896,34 @@ class DumpDB:
                     isinstance(release_event, dict)
                     and release_event.get("id") is not None
                 ):
-                    buffers["album_events"].append((
-                        e["id"],
-                        release_event["id"],
-                        release_event.get("nameHint") or None,
-                    ))
+                    buffers["album_events"].append(
+                        (
+                            e["id"],
+                            release_event["id"],
+                            release_event.get("nameHint") or None,
+                        )
+                    )
 
             def _artist_children(e: dict) -> None:
                 for group in e.get("groups") or []:
                     if group.get("id") is not None:
-                        buffers["artist_groups"].append((
-                            e["id"],
-                            group["id"],
-                            group.get("linkType", ""),
-                            group.get("nameHint") or None,
-                        ))
+                        buffers["artist_groups"].append(
+                            (
+                                e["id"],
+                                group["id"],
+                                group.get("linkType", ""),
+                                group.get("nameHint") or None,
+                            )
+                        )
                 for member in e.get("members") or []:
                     if member.get("id") is not None:
-                        buffers["artist_members"].append((
-                            e["id"],
-                            member["id"],
-                            member.get("nameHint") or None,
-                        ))
+                        buffers["artist_members"].append(
+                            (
+                                e["id"],
+                                member["id"],
+                                member.get("nameHint") or None,
+                            )
+                        )
 
             def _event_children(e: dict) -> None:
                 buffers["event_artists"].extend(_credit_rows(e["id"], e.get("artists")))
@@ -905,11 +932,13 @@ class DumpDB:
             def _tag_children(e: dict) -> None:
                 for related in e.get("relatedTags") or []:
                     if related.get("id") is not None:
-                        buffers["tag_related_tags"].append((
-                            e["id"],
-                            related["id"],
-                            related.get("nameHint") or None,
-                        ))
+                        buffers["tag_related_tags"].append(
+                            (
+                                e["id"],
+                                related["id"],
+                                related.get("nameHint") or None,
+                            )
+                        )
                 for target in e.get("newTargets") or []:
                     buffers["tag_new_targets"].append((e["id"], target))
 
@@ -947,7 +976,8 @@ class DumpDB:
                 )
                 raise IncompleteDumpError(msg)
             cur.execute(
-                "INSERT INTO meta(key,value) VALUES('dump_mtime',?)", (dump_mtime,))
+                "INSERT INTO meta(key,value) VALUES('dump_mtime',?)", (dump_mtime,)
+            )
             raw.commit()
         finally:
             raw.close()
@@ -1003,7 +1033,8 @@ class DumpDB:
         try:
             conn.set_authorizer(_readonly_authorizer)
             conn.set_progress_handler(
-                lambda: int(time.monotonic() > deadline), 10_000,
+                lambda: int(time.monotonic() > deadline),
+                10_000,
             )
             try:
                 cursor = conn.execute(statement)
@@ -1076,7 +1107,7 @@ def _rss_mb() -> float | None:
     if statm.exists():
         try:
             return int(statm.read_text(encoding="utf-8").split()[1]) * 4096 / 1024**2
-        except (OSError, IndexError, ValueError):
+        except OSError, IndexError, ValueError:
             return None
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return peak / 1024**2 if sys.platform == "darwin" else peak / 1024

@@ -26,7 +26,7 @@ AUTOMATICALLY_FIXED: bool | Literal["Partially"] = False
 
 def check_entry_version_for_rule(
     version_data: BaseEntryVersion,
-    is_relevant_entry = None,
+    is_relevant_entry=None,
     # needed since currently param is supplied if
     # find_relevant_entries() is present (TODO FIX)
 ) -> RuleModuleResult:

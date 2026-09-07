@@ -69,8 +69,8 @@ def test() -> CorrectTestResults:
             ("Song", 889898, 3031669),
             ("Album", 51672, 271513),
             ("Tag", 6366, 57221),
-            ("ReleaseEvent", 9772, 41598), # series
-            ("ReleaseEvent", 9772, 41604), # standalone
+            ("ReleaseEvent", 9772, 41598),  # series
+            ("ReleaseEvent", 9772, 41604),  # standalone
             ("ReleaseEventSeries", 1041, 3825),
             ("Venue", 433, 1115),
         ],
@@ -79,8 +79,8 @@ def test() -> CorrectTestResults:
             ("Song", 889898, 3031665),
             ("Album", 51672, 271518),
             ("Tag", 6366, 57225),
-            ("ReleaseEvent", 9772, 41602), # series
-            ("ReleaseEvent", 9772, 41608), # standalone
+            ("ReleaseEvent", 9772, 41602),  # series
+            ("ReleaseEvent", 9772, 41608),  # standalone
             ("ReleaseEventSeries", 1041, 3829),
             ("Venue", 433, 1106),
         ],
@@ -97,12 +97,12 @@ def test() -> CorrectTestResults:
             ("Tag", 6366, 57222),
             ("Tag", 6366, 57223),
             ("Tag", 6366, 57224),
-            ("ReleaseEvent", 9772, 41599), # series
-            ("ReleaseEvent", 9772, 41600), # series
-            ("ReleaseEvent", 9772, 41601), # series
-            ("ReleaseEvent", 9772, 41605), # standalone
-            ("ReleaseEvent", 9772, 41606), # standalone
-            ("ReleaseEvent", 9772, 41607), # standalone
+            ("ReleaseEvent", 9772, 41599),  # series
+            ("ReleaseEvent", 9772, 41600),  # series
+            ("ReleaseEvent", 9772, 41601),  # series
+            ("ReleaseEvent", 9772, 41605),  # standalone
+            ("ReleaseEvent", 9772, 41606),  # standalone
+            ("ReleaseEvent", 9772, 41607),  # standalone
             ("ReleaseEventSeries", 1041, 3826),
             ("ReleaseEventSeries", 1041, 3827),
             ("ReleaseEventSeries", 1041, 3828),
@@ -118,8 +118,8 @@ def test() -> CorrectTestResults:
             (3031669, 31074, ("Song", 889898, 3031669)),
             (271513, 31074, ("Album", 51672, 271513)),
             (57221, 31074, ("Tag", 6366, 57221)),
-            (41598, 31074, ("ReleaseEvent", 9772, 41598)), # series
-            (41604, 31074, ("ReleaseEvent", 9772, 41604)), # standalone
+            (41598, 31074, ("ReleaseEvent", 9772, 41598)),  # series
+            (41604, 31074, ("ReleaseEvent", 9772, 41604)),  # standalone
             (3825, 31074, ("ReleaseEventSeries", 1041, 3825)),
             (1115, 31074, ("Venue", 433, 1115)),
         ],
@@ -128,8 +128,8 @@ def test() -> CorrectTestResults:
             (3031665, 31074, ("Song", 889898, 3031665)),
             (271518, 31074, ("Album", 51672, 271518)),
             (57225, 31074, ("Tag", 6366, 57225)),
-            (41602, 31074, ("ReleaseEvent", 9772, 41602)), # series
-            (41608, 31074, ("ReleaseEvent", 9772, 41608)), # standalone
+            (41602, 31074, ("ReleaseEvent", 9772, 41602)),  # series
+            (41608, 31074, ("ReleaseEvent", 9772, 41608)),  # standalone
             (3829, 31074, ("ReleaseEventSeries", 1041, 3829)),
             (1106, 31074, ("Venue", 433, 1106)),
         ],
@@ -138,8 +138,8 @@ def test() -> CorrectTestResults:
             (3031674, 31074, ("Song", 889898, 3031674)),
             (271515, 31074, ("Album", 51672, 271515)),
             (57222, 31074, ("Tag", 6366, 57222)),
-            (41599, 31074, ("ReleaseEvent", 9772, 41599)), # series
-            (41605, 31074, ("ReleaseEvent", 9772, 41605)), # standalone
+            (41599, 31074, ("ReleaseEvent", 9772, 41599)),  # series
+            (41605, 31074, ("ReleaseEvent", 9772, 41605)),  # standalone
             (3826, 31074, ("ReleaseEventSeries", 1041, 3826)),
             (1112, 31074, ("Venue", 433, 1112)),
         ],
@@ -202,7 +202,9 @@ def autofix(
 
 
 def fix_mobile_links(
-    data: dict[Any, Any], base_update_note: str = "", args: Any = None,
+    data: dict[Any, Any],
+    base_update_note: str = "",
+    args: Any = None,
 ) -> dict[Any, Any]:
     # TODO full tests
     # "lyrics": [

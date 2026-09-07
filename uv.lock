@@ -669,7 +669,7 @@ wheels = [
 
 [[package]]
 name = "vdbpy"
-version = "23.2.1"
+version = "23.2.2"
 source = { editable = "packages/vdbpy" }
 dependencies = [
     { name = "defusedxml" },
@@ -698,7 +698,7 @@ requires-dist = [
 
 [[package]]
 name = "vocadb-rules"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "packages/vocadb-rules" }
 dependencies = [
     { name = "bs4" },
@@ -715,7 +715,7 @@ requires-dist = [
 
 [[package]]
 name = "vocadb-scripts"
-version = "2.5.5"
+version = "2.5.6"
 source = { editable = "packages/vocadb-scripts" }
 dependencies = [
     { name = "kaleido" },
@@ -734,7 +734,7 @@ requires-dist = [
 
 [[package]]
 name = "vocadb-tools"
-version = "0.2.4"
+version = "0.2.5"
 source = { editable = "." }
 
 [package.dev-dependencies]

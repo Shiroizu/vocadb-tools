@@ -127,9 +127,7 @@ derived_fields_by_entry_type: dict[EntryType, list[ChangedFields]] = {
     "ReleaseEvent": ["Category", "Names", "OriginalName"],
 }
 
-changed_fields_by_entry_type: dict[
-    EntryType | Literal["Shared"], ChangedFields
-] = {  # ty: ignore[invalid-assignment]
+changed_fields_by_entry_type: dict[EntryType | Literal["Shared"], ChangedFields] = {  # ty: ignore[invalid-assignment]
     "Song": ChangedSongFields,
     "Album": ChangedAlbumFields,
     "Artist": ChangedArtistFields,

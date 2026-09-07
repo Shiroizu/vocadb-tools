@@ -110,6 +110,6 @@ def get_viewcount_1d(video_id: str, api_key: str = "") -> int:
 
     try:
         return int(data.split("<view_counter>")[1].split("</view_counter>")[0])
-    except (IndexError, ValueError):
+    except IndexError, ValueError:
         logger.warning(f"Nico PV {video_id} deleted!")
         return 0
