@@ -1,4 +1,4 @@
-# ruff: noqa: T201, PLR0915, TRY002, FURB171
+# ruff: noqa: T201, FURB171
 
 import argparse
 import logging
@@ -22,7 +22,6 @@ from vdbpy.types.shared import EntryStatus, EntryType, VersionedEntryType
 from vdbpy.utils.data import add_s
 from vdbpy.utils.files import get_lines
 from vdbpy.utils.logger import get_logger
-
 from vocadb_rules.mod_types import (
     CheckResult,
     CorrectTestResults,

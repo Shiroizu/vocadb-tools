@@ -11,7 +11,7 @@ type ReleaseEventSeriesEntry = dict[Any, Any]  # TODO implement
 
 @dataclass
 class ReleaseEventSeriesVersion(BaseEntryVersion):
-    event_category: "EventCategory"
+    event_category: EventCategory
 
 
 @dataclass

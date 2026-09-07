@@ -3,6 +3,7 @@ from typing import Any
 
 import tabulate as tabulate_module
 from tabulate import tabulate
+
 from vdbpy.api.artists import get_artist_by_id_7d
 from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.utils.logger import get_logger

@@ -1162,10 +1162,14 @@ def _ingest_entity(
 def _create_indexes(cur: Any) -> None:
     statements = (
         "CREATE INDEX ix_names_entry ON entry_names(entry_type,entry_id)",
-        "CREATE INDEX ix_translated_names_entry "
-        "ON entry_translated_names(entry_type,entry_id)",
-        "CREATE INDEX ix_culture_codes_entry "
-        "ON entry_culture_codes(entry_type,entry_id)",
+        (
+            "CREATE INDEX ix_translated_names_entry "
+            "ON entry_translated_names(entry_type,entry_id)"
+        ),
+        (
+            "CREATE INDEX ix_culture_codes_entry "
+            "ON entry_culture_codes(entry_type,entry_id)"
+        ),
         "CREATE INDEX ix_tags_entry ON entry_tags(entry_type,entry_id)",
         "CREATE INDEX ix_tags_tag ON entry_tags(tag_id)",
         "CREATE INDEX ix_weblinks_entry ON entry_web_links(entry_type,entry_id)",

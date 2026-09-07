@@ -179,7 +179,7 @@ def fetch_json_items_with_total_count(
                 logger.debug(f"Limit {limit} reached, stopping.")
                 limit_reached = True
                 break
-            if callable(limit) and limit(item):
+            if limit is not None and not isinstance(limit, int) and limit(item):
                 logger.debug("Limit condition met, stopping.")
                 limit_reached = True
                 break
@@ -290,7 +290,7 @@ def fetch_all_items_between_dates(
                 logger.info(f"Limit {limit} reached, stopping.")
                 limit_reached = True
                 break
-            if callable(limit) and limit(item):
+            if limit is not None and not isinstance(limit, int) and limit(item):
                 logger.info("Limit condition met, stopping.")
                 limit_reached = True
                 break

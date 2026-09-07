@@ -17,7 +17,7 @@ class ObjectRef:
     name_hint: str
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any] | None) -> "ObjectRef | None":
+    def from_dict(cls, data: dict[str, Any] | None) -> ObjectRef | None:
         if not data:
             return None
         return cls(id=data["id"], name_hint=data.get("nameHint", ""))
@@ -32,7 +32,7 @@ class TranslatedName:
     default_language: str
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any] | None) -> "TranslatedName | None":
+    def from_dict(cls, data: dict[str, Any] | None) -> TranslatedName | None:
         if not data:
             return None
         return cls(
@@ -50,7 +50,7 @@ class TagUsage:
     tag: ObjectRef | None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "TagUsage":
+    def from_dict(cls, data: dict[str, Any]) -> TagUsage:
         return cls(count=data.get("count", 0), tag=ObjectRef.from_dict(data.get("tag")))
 
 
@@ -101,7 +101,7 @@ class DumpArtist:
     tags: list[TagUsage]
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DumpArtist":
+    def from_dict(cls, data: dict[str, Any]) -> DumpArtist:
         names, aliases = _names(data)
         return cls(
             id=data["id"],
@@ -139,7 +139,7 @@ class DumpAlbum:
     tags: list[TagUsage]
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DumpAlbum":
+    def from_dict(cls, data: dict[str, Any]) -> DumpAlbum:
         names, aliases = _names(data)
         return cls(
             id=data["id"],
@@ -184,7 +184,7 @@ class DumpSong:
     tags: list[TagUsage]
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DumpSong":
+    def from_dict(cls, data: dict[str, Any]) -> DumpSong:
         names, aliases = _names(data)
         return cls(
             id=data["id"],
@@ -223,7 +223,7 @@ class DumpEventSeries:
     tags: list[TagUsage]
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DumpEventSeries":
+    def from_dict(cls, data: dict[str, Any]) -> DumpEventSeries:
         names, name_aliases = _names(data)
         aliases = list(data.get("aliases") or []) + name_aliases
         return cls(
@@ -258,7 +258,7 @@ class DumpEvent:
     tags: list[TagUsage]
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DumpEvent":
+    def from_dict(cls, data: dict[str, Any]) -> DumpEvent:
         names, aliases = _names(data)
         return cls(
             id=data["id"],
@@ -297,7 +297,7 @@ class DumpTag:
     web_links: list[ExternalLink] = field(default_factory=list)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DumpTag":
+    def from_dict(cls, data: dict[str, Any]) -> DumpTag:
         names, aliases = _names(data)
         return cls(
             id=data["id"],

@@ -1,5 +1,10 @@
 target-version = "py314"
 exclude = [".venv", "WIP"]
+src = [
+    "packages/vdbpy/src",
+    "packages/vocadb-rules/src",
+    "packages/vocadb-scripts/src",
+]
 
 [lint]
 select = ["ALL"]
@@ -8,6 +13,7 @@ ignore = [
     "ARG001",  # Unused function argument
     "C901",    # Function too complex
     "COM812",  # Trailing comma missing
+    "CPY001",  # Missing copyright notice
     "D100",    # Missing docstring in public module
     "D101",    # Missing docstring in public class
     "D102",    # Missing docstring in public method
@@ -30,6 +36,7 @@ ignore = [
     "PLR0911", # Too many return statements
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments
+    "PLR0917", # Too many positional arguments
     "PLR0915", # Too many statements
     "PLR2004", # Magic values
     "PTH",     # `open()` should be replaced by `Path.open()`  TODO
@@ -47,5 +54,4 @@ ignore = [
 
 [lint.per-file-ignores]
 "packages/vocadb-rules/src/vocadb_rules/modules/*" = ["N999"]
-"**/tests.py" = ["S101"]
-"**/tests/*" = ["S101"]
+"packages/vocadb-rules/src/*" = ["S101"]

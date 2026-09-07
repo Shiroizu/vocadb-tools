@@ -4,6 +4,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 
 import plotly.graph_objects as go
+
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()

@@ -2,6 +2,7 @@ import sys
 from datetime import datetime
 
 import requests
+
 from vdbpy.api.notifications import (
     get_cached_notification_by_id,
     get_messages_by_user_id,

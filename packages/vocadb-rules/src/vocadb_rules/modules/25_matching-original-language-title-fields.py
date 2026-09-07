@@ -2,6 +2,7 @@
 from typing import Any, Literal
 
 import requests
+
 from vdbpy.edit.entries import edit_entry
 from vdbpy.types.changed_fields import (
     ChangedFields,
@@ -12,7 +13,6 @@ from vdbpy.types.shared import (
     EntryType,
 )
 from vdbpy.utils.logger import get_logger
-
 from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,

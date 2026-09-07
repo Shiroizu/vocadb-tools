@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
+
 from vdbpy.api.songlists import create_or_update_songlist, delete_songlist
 from vdbpy.api.songs import get_songs_with_total_count
 from vdbpy.api.user_library import get_user_library
@@ -35,7 +36,6 @@ from vdbpy.utils.files import (
     save_file,
 )
 from vdbpy.utils.logger import get_logger
-
 from vocadb_scripts.find.favourite_producers import build_top_favourite_producers
 from vocadb_scripts.find.favourite_tags import build_top_favourite_genres
 

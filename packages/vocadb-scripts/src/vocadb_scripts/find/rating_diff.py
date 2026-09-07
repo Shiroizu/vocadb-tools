@@ -3,6 +3,7 @@
 import argparse
 
 import requests
+
 from vdbpy.api.user_library import get_user_library
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE

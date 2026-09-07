@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
+
 from vdbpy.api.notifications import (
     Notification,
     delete_notifications,

@@ -55,7 +55,7 @@ class RemoteDumpInfo:
     last_modified: datetime | None
     content_length: int | None
 
-    def is_newer_than(self, other: "RemoteDumpInfo") -> bool:
+    def is_newer_than(self, other: RemoteDumpInfo) -> bool:
         """Return True if this looks like a different (newer) dump than `other`."""
         if self.last_modified and other.last_modified:
             return self.last_modified > other.last_modified
@@ -246,7 +246,7 @@ class Dump:
     path: Path
 
     @classmethod
-    def load(cls, dump_path: Path | None = None) -> "Dump":
+    def load(cls, dump_path: Path | None = None) -> Dump:
         return cls(dump_path or get_dump_path())
 
     def _iter(self, folder: str) -> Iterator[dict]:

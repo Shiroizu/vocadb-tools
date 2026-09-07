@@ -1,7 +1,6 @@
 """Monthly new user count graph."""
 
 from vdbpy.api.users import get_monthly_user_count
-
 from vocadb_scripts.graph.graph_utils import build_figure, collect_monthly_data
 
 

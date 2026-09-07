@@ -16,7 +16,6 @@ from vdbpy.types.shared import (
     EntryType,
 )
 from vdbpy.utils.logger import get_logger
-
 from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,

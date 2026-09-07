@@ -15,9 +15,10 @@ from __future__ import annotations
 
 import argparse
 
+from wcwidth import wcswidth
+
 from vdbpy.utils.dump_sql import DumpDB, SqlError, SqlResult
 from vdbpy.utils.logger import get_logger
-from wcwidth import wcswidth
 
 logger = get_logger()
 

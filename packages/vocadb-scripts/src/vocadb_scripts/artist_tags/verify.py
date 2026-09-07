@@ -3,6 +3,7 @@ from typing import Any
 
 import tabulate as tabulate_module
 from tabulate import tabulate
+
 from vdbpy.api.artists import (
     get_json_artists_with_total_count,
     get_song_count_by_artist_id_30d,

@@ -55,17 +55,17 @@ class AlbumVersion(BaseEntryVersion):
     # Skipped fields:
     # - releaseEvent (legacy), e.g. https://vocadb.net/api/albums/versions/204261
     album_type: AlbumType
-    artists: list["VersionArtistParticipation"]
+    artists: list[VersionArtistParticipation]
     barcodes: list[str]
     catalog_number: str  # part of originalRelease
     discs: list[Disc]
-    additional_pictures: list["Picture"]
+    additional_pictures: list[Picture]
     picture_mime: str
     publish_date: datetime | None  # part of originalRelease
     publish_day: int
     publish_month: int
     publish_year: int
-    pvs: list["PV"]
+    pvs: list[PV]
     release_event_ids: list[int]  # part of originalRelease
     songs: list[AlbumTrack]
 
@@ -78,7 +78,7 @@ class Album:
     cover_picture_mime: str
     creation_date: datetime
     deleted: bool
-    album_type: "AlbumType"
+    album_type: AlbumType
     album_id: int
     name: str
     rating_average: float
@@ -88,7 +88,7 @@ class Album:
     release_day: int
     release_event_ids: list[int]
     version_count: int
-    status: "EntryStatus"
+    status: EntryStatus
 
 
 @dataclass

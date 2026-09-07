@@ -7,6 +7,7 @@ from typing import Any
 
 import tabulate as tabulate_module
 from tabulate import tabulate
+
 from vdbpy.api.songs import get_cached_rated_songs_with_ratings
 from vdbpy.api.tags import get_tag_details_by_id_7d
 from vdbpy.api.users import get_username_by_id

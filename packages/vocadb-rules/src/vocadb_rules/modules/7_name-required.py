@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Literal
 
 from sqlalchemy import func, select
+
 from vdbpy.api.entries import is_entry_tagged_1d
 from vdbpy.types.albums import AlbumVersion
 from vdbpy.types.artists import ArtistVersion

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import requests
+
 from vdbpy.api.entries import get_saved_entry_search
 from vdbpy.config import SONG_API_URL
 from vdbpy.edit.entries import edit_entry
@@ -12,7 +13,6 @@ from vdbpy.types.shared import BaseEntryVersion, EntryTuple, EntryType
 from vdbpy.types.songs import SongVersion
 from vdbpy.utils.cache import cache_with_expiration
 from vdbpy.utils.logger import get_logger
-
 from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,

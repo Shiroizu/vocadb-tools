@@ -1,7 +1,6 @@
 """Monthly comment count graph."""
 
 from vdbpy.api.comments import get_monthly_comment_count
-
 from vocadb_scripts.graph.graph_utils import build_figure, collect_monthly_data
 
 

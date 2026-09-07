@@ -1,7 +1,6 @@
 """Monthly edit count graph."""
 
 from vdbpy.api.edits import get_monthly_edit_count
-
 from vocadb_scripts.graph.graph_utils import build_figure, collect_monthly_data
 
 

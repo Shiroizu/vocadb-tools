@@ -107,7 +107,7 @@ class ExternalLink:
 class VersionArtistParticipation:
     is_supporting: bool
     artist_id: int
-    roles: list["ArtistRole"]
+    roles: list[ArtistRole]
     name_hint: str
 
 

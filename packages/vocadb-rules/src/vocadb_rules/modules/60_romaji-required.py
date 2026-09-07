@@ -6,7 +6,6 @@ from vdbpy.types.changed_fields import (
 )
 from vdbpy.types.shared import BaseEntryVersion, EntryType
 from vdbpy.types.songs import SongVersion
-
 from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,

@@ -21,6 +21,7 @@ from datetime import UTC, datetime, timedelta
 
 import tabulate as tabulate_module
 from tabulate import tabulate
+
 from vdbpy.api.artists import (
     get_artist_by_id_7d,
     get_artist_details_by_id_7d,

@@ -1,6 +1,7 @@
 from typing import Any, Literal
 
 import requests
+
 from vdbpy.edit.entries import edit_entry
 from vdbpy.types.changed_fields import (
     ChangedFields,
@@ -9,7 +10,6 @@ from vdbpy.types.shared import BaseEntryVersion, EntryTuple, EntryType
 from vdbpy.types.songs import SongVersion
 from vdbpy.utils.console import get_boolean
 from vdbpy.utils.logger import get_logger
-
 from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,

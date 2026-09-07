@@ -82,7 +82,7 @@ def get_cached_raw_entry_version(
     return fetch_json(url)
 
 
-def get_cached_entry_version(  # noqa: PLR0911
+def get_cached_entry_version(
     entry_type: EntryType, version_id: int
 ) -> (
     AlbumVersion
@@ -135,7 +135,7 @@ def get_random_entry(
     entry_type: EntryType | None = None,
 ) -> dict[Any, Any]:  # TODO type
     selected_entry_type: EntryType = (
-        entry_type if entry_type else random.choice(get_args(EntryType))
+        entry_type or random.choice(get_args(EntryType))
     )
     total = get_cached_entry_count_by_entry_type(selected_entry_type)
     random_index = random.randint(1, total)

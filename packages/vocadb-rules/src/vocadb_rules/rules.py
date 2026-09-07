@@ -6,6 +6,7 @@ from types import ModuleType
 from typing import TYPE_CHECKING, cast
 
 from bs4 import BeautifulSoup
+
 from vdbpy.config import WIKI_URL
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_text

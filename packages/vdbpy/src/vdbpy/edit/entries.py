@@ -15,7 +15,7 @@ logger = get_logger()
 
 def _add_event_id_to_entry_data(
     data: dict[Any, Any],
-    base_update_notes: str,  # noqa: ARG001
+    base_update_notes: str,
     id_to_add: int,
 ) -> dict[Any, Any]:
     entry_event_ids = [event["id"] for event in data["releaseEvents"]]
@@ -73,7 +73,7 @@ def _remove_artist_id_from_entry_data(
 
 def _replace_artist_in_entry_data(
     data: dict[Any, Any],
-    base_update_note: str,  # noqa: ARG001
+    base_update_note: str,
     artist_ids: tuple[int, int],
 ) -> dict[Any, Any]:
     id_to_remove, id_to_add = artist_ids
@@ -95,7 +95,7 @@ def _replace_artist_in_entry_data(
 
 def _add_language_codes_to_entry_data(
     data: dict[Any, Any],
-    base_update_note: str,  # noqa: ARG001
+    base_update_note: str,
     codes_to_add: list[str],
 ) -> dict[Any, Any]:
     existing: list[str] = list(data.get("cultureCodes") or [])
@@ -118,7 +118,7 @@ def _add_language_codes_to_entry_data(
 
 def _mark_pvs_unavailable_in_entry_data(
     data: dict[Any, Any],
-    base_update_note: str,  # noqa: ARG001
+    base_update_note: str,
     service: Service | None,
 ) -> dict[Any, Any]:
     logger.info("Marking all original PVs unavailable.")

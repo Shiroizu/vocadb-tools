@@ -9,7 +9,6 @@ from vdbpy.types.shared import (
 )
 from vdbpy.types.songs import SongVersion
 from vdbpy.utils.logger import get_logger
-
 from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,

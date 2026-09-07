@@ -104,8 +104,8 @@ class OptionalSongFields:
     release_events: list[ReleaseEvent] | Literal["Unknown"]
     tags: list[Tag] | Literal["Unknown"]
     external_links: list[ExternalLink] | Literal["Unknown"]
-    max_milli_bpm: int | None | Literal["Unknown"]
-    min_milli_bpm: int | None | Literal["Unknown"]
+    max_milli_bpm: int | Literal["Unknown"] | None
+    min_milli_bpm: int | Literal["Unknown"] | None
     languages: list[str] | Literal["Unknown"]
 
 

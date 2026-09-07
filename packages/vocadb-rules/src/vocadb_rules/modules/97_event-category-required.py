@@ -8,7 +8,6 @@ from vdbpy.types.shared import (
     BaseEntryVersion,
     EntryType,
 )
-
 from vocadb_rules.mod_types import (
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,

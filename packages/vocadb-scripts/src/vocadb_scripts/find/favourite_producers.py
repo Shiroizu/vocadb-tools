@@ -8,6 +8,7 @@ from typing import Any
 
 import tabulate as tabulate_module
 from tabulate import tabulate
+
 from vdbpy.api.artists import (
     get_artist_by_id_7d,
     get_artist_details_by_id_7d,
@@ -313,8 +314,10 @@ def get_producer_deep_dive(user_id: int, artist_id: int) -> str:
         f"Songs: {total_songs}{date_range}",
         f"With PVs: {total_with_pvs} / {total_songs} ({pv_pct})",
         f"Rated: {rated_count} / {total_songs} ({rated_pct})",
-        f"Rated (PVs only): {rated_with_pvs} / {total_with_pvs}"
-        f" ({rated_pv_pct})",
+        (
+            f"Rated (PVs only): {rated_with_pvs} / {total_with_pvs}"
+            f" ({rated_pv_pct})"
+        ),
     ]
 
     if top_unrated:

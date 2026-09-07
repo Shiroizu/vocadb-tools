@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 from sqlalchemy import func, select
+
 from vdbpy.api.entries import is_entry_tagged_1d
 from vdbpy.api.songs import get_songs
 from vdbpy.types.changed_fields import ChangedFields
