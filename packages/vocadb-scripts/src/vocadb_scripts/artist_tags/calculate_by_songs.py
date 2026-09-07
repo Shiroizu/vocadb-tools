@@ -82,7 +82,7 @@ def get_artist_tag_table(
     return sorted_by_entry_count, truncated
 
 
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("artist_tags_by_songs")
     args = parse_args()
 
@@ -102,3 +102,7 @@ if __name__ == "__main__":
     if truncated:
         logger.warning("Results were truncated.")
     logger.info(tabulate(table, headers="keys", tablefmt="github"))
+
+
+if __name__ == "__main__":
+    cli()

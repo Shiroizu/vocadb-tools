@@ -396,8 +396,12 @@ def main(user_id: int, max_results: int = 20, artist_id: int | None = None) -> s
     return table
 
 
-if __name__ == "__main__":
+def cli() -> None:
     args = parse_args()
     logger = get_logger("find_favourite_producers")
     result = main(args.user_id, args.max_results, args.artist_id)
     logger.info(f"\n{result}")
+
+
+if __name__ == "__main__":
+    cli()

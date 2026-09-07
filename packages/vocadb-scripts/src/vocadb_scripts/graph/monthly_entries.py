@@ -19,5 +19,9 @@ def get_monthly_entries_png() -> bytes:
     return _figure().to_image(format="png")
 
 
-if __name__ == "__main__":
+def cli() -> None:
     _figure().show()
+
+
+if __name__ == "__main__":
+    cli()

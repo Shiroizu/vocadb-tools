@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def cli() -> None:
     args = parse_args()
     logger = get_logger("verify_artist_tags")
 
@@ -78,3 +78,7 @@ if __name__ == "__main__":
     if truncated:
         logger.warning(f"Results limited to first {MAX_ARTISTS} artists.")
     logger.info(tabulate(table, headers="keys", tablefmt="github"))
+
+
+if __name__ == "__main__":
+    cli()

@@ -483,11 +483,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("recommend_advanced")
     args = parse_args()
 
-    username, user_id = find_user_by_username_1d(args.username)
+    _username, user_id = find_user_by_username_1d(args.username)
     if not user_id:
         logger.error(f"User '{args.username}' not found")
         sys.exit(1)
@@ -506,3 +506,7 @@ if __name__ == "__main__":
             state_dir=args.state_dir,
         )
     logger.info(result)
+
+
+if __name__ == "__main__":
+    cli()

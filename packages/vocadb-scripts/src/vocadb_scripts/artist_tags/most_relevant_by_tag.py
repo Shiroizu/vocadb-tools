@@ -100,7 +100,7 @@ def get_relevant_tag_artists_table(
     return sorted_by_entry_count, truncated
 
 
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("most_relevant_artist_tags")
     args = parse_args()
     producers_only = not args.all_artists
@@ -117,3 +117,7 @@ if __name__ == "__main__":
     if truncated:
         logger.warning(f"Results limited to first {MAX_SONGS} songs.")
     logger.info(tabulate(table, headers="keys", tablefmt="github"))
+
+
+if __name__ == "__main__":
+    cli()

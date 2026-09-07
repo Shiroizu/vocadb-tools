@@ -77,10 +77,14 @@ def main(
     return "\n".join(lines)
 
 
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("rating-diff")
     parser = argparse.ArgumentParser()
     parser.add_argument("user_id_1", type=int)
     parser.add_argument("user_id_2", type=int)
     args = parser.parse_args()
     logger.info(main(args.user_id_1, args.user_id_2))
+
+
+if __name__ == "__main__":
+    cli()

@@ -65,7 +65,11 @@ def get_rated_songs_png(user_id: int, username: str) -> bytes:
     return _figure(user_id, username).to_image(format="png")
 
 
-if __name__ == "__main__":
+def cli() -> None:
     if len(sys.argv) != 3:
         sys.exit(f"Usage: {sys.argv[0]} <user_id> <username>")
     _figure(int(sys.argv[1]), sys.argv[2]).show()
+
+
+if __name__ == "__main__":
+    cli()

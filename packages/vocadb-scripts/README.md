@@ -20,5 +20,52 @@ Ideas, Pull Requests, etc. are welcome.
 
 ```
 uv run vdb-sql --schema
-uv run packages/vocadb-scripts/src/vocadb_scripts/graph/monthly_comments.py
+uv run vdb-graph-monthly-comments
 ```
+
+Add `--help` to any command for its arguments.
+
+### Commands
+
+Tools:
+
+| Command | Description |
+|---|---|
+| `vdb-sql` | Query the local database dump |
+| `vdb-export-dms` | Save your private messages as files |
+| `vdb-export-rated-songs` | Export your rated songs as CSV |
+| `vdb-notifs-to-songlist` | Turn notifications into a songlist |
+
+Find:
+
+| Command | Description |
+|---|---|
+| `vdb-find-favourite-albums` | A user's favourite albums |
+| `vdb-find-favourite-producers` | A user's favourite producers |
+| `vdb-find-favourite-tags` | A user's favourite tags |
+| `vdb-find-favourite-vocalists` | A user's favourite vocalists |
+| `vdb-rating-diff` | Compare the rated songs of two users |
+
+Graphs:
+
+| Command | Description |
+|---|---|
+| `vdb-graph-monthly-comments` | Monthly comments on VocaDB |
+| `vdb-graph-monthly-edits` | Monthly edits on VocaDB |
+| `vdb-graph-monthly-entries` | Monthly entry creations on VocaDB |
+| `vdb-graph-monthly-users` | Monthly new users on VocaDB |
+| `vdb-graph-rated-songs` | A user's rated songs by month |
+
+Artist tags:
+
+| Command | Description |
+|---|---|
+| `vdb-artist-tags-by-songs` | Most common tags of an artist's songs |
+| `vdb-artist-tags-by-tag` | Most relevant artists for a tag |
+| `vdb-artist-tags-verify` | Verify the artists tagged with a tag |
+
+Recommendations:
+
+| Command | Description |
+|---|---|
+| `vdb-recommend` | Build a recommendation songlist for a user |

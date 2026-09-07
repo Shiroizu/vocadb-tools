@@ -92,8 +92,12 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def cli() -> None:
     args = parse_args()
     logger = get_logger("find_favourite_albums")
     result = main(args.user_id, args.max_results)
     logger.info(f"\n{result}")
+
+
+if __name__ == "__main__":
+    cli()

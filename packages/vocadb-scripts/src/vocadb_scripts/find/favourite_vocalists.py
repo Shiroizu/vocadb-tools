@@ -176,8 +176,12 @@ def main(user_id: int, max_results: int = 20, group_by_base_vb: bool = True) -> 
     return table
 
 
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("find_favourite_vocalists")
     args = parse_args()
     result = main(args.user_id, args.max_results, not args.do_not_group_by_base_vb)
     logger.info(f"\n{result}")
+
+
+if __name__ == "__main__":
+    cli()
