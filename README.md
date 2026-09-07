@@ -45,6 +45,18 @@ uv run python -m vocadb_rules.tests --rule 55  # one rule + its dependencies
 uv run python -m vocadb_rules.tests --debug
 ```
 
+## Versioning
+
+Each package keeps its own semver. `vcommit.py` bumps and commits the staged changes.
+
+```
+uv run vcommit.py patch "Fix a small bug"
+uv run vcommit.py --package vdbpy minor "New API"  # bump this one, whatever is staged
+uv run vcommit.py major "Breaking change"
+```
+
+All bumped versions go in the commit message: `vdbpy 23.3.0 + vocadb-tools 0.3.0, New API`.
+
 ## Tools
 
 ```

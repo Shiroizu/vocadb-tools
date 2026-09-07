@@ -92,8 +92,4 @@ tests/unit/test_utils_date.py::test_parse_date_short_format PASSED              
 
 ### Versioning
 
-Commit the staged changes with automatic version bump:
-
-```bash
-uv run vcommit.py patch "Fix a small bug"
-```
+See the [workspace README](../../README.md#versioning).
