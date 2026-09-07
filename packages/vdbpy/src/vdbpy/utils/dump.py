@@ -10,7 +10,6 @@ The dump is a flat archive of six folders, one per entry type:
 """
 
 import json
-import os
 import zipfile
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -201,7 +200,7 @@ def download_dump(dest: Path | None = None, timeout: int = 300) -> Path:
                 written += f.write(chunk)
         _check_download_size(written, expected)
         _verify_dump_archive(part_path, previous=dump_path)
-        os.replace(part_path, dump_path)
+        part_path.replace(dump_path)
     except BaseException:
         part_path.unlink(missing_ok=True)
         raise

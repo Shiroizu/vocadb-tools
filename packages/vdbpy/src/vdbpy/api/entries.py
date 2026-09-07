@@ -1,6 +1,6 @@
 import random
 from pathlib import Path
-from typing import Any, get_args
+from typing import Any, cast, get_args
 
 import requests
 
@@ -227,14 +227,15 @@ def read_entries_from_file(file: Path) -> list[EntryTuple]:
     for line in get_lines(file):
         if not line.strip():
             continue
-        entry_type, entry_id = line.split(",")
-        if entry_type not in get_args(EntryType):
-            msg = f"Malformatted entry type {entry_type} in {file}"
+        raw_entry_type, entry_id = line.split(",")
+        if raw_entry_type not in get_args(EntryType):
+            msg = f"Malformatted entry type {raw_entry_type} in {file}"
             raise ValueError(msg)
+        entry_type = cast("EntryType", raw_entry_type)
         if (entry_type, int(entry_id)) in entries:
             logger.warning(f"Duplicate entry {entry_type} {entry_id} in {file}")
             continue
-        entries.append((entry_type, int(entry_id)))  # type: ignore
+        entries.append((entry_type, int(entry_id)))
     return entries
 
 

@@ -8,50 +8,46 @@ src = [
 
 [lint]
 select = ["ALL"]
+# recounted 2026-09-07 (`ruff check --statistics` with `ignore = []`)
+#   [style]   deliberate, count is irrelevant.
+#   [backlog] fix later + enable rule
 ignore = [
-    "ANN",     # Missing return/type annotations
-    "ARG001",  # Unused function argument
-    "C901",    # Function too complex
-    "COM812",  # Trailing comma missing
-    "CPY001",  # Missing copyright notice
-    "D100",    # Missing docstring in public module
-    "D101",    # Missing docstring in public class
-    "D102",    # Missing docstring in public method
-    "D103",    # Missing docstring in public function
-    "D104",    # Missing docstring in public package
-    "D107",    # Missing docstring in `__init__`
-    "D203",    # incompatible with D211
-    "D213",    # incompatible with D212
-    "E501",    # Line too long
-    "EM101",   # Exception must not use a string literal
-    "EM102",   # Exception must not use an f-string literal
-    "ERA001",  # Commented-out code
-    "FBT001",  # Boolean-typed positional argument in function definition
-    "FBT002",  # Boolean default positional argument in function definition
-    "FIX002",  # Line contains TODO
-    "G004",    # Logging statement uses f-string
-    "INP001",  # Missing __init__.py
-    "PERF401", # Replace for loop with extend / list comprehension
-    "PGH003",  # Use specific rule codes when ignoring type issues
-    "PLR0911", # Too many return statements
-    "PLR0912", # Too many branches
-    "PLR0913", # Too many arguments
-    "PLR0917", # Too many positional arguments
-    "PLR0915", # Too many statements
-    "PLR2004", # Magic values
-    "PTH",     # `open()` should be replaced by `Path.open()`  TODO
-    "S311",    # Standard pseudo-random generator
-    "SIM102",  # Use a single `if` statement instead of nested `if` statements
-    "TC001",   # Move application import into type-checking block
-    "TC002",   # Move third-party import into type-checking block
-    "TC003",   # Move standard library import into type-checking block
-    "TD",      # Missing issue link for TODO
-    "TRY002",  # Create your own exception
-    "TRY003",  # Avoid specifying long messages outside the exception class
-    "TRY300",  # try-consider-else
-    "UP040",   # Type alias instead of the `type` keyword
+    "ANN",     # 39  [backlog] Missing return/type annotations
+    "ARG001",  # 13  [backlog] Unused function argument
+    "C901",    # 15  [backlog] Function too complex
+    "COM812",  # 213 [style]   Trailing comma missing (conflicts with the formatter)
+    "CPY001",  # 135 [style]   Missing copyright notice
+    "D100",    # 96  [style]   Missing docstring in public module
+    "D101",    # 91  [style]   Missing docstring in public class
+    "D102",    # 30  [style]   Missing docstring in public method
+    "D103",    # 393 [style]   Missing docstring in public function
+    "D104",    # 12  [style]   Missing docstring in public package
+    "D203",    # 0   [style]   incompatible with D211
+    "D213",    # 0   [style]   incompatible with D212
+    "EM101",   # 10  [backlog] Exception must not use a string literal
+    "EM102",   # 10  [backlog] Exception must not use an f-string literal
+    "ERA001",  # 52  [backlog] Commented-out code
+    "FBT001",  # 59  [backlog] Boolean-typed positional argument in function definition
+    "FBT002",  # 53  [backlog] Boolean default positional argument in function definition
+    "FIX002",  # 61  [backlog] Line contains TODO
+    "G004",    # 354 [backlog] Logging statement uses f-string
+    "PLR0911", # 6   [backlog] Too many return statements
+    "PLR0912", # 8   [backlog] Too many branches
+    "PLR0913", # 13  [backlog] Too many arguments
+    "PLR0917", # 13  [backlog] Too many positional arguments
+    "PLR0915", # 6   [backlog] Too many statements
+    "PLR2004", # 45  [style]   Magic values
+    "S311",    # 7   [style]   Standard pseudo-random generator (entry sampling)
+    "TC001",   # 188 [backlog] Move application import into type-checking block
+    "TC002",   # 22  [backlog] Move third-party import into type-checking block
+    "TC003",   # 27  [backlog] Move standard library import into type-checking block
+    "TD",      # 181 [style]   Missing issue link for TODO
+    "TRY003",  # 20  [backlog] Avoid specifying long messages outside the exception class
 ]
 
 [lint.per-file-ignores]
+"packages/vdbpy/src/vdbpy/types/changed_fields.py" = ["UP040"]
+"packages/vdbpy/examples/*" = ["INP001"]
+"packages/vocadb-rules/tests/*" = ["INP001"]
 "packages/vocadb-rules/src/vocadb_rules/modules/*" = ["N999"]
 "packages/vocadb-rules/src/*" = ["S101"]

@@ -32,18 +32,19 @@ def prompt_choice(choices: list[str], allow_skip: bool = False) -> str:
 
         try:
             choice = int(input("\nSelect a number: "))
-            if choice < 1 or choice > len(choices):
-                logger.warning("Invalid selection.")
-                continue
-            selection = choices[choice - 1]
-            if selection == none:
-                return ""
-
-            return selection
-
         except ValueError:
             logger.warning("Invalid input. Please enter a number.")
             continue
+
+        if choice < 1 or choice > len(choices):
+            logger.warning("Invalid selection.")
+            continue
+
+        selection = choices[choice - 1]
+        if selection == none:
+            return ""
+
+        return selection
 
 
 def get_boolean(prompt: str) -> bool:

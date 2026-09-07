@@ -59,7 +59,7 @@ entry_types_by_api_url: dict[str, EntryType] = {
 # Unsupported: "CultureCodes",
 renamed_version_fields_to_changed_fields_mapping_by_entry_type: dict[
     str, dict[EntryType | Literal["Shared"], ChangedFields]
-] = {
+] = {  # ty: ignore[invalid-assignment]
     "Shared": {
         "name_non_english": "Names",
         "name_romaji": "Names",
@@ -119,7 +119,7 @@ renamed_version_fields_to_changed_fields_mapping_by_entry_type: dict[
         "latitude": "Coordinates",
         "longitude": "Coordinates",
     },
-}  # type: ignore
+}
 
 derived_fields_by_entry_type: dict[EntryType, list[ChangedFields]] = {
     "Song": ["Lyrics"],
@@ -127,7 +127,9 @@ derived_fields_by_entry_type: dict[EntryType, list[ChangedFields]] = {
     "ReleaseEvent": ["Category", "Names", "OriginalName"],
 }
 
-changed_fields_by_entry_type: dict[EntryType | Literal["Shared"], ChangedFields] = {
+changed_fields_by_entry_type: dict[
+    EntryType | Literal["Shared"], ChangedFields
+] = {  # ty: ignore[invalid-assignment]
     "Song": ChangedSongFields,
     "Album": ChangedAlbumFields,
     "Artist": ChangedArtistFields,
@@ -136,4 +138,4 @@ changed_fields_by_entry_type: dict[EntryType | Literal["Shared"], ChangedFields]
     "ReleaseEvent": ChangedReleaseEventFields,
     "ReleaseEventSeries": ChangedReleaseEventSeriesFields,
     "Shared": SharedChangedFields,
-}  # type: ignore
+}

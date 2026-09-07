@@ -22,6 +22,10 @@ RETRY_TIMER = 10
 HTTP_verb = Literal["get", "post", "delete"]
 
 
+class RetriesExhaustedError(Exception):
+    """Raised when a request keeps failing after every retry attempt."""
+
+
 def fetch_with_retries(
     url: str,
     verb: HTTP_verb,
@@ -53,8 +57,6 @@ def fetch_with_retries(
             if "localhost" not in url:
                 time.sleep(BASE_DELAY)
 
-            return r
-
         except requests.exceptions.HTTPError as e:
             # Don't retry on 404s
             logger.warning(f"HTTP error: {e}")
@@ -70,6 +72,9 @@ def fetch_with_retries(
         ) as e:
             logger.warning(f"Connection issue: {e}")
 
+        else:
+            return r
+
         if attempt < max_retries:
             logger.warning(f"Retry attempt #{attempt}/{max_retries}")
             logger.warning(f"Trying again in {RETRY_TIMER} seconds...")
@@ -77,7 +82,7 @@ def fetch_with_retries(
 
     # All retries exhausted
     msg = f"Failed to fetch {verb.upper()} from {url} after {max_retries} retries"
-    raise Exception(msg)
+    raise RetriesExhaustedError(msg)
 
 
 def fetch_text(

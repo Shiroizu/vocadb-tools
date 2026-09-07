@@ -21,5 +21,6 @@ saved_entry_searches/
 coverage.xml
 WIP/
 TODO.md
+todo/
 testing.py
 .DS_Store

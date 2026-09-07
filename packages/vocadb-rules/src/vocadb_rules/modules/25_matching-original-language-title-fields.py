@@ -32,9 +32,10 @@ ASSUME_VALID_FOR_RULE_ID: list[int] = [24]
 
 
 def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleResult:
-    if version_data.status == "Draft":
-        if not isinstance(version_data, tuple(EntryTypesWithoutVersionedStatus)):
-            return "Not applicable"
+    if version_data.status == "Draft" and not isinstance(
+        version_data, tuple(EntryTypesWithoutVersionedStatus)
+    ):
+        return "Not applicable"
 
     all_names: list[str] = [
         version_data.name_english,
@@ -56,17 +57,14 @@ def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleRe
 
     match version_data.default_name_language:
         case "Non-English":
-            if not version_data.name_non_english:
-                if not possibly_untitled:
-                    return "Rule violation"
+            if not version_data.name_non_english and not possibly_untitled:
+                return "Rule violation"
         case "Romaji":
-            if not version_data.name_romaji:
-                if not possibly_untitled:
-                    return "Rule violation"
+            if not version_data.name_romaji and not possibly_untitled:
+                return "Rule violation"
         case "English":
-            if not version_data.name_english:
-                if not possibly_untitled:
-                    return "Rule violation"
+            if not version_data.name_english and not possibly_untitled:
+                return "Rule violation"
         case "Unspecified":
             if not possibly_untitled:
                 return "Rule violation"

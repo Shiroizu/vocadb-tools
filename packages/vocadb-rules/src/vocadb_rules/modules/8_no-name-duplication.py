@@ -29,26 +29,27 @@ ASSUME_VALID_FOR_RULE_ID: list[int] = [25]
 
 
 def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleResult:
-    if version_data.status == "Draft":
-        # Draft since 24 & 25 are draft
-        # otherwise issue with Song v1864789 for example
-        if not isinstance(version_data, EntryTypesWithoutVersionedStatus):
-            return "Not applicable"
+    # Draft since 24 & 25 are draft
+    # otherwise issue with Song v1864789 for example
+    if version_data.status == "Draft" and not isinstance(
+        version_data, EntryTypesWithoutVersionedStatus
+    ):
+        return "Not applicable"
 
     if isinstance(version_data, ReleaseEventVersion):
         # Automatically valid since dupe event names are blocked
         return "Valid"
 
-    names: list[str] = []
-
-    for name in [
-        version_data.name_english,
-        version_data.name_non_english,
-        version_data.name_romaji,
-        *version_data.aliases,
-    ]:
-        if name.strip():
-            names.append(name.strip())
+    names: list[str] = [
+        name.strip()
+        for name in [
+            version_data.name_english,
+            version_data.name_non_english,
+            version_data.name_romaji,
+            *version_data.aliases,
+        ]
+        if name.strip()
+    ]
 
     if len(names) != len(set(names)):
         return "Rule violation"

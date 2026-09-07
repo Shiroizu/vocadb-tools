@@ -23,7 +23,10 @@ from vocadb_rules.mod_types import (
 )
 
 logger = get_logger()
-MSG = "Original language field for entry names should not be 'unspecified' for 'finished' entries."
+MSG = (
+    "Original language field for entry names should not be 'unspecified'"
+    " for 'finished' entries."
+)
 FIELDS: list[ChangedFields] = ["OriginalName", "Status", "Series"]
 ENTRY_TYPES: list[EntryType] = []
 COMPLETE = True
@@ -31,9 +34,10 @@ AUTOMATICALLY_FIXED: bool | Literal["Partially"] = "Partially"
 
 
 def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleResult:
-    if version_data.status == "Draft":
-        if not isinstance(version_data, tuple(EntryTypesWithoutVersionedStatus)):
-            return "Not applicable"
+    if version_data.status == "Draft" and not isinstance(
+        version_data, tuple(EntryTypesWithoutVersionedStatus)
+    ):
+        return "Not applicable"
 
     if version_data.default_name_language == "Unspecified":
         if isinstance(version_data, ReleaseEventVersion) and version_data.series:

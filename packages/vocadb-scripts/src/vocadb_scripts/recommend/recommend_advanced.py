@@ -124,9 +124,10 @@ def _load_last_songlist_id(state_dir: Path, user_id: int) -> int | None:
         return None
     try:
         n = int(raw[key])
-        return n if n > 0 else None
     except (TypeError, ValueError):
         return None
+    else:
+        return n if n > 0 else None
 
 
 def _save_last_songlist_id(state_dir: Path, user_id: int, songlist_id: int) -> None:

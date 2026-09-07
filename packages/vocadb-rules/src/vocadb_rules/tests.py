@@ -37,6 +37,10 @@ from vocadb_rules.rules import (
 logger = get_logger()
 
 
+class RuleTestFailedError(Exception):
+    """Raised when a rule module's check result does not match the expected one."""
+
+
 def extract_function_lines(lines: list[str]) -> dict[str, list[str]]:
     functions: dict[str, list[str]] = {}
     current_func = None
@@ -72,9 +76,9 @@ def get_rule_entry_status(
 ) -> EntryStatus:
     code = get_lines(rule_modules_dir / f"{rule_id}_{rule_name}.py")
     for line in code:
-        if 'if version_data.status == "Draft":' in line:
+        if 'version_data.status == "Draft"' in line:
             return "Finished"
-        if 'if version_data.status != "Approved":' in line:
+        if 'version_data.status != "Approved"' in line:
             return "Approved"
     return "Draft"
 
@@ -149,9 +153,9 @@ def check_rule_module_structure(
     for line in rule_check_function_lines:
         words = line.strip().split()
         for word in words:
-            r_stripped = word.lstrip("({")
+            r_stripped = word.lstrip("({[")
             if r_stripped.startswith("version_data."):
-                field = r_stripped.split(".")[1].rstrip(",:)}")
+                field = r_stripped.split(".")[1].rstrip(",:)}]")
                 logger.debug(f"Found field 'version_data.{field}'")
                 if field not in ["entry_id", "version_id"]:
                     accessed_fields.add(field)
@@ -456,7 +460,7 @@ def run_edit_and_entry_tests(
                         f"  Expected: {correct}\n"
                         f"  Actual:   {result}",
                     )
-                    raise Exception
+                    raise RuleTestFailedError
 
                 result2: tuple[int, str, int, int] = check_function(
                     entry=(entry_type, entry_id),
@@ -614,10 +618,13 @@ def main() -> None:
         f"R{rid} {name}" for rid, (name, _) in rule_modules_by_rule_id.items()
     )
     logger.info("=" * 72)
-    logger.info(f"Loaded {len(rule_modules_by_rule_id)} rule module(s): {rule_summary}")
+    logger.info(
+        f"Loaded {len(rule_modules_by_rule_id)} rule module(s): {rule_summary}",
+    )
     logger.info("Plan:")
     logger.info(
-        "  1. Edit-check tests (per-version: structural + check_entry_version_for_rule)",
+        "  1. Edit-check tests (per-version: structural"
+        " + check_entry_version_for_rule)",
     )
     logger.info("  Entry-check loop: SKIPPED (needs mikumod-style check_function)")
     logger.info("=" * 72)

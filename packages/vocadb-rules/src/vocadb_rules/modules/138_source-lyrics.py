@@ -62,9 +62,10 @@ def test() -> CorrectTestResults:
 @cache_with_expiration(days=7)
 def get_artist_ids_for_verified_user_7d(user_id: int) -> list[int]:
     user_profile = get_user_profile_by_id_1d(user_id)
-    artist_ids: list[int] = []
-    for owned_artist_data in user_profile["ownedArtistEntries"]:
-        artist_ids.append(int(owned_artist_data["artist"]["id"]))
+    artist_ids: list[int] = [
+        int(owned_artist_data["artist"]["id"])
+        for owned_artist_data in user_profile["ownedArtistEntries"]
+    ]
 
     logger.debug(f"Artist ids for user {user_id}: {artist_ids}")
     return artist_ids

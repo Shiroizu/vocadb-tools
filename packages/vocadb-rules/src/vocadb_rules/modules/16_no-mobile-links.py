@@ -31,13 +31,10 @@ UNSAFE_DOMAINS_TO_EDIT = ["ykimg", "seiga"]
 
 
 def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleResult:
-    all_link_urls: list[str] = []
-    for link in version_data.external_links:
-        all_link_urls.append(link.url)
+    all_link_urls: list[str] = [link.url for link in version_data.external_links]
 
     if isinstance(version_data, SongVersion):
-        for lyrics in version_data.lyrics:
-            all_link_urls.append(lyrics.url)
+        all_link_urls.extend(lyrics.url for lyrics in version_data.lyrics)
 
     if not all_link_urls:
         return "Not applicable"

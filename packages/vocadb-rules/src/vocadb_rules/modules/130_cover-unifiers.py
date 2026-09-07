@@ -57,7 +57,10 @@ def analyze_sql_dump(db: DumpDB) -> set[EntryTuple]:
 @cache_conditionally(days=0.1)
 def has_more_than_5_derived_versions(entry_id: int) -> bool:
     derived_versions = get_songs(
-        song_search_params=SongSearchParams(original_version_id=entry_id, max_results=5),
+        song_search_params=SongSearchParams(
+            original_version_id=entry_id,
+            max_results=5,
+        ),
     )
     return len(derived_versions) >= 5
 

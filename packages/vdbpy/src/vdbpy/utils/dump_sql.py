@@ -750,6 +750,7 @@ class DumpDB:
     ArtistMember = ArtistMember
 
     def __init__(self, engine: Engine, path: Path) -> None:
+        """Wrap an already-built SQLite dump database. Prefer `DumpDB.build()`."""
         self.engine = engine
         self.path = path
 

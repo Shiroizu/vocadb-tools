@@ -1,0 +1,1 @@
+"""Entry creation helpers."""
