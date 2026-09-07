@@ -16,6 +16,13 @@ def run(cmd: list[str]) -> str:
     return subprocess.check_output(cmd, text=True).strip()  # noqa: S603
 
 
+def verify() -> None:
+    result = subprocess.run(["uv", "run", "check"], check=False)  # noqa: S607
+    if result.returncode:
+        print("\n'uv run check' failed. Nothing committed.")  # noqa: T201
+        sys.exit(result.returncode)
+
+
 def staged_packages(staged: list[str]) -> set[str]:
     names: set[str] = set()
     for path in staged:
@@ -62,6 +69,8 @@ def main() -> None:
     if not staged:
         print("No staged files. Stage changes before committing.")  # noqa: T201
         sys.exit(1)
+
+    verify()
 
     packages = {package} if package else staged_packages(staged)
     others = sorted(packages - {ROOT_PACKAGE})
