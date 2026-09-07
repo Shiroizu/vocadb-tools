@@ -7,17 +7,7 @@ members = [
     "vdbpy",
     "vocadb-rules",
     "vocadb-scripts",
-]
-
-[manifest.dependency-groups]
-dev = [
-    { name = "coverage", specifier = ">=7.13.4" },
-    { name = "genbadge", specifier = ">=1.1.2" },
-    { name = "pydeps", specifier = ">=3.0.1" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-mock", specifier = ">=3" },
-    { name = "ruff", specifier = ">=0.15.2" },
-    { name = "ty", specifier = ">=0.0.18" },
+    "vocadb-tools",
 ]
 
 [[package]]
@@ -740,6 +730,41 @@ requires-dist = [
     { name = "plotly" },
     { name = "vdbpy", editable = "packages/vdbpy" },
     { name = "wcwidth", specifier = ">=0.6.0" },
+]
+
+[[package]]
+name = "vocadb-tools"
+version = "0.1.0"
+source = { editable = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "coverage" },
+    { name = "genbadge" },
+    { name = "pydeps" },
+    { name = "pytest" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+    { name = "ty" },
+    { name = "vdbpy" },
+    { name = "vocadb-rules" },
+    { name = "vocadb-scripts" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "coverage", specifier = ">=7.13.4" },
+    { name = "genbadge", specifier = ">=1.1.2" },
+    { name = "pydeps", specifier = ">=3.0.1" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-mock", specifier = ">=3" },
+    { name = "ruff", specifier = ">=0.15.2" },
+    { name = "ty", specifier = ">=0.0.18" },
+    { name = "vdbpy", editable = "packages/vdbpy" },
+    { name = "vocadb-rules", editable = "packages/vocadb-rules" },
+    { name = "vocadb-scripts", editable = "packages/vocadb-scripts" },
 ]
 
 [[package]]
