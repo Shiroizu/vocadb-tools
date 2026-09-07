@@ -1,6 +1,6 @@
 Collection of [VocaDB](https://vocadb.net/) related scripts.
 
-Uses [VDBpy](https://github.com/Shiroizu/VDBpy/) under the hood.
+Uses [vdbpy](../vdbpy/) under the hood.
 
 Ideas, Pull Requests, etc. are welcome.
 
@@ -10,10 +10,15 @@ Ideas, Pull Requests, etc. are welcome.
 
 ## Usage
 
-1) Install [Git](https://git-scm.com/downloads) --> `git clone https://github.com/Shiroizu/VocaDB-scripts` (or download ZIP & extract)
+1) Install [Git](https://git-scm.com/downloads) --> `git clone https://github.com/Shiroizu/vocadb-tools` (or download ZIP & extract)
 
-2) `cd VocaDB-scripts`
+2) `cd vocadb-tools`
 
 3) Install [uv](https://docs.astral.sh/uv/)
 
-4) Run commands with "uv run": `uv run scripts/graph/monthly_comments.py`
+4) Run commands with "uv run", from the workspace root:
+
+```
+uv run vdb-sql --schema
+uv run packages/vocadb-scripts/src/vocadb_scripts/graph/monthly_comments.py
+```

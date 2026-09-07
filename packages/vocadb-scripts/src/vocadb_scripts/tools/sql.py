@@ -4,9 +4,9 @@ The first query is slow and later ones are instant.
 
 Usage:
 
-    uv run scripts/tools/sql.py --schema
-    uv run scripts/tools/sql.py "SELECT id, song_type FROM songs LIMIT 5"
-    uv run scripts/tools/sql.py --max-rows 20 "SELECT tag_id FROM entry_tags"
+    uv run vdb-sql --schema
+    uv run vdb-sql "SELECT id, song_type FROM songs LIMIT 5"
+    uv run vdb-sql --max-rows 20 "SELECT tag_id FROM entry_tags"
 
 Note that you can also use a visual database browsing tool.
 """
@@ -108,7 +108,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("sql")
     args = parse_args()
     if args.schema:
@@ -120,3 +120,7 @@ if __name__ == "__main__":
             logger.info(main(args.query, max_rows=args.max_rows))
         except SqlError as exc:
             raise SystemExit(f"Query rejected: {exc}") from exc
+
+
+if __name__ == "__main__":
+    cli()

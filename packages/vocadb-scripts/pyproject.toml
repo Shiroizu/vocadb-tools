@@ -15,6 +15,9 @@ dependencies = [
     "wcwidth>=0.6.0",
 ]
 
+[project.scripts]
+vdb-sql = "vocadb_scripts.tools.sql:cli"
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 
