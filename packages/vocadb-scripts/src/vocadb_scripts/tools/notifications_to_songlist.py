@@ -15,7 +15,7 @@ from vdbpy.api.songlists import (
     export_songlist,
     parse_csv_songlist,
 )
-from vdbpy.api.songs import get_song_by_id
+from vdbpy.api.songs import SongSearchParams, get_song_by_id, get_songs
 from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import cache_with_expiration
@@ -23,6 +23,10 @@ from vdbpy.utils.files import get_credentials, get_lines, save_file
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
+
+CREDENTIALS_FILE = "credentials.env"
+SEEN_SONG_IDS_FILE = Path("data") / "seen song ids.txt"
+NOTIF_LOG_FILE = Path("output") / "notifications.txt"
 
 # TODO --skip_out_of_scope songs
 # TODO --skip_already_rated
@@ -109,7 +113,7 @@ def filter_notifications(
             logger.info("\tSkipping music PV")
             continue
 
-        # delete_notifications(session, USER_ID, notification_ids)
+        # delete_notifications(session, user_id, notification_ids)
         new_song_ids.append(song_id)
         continue
 
@@ -214,49 +218,44 @@ def get_songlist_song_ids(songlist_id: int) -> list[int]:
     return song_ids
 
 
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("notifications_to_songlist")
     args = parse_args()
 
-    INCLUDE_READ_NOTIFICATIONS = args.include_read_notifications
-    MAX_SONGLIST_LENGTH = args.max_songlist_length
-    MAX_NOTIFS = args.max_notifs
-    SKIP_COVERS = args.skip_covers
-    SKIP_INSTRUMENTALS = args.skip_instrumentals
-    SKIP_MUSIC_PVS = args.skip_music_pvs
-    INCLUDE_SEEN_SONGS = args.include_seen_songs
-    DELETE_SEEN_NOTIFS = args.delete_seen_notifications
-    SONGLIST_TITLE = args.songlist_title
-
-    CREDENTIALS_FILE = "credentials.env"
-    SEEN_SONG_IDS_FILE = Path("data") / "seen song ids.txt"
-    NOTIF_LOG_FILE = Path("output") / "notifications.txt"
+    include_read_notifications = args.include_read_notifications
+    max_songlist_length = args.max_songlist_length
+    max_notifs = args.max_notifs
+    skip_covers = args.skip_covers
+    skip_instrumentals = args.skip_instrumentals
+    skip_music_pvs = args.skip_music_pvs
+    include_seen_songs = args.include_seen_songs
+    delete_seen_notifs = args.delete_seen_notifications
 
     un, pw = get_credentials(CREDENTIALS_FILE)
     login = {"userName": un, "password": pw}
 
-    _, USER_ID = find_user_by_username_1d(un)
+    _, user_id = find_user_by_username_1d(un)
 
     songlist_title = (
-        SONGLIST_TITLE or f"Songs to check {str(datetime.now(tz=UTC))[:10]}"
+        args.songlist_title or f"Songs to check {str(datetime.now(tz=UTC))[:10]}"
     )
 
-    logger.info(f"Fetching notifications for user {un} ({USER_ID}) with settings:\n")
+    logger.info(f"Fetching notifications for user {un} ({user_id}) with settings:\n")
     logger.info(
-        f"\t{INCLUDE_READ_NOTIFICATIONS=} (change with --include_read_notifications)"
+        f"\t{include_read_notifications=} (change with --include_read_notifications)"
     )
-    logger.info(f"\t{MAX_SONGLIST_LENGTH=} (change with --max_songlist_length N)")
-    logger.info(f"\t{MAX_NOTIFS=} (change with --max_notifs N)")
-    logger.info(f"\t{SKIP_COVERS=} (change with --skip_covers or -sc)")
-    logger.info(f"\t{SKIP_MUSIC_PVS=} (change with --skip_music_pvs or -sm)")
-    logger.info(f"\t{SKIP_INSTRUMENTALS=} (change with --skip_instruments or -si)")
-    logger.info(f"\t{INCLUDE_SEEN_SONGS=} (change with --include_seen_songs or -is)")
+    logger.info(f"\t{max_songlist_length=} (change with --max_songlist_length N)")
+    logger.info(f"\t{max_notifs=} (change with --max_notifs N)")
+    logger.info(f"\t{skip_covers=} (change with --skip_covers or -sc)")
+    logger.info(f"\t{skip_music_pvs=} (change with --skip_music_pvs or -sm)")
+    logger.info(f"\t{skip_instrumentals=} (change with --skip_instruments or -si)")
+    logger.info(f"\t{include_seen_songs=} (change with --include_seen_songs or -is)")
     logger.info(
-        f"\t{INCLUDE_READ_NOTIFICATIONS=} "
+        f"\t{include_read_notifications=} "
         "(change with --include_read_notifications or -ir)"
     )
     logger.info(
-        f"\t{DELETE_SEEN_NOTIFS=} (change with --delete_seen_notifications or -ds)"
+        f"\t{delete_seen_notifs=} (change with --delete_seen_notifications or -ds)"
     )
     logger.info(f"\t{songlist_title=} (change with --songlist_title S)")
 
@@ -274,26 +273,24 @@ if __name__ == "__main__":
         _ = set(map(int, get_lines(SEEN_SONG_IDS_FILE)))
         """
         all_notifications = get_notifications_by_user_id(
-            USER_ID,
+            user_id,
             session,
-            include_read=INCLUDE_READ_NOTIFICATIONS,
-            max_notifs=MAX_NOTIFS,
+            include_read=include_read_notifications,
+            max_notifs=max_notifs,
         )
         logger.info(f"Found {len(all_notifications)} notifications")
 
         new_song_ids = filter_notifications(
-            user_id=USER_ID,
+            user_id=user_id,
             session=session,
             all_notifications=all_notifications,
-            skip_covers=SKIP_COVERS,
-            skip_music_pvs=SKIP_MUSIC_PVS,
-            skip_instruments=SKIP_INSTRUMENTALS,
-            delete_seen_notifs=DELETE_SEEN_NOTIFS,
+            skip_covers=skip_covers,
+            skip_music_pvs=skip_music_pvs,
+            skip_instruments=skip_instrumentals,
+            delete_seen_notifs=delete_seen_notifs,
         )
 
         """
-
-        from vdbpy.api.songs import SongSearchParams, get_songs
 
         song_entries = get_songs(
             song_search_params=SongSearchParams(release_event_id=9122)
@@ -302,7 +299,7 @@ if __name__ == "__main__":
 
         logger.info(f"{len(new_song_ids)}")
 
-        if not INCLUDE_SEEN_SONGS:
+        if not include_seen_songs:
             new_song_ids = filter_out_seen_song_ids(SEEN_SONG_IDS_FILE, new_song_ids)
 
         logger.info(f"{len(new_song_ids)}")
@@ -314,8 +311,12 @@ if __name__ == "__main__":
         create_songlists_with_size_limit(
             session=session,
             song_ids=new_song_ids,
-            author_id=USER_ID,
+            author_id=user_id,
             title="Anon3 songs to check",
         )
         save_file(SEEN_SONG_IDS_FILE, new_song_ids, append=True)
         logger.info(f"Notifications appended to '{SEEN_SONG_IDS_FILE}'")
+
+
+if __name__ == "__main__":
+    cli()

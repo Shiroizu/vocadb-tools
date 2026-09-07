@@ -14,12 +14,12 @@ from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
-# TODO main function
+CREDENTIALS_FILE = "credentials.env"
+OUTPUT_DIR = "output/dms"
 
-if __name__ == "__main__":
+
+def cli() -> None:
     logger = get_logger("export_dms")
-    CREDENTIALS_FILE = "credentials.env"
-    OUTPUT_DIR = "output/dms"
 
     un, pw = get_credentials(CREDENTIALS_FILE)
     login = {"userName": un, "password": pw}
@@ -66,3 +66,7 @@ if __name__ == "__main__":
             counter += 1
             filename = sanitize_filename(filename)
             save_file(f"{OUTPUT_DIR}/{filename}.md", details["body"])
+
+
+if __name__ == "__main__":
+    cli()

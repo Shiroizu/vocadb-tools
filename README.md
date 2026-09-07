@@ -19,5 +19,14 @@ uv sync
 uv run ruff check
 uv run ty check
 uv run pytest
+```
+
+## Tools
+
+```
 uv run vdb-sql --schema
+uv run vdb-sql "SELECT id, song_type FROM songs LIMIT 5"
+uv run vdb-export-dms
+uv run vdb-export-rated-songs <user_id>
+uv run vdb-notifs-to-songlist --help
 ```

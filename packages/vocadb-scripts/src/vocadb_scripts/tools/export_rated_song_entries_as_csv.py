@@ -6,6 +6,9 @@ from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
+COLUMN_DELIMITER = ";"
+LIST_DELIMITER = ","
+
 
 def list_to_string_or_zero(data: list[str]) -> str:
     return LIST_DELIMITER.join(data) if data else "0"
@@ -22,17 +25,13 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-# TODO main function
-
-if __name__ == "__main__":
+def cli() -> None:
     logger = get_logger("export_rated_song_entries_as_csv")
     args = parse_args()
 
     user_id = args.user_id
 
-    OUTPUT_FILE = f"output/rated-songs-{user_id}.csv"
-    COLUMN_DELIMITER = ";"
-    LIST_DELIMITER = ","
+    output_file = f"output/rated-songs-{user_id}.csv"
 
     rated_songs = get_cached_rated_songs_with_ratings(
         user_id,
@@ -65,7 +64,7 @@ if __name__ == "__main__":
         ]
     )
 
-    save_file(OUTPUT_FILE, COLUMN_DELIMITER.join(headers))
+    save_file(output_file, COLUMN_DELIMITER.join(headers))
 
     for song in rated_songs:
         output_line: list[str] = []
@@ -122,6 +121,10 @@ if __name__ == "__main__":
             logger.info(len(headers))
             _ = input("Press enter to continue")
 
-        save_file(OUTPUT_FILE, COLUMN_DELIMITER.join(output_line), append=True)
+        save_file(output_file, COLUMN_DELIMITER.join(output_line), append=True)
 
-    logger.info(f"\nTable saved to '{OUTPUT_FILE}'")
+    logger.info(f"\nTable saved to '{output_file}'")
+
+
+if __name__ == "__main__":
+    cli()
