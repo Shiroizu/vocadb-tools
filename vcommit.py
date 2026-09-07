@@ -64,12 +64,18 @@ def main() -> None:
         sys.exit(1)
 
     packages = {package} if package else staged_packages(staged)
-    ordered = [*sorted(packages - {ROOT_PACKAGE}), ROOT_PACKAGE]
-    versions = " + ".join(bump_package(name, bump) for name in ordered)
+    others = sorted(packages - {ROOT_PACKAGE})
+    other_versions = [bump_package(name, bump) for name in others]
+    root_version = bump_package(ROOT_PACKAGE, bump).rsplit(" ", 1)[-1]
+
+    parts = [root_version, message]
+    if other_versions:
+        parts.append(" + ".join(other_versions))
+    subject = " - ".join(parts)
 
     run(["git", "add", "uv.lock"])
-    run(["git", "commit", "-m", f"{versions}, {message}"])
-    print(f"Committed: {versions}, {message}")  # noqa: T201
+    run(["git", "commit", "-m", subject])
+    print(f"Committed: {subject}")  # noqa: T201
 
 
 if __name__ == "__main__":
