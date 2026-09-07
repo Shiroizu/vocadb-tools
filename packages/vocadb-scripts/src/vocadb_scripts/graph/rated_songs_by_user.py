@@ -1,6 +1,6 @@
 """Rated songs by publish month graph."""
 
-import sys
+import argparse
 from datetime import UTC, datetime
 
 import plotly.graph_objects as go
@@ -65,10 +65,18 @@ def get_rated_songs_png(user_id: int, username: str) -> bytes:
     return _figure(user_id, username).to_image(format="png")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Graph a user's rated songs by publish month and rating month."
+    )
+    parser.add_argument("user_id", type=int, help="VocaDB user id")
+    parser.add_argument("username", help="Username, used for the graph title")
+    return parser.parse_args()
+
+
 def cli() -> None:
-    if len(sys.argv) != 3:
-        sys.exit(f"Usage: {sys.argv[0]} <user_id> <username>")
-    _figure(int(sys.argv[1]), sys.argv[2]).show()
+    args = parse_args()
+    _figure(args.user_id, args.username).show()
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import argparse
 import sys
 from datetime import datetime
 
@@ -19,6 +20,13 @@ OUTPUT_DIR = "output/dms"
 
 
 def cli() -> None:
+    argparse.ArgumentParser(
+        description=(
+            f"Save your VocaDB private messages as files under '{OUTPUT_DIR}/'."
+            f" Credentials are read from '{CREDENTIALS_FILE}' in the current directory."
+        )
+    ).parse_args()
+
     logger = get_logger("export_dms")
 
     un, pw = get_credentials(CREDENTIALS_FILE)

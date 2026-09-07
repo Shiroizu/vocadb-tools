@@ -1,5 +1,7 @@
 """Monthly edit count graph."""
 
+import argparse
+
 from vdbpy.api.edits import get_monthly_edit_count
 from vocadb_scripts.graph.graph_utils import build_figure, collect_monthly_data
 
@@ -15,6 +17,9 @@ def get_monthly_edits_png() -> bytes:
 
 
 def cli() -> None:
+    argparse.ArgumentParser(
+        description="Graph the monthly edit count on VocaDB."
+    ).parse_args()
     _figure().show()
 
 

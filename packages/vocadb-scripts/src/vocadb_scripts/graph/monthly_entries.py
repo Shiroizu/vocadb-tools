@@ -1,5 +1,7 @@
 """Monthly entry creation graph."""
 
+import argparse
+
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.utils.data import get_monthly_count
 from vocadb_scripts.graph.graph_utils import build_figure, collect_monthly_data
@@ -20,6 +22,9 @@ def get_monthly_entries_png() -> bytes:
 
 
 def cli() -> None:
+    argparse.ArgumentParser(
+        description="Graph the monthly entry creation count on VocaDB."
+    ).parse_args()
     _figure().show()
 
 

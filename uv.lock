@@ -715,7 +715,7 @@ requires-dist = [
 
 [[package]]
 name = "vocadb-scripts"
-version = "2.5.4"
+version = "2.5.5"
 source = { editable = "packages/vocadb-scripts" }
 dependencies = [
     { name = "kaleido" },
@@ -734,7 +734,7 @@ requires-dist = [
 
 [[package]]
 name = "vocadb-tools"
-version = "0.2.3"
+version = "0.2.4"
 source = { editable = "." }
 
 [package.dev-dependencies]
