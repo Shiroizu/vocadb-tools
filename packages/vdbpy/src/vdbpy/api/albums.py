@@ -2,6 +2,7 @@ from typing import Any
 
 import requests
 
+from vdbpy.api.users import has_public_album_collection
 from vdbpy.config import ALBUM_API_URL, USER_API_URL
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import (
@@ -35,8 +36,6 @@ def get_albums_by_user_id(
     session: requests.Session | None = None,
 ) -> list[dict[Any, Any]]:
     """Fetch albums in the user's collection."""
-    from vdbpy.api.users import has_public_album_collection  # noqa: PLC0415
-
     if has_public_album_collection(user_id) is False:
         return []
     logger.info(f"Fetching albums for user id {user_id}")
@@ -45,14 +44,3 @@ def get_albums_by_user_id(
     albums = fetch_json_items(api_url, params=params, session=session)
     logger.info(f"Found total of {len(albums)} albums.")
     return albums
-
-
-def get_cached_albums_by_user_id(
-    user_id: int, session: requests.Session | None = None
-) -> list[dict[Any, Any]]:
-    """Return albums from the user library cache (always fetched with Artists field)."""
-    from vdbpy.api.user_library import get_user_library  # noqa: PLC0415
-
-    return get_user_library(
-        user_id, collections=frozenset({"albums"}), session=session
-    ).albums

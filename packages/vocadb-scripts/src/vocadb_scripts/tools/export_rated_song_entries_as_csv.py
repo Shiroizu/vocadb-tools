@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from vdbpy.api.songs import get_cached_rated_songs_with_ratings
+from vdbpy.api.user_library import get_cached_rated_songs_with_ratings
 from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger

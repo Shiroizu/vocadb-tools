@@ -26,7 +26,7 @@ from vdbpy.api.artists import (
     get_artist_by_id_7d,
     get_artist_details_by_id_7d,
 )
-from vdbpy.api.songs import get_cached_rated_songs_with_ratings
+from vdbpy.api.user_library import get_cached_rated_songs_with_ratings
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import get_vdbpy_cache_dir

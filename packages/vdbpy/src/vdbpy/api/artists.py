@@ -96,15 +96,3 @@ def get_followed_artists_by_user_id(
     if followed_artists:
         followed_artists = [ar["artist"] for ar in followed_artists]
     return followed_artists
-
-
-def get_cached_followed_artists_by_user_id(
-    user_id: int, session: requests.Session | None = None
-) -> list[dict[Any, Any]]:
-    """Return followed artists from the user library cache."""
-    from vdbpy.api.user_library import get_user_library  # noqa: PLC0415
-
-    lib = get_user_library(
-        user_id, collections=frozenset({"followed_artists"}), session=session
-    )
-    return lib.followed_artists

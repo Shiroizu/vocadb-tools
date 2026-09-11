@@ -29,7 +29,8 @@ import requests
 
 from vdbpy.api.albums import get_albums_by_user_id
 from vdbpy.api.artists import get_followed_artists_by_user_id
-from vdbpy.api.songs import get_rated_songs_with_ratings
+from vdbpy.api.songs import get_rated_songs_with_ratings, get_song_ratings
+from vdbpy.api.users import has_public_album_collection
 from vdbpy.config import USER_API_URL
 from vdbpy.types.songs import OptionalSongFieldName
 from vdbpy.utils.logger import get_logger
@@ -249,6 +250,22 @@ ALL_COLLECTIONS: frozenset[str] = frozenset(
 )
 
 
+def has_public_song_ratings(
+    user_id: int, session: requests.Session | None = None
+) -> bool | None:
+    """Check if the user's song ratings are public."""
+    entries = get_rated_songs_with_ratings(user_id, max_results=1, session=session)
+    if not entries:
+        return None
+    song_id = entries[0]["song"]["id"]
+    ratings = get_song_ratings(song_id, session=session)
+    return any(
+        r.get("user", {}).get("id") == user_id
+        for r in ratings
+        if isinstance(r.get("user"), dict)
+    )
+
+
 def get_user_library(
     user_id: int,
     force_refresh: bool = False,
@@ -260,11 +277,6 @@ def get_user_library(
         collections = ALL_COLLECTIONS
 
     lib = _load_library_cache(user_id)
-
-    from vdbpy.api.users import (  # noqa: PLC0415
-        has_public_album_collection,
-        has_public_song_ratings,
-    )
 
     if "rated_songs" in collections:
         if check_only_if_public and has_public_song_ratings(user_id, session) is False:
@@ -330,3 +342,31 @@ def get_user_library(
 
     _save_library_cache(user_id, lib)
     return lib
+
+
+def get_cached_rated_songs_with_ratings(
+    user_id: int, session: requests.Session | None = None
+) -> list[dict[Any, Any]]:
+    lib = get_user_library(
+        user_id, collections=frozenset({"rated_songs"}), session=session
+    )
+    return [
+        {"song": e.song, "rating": e.rating, "date": e.date}
+        for e in lib.rated_songs.values()
+    ]
+
+
+def get_cached_albums_by_user_id(
+    user_id: int, session: requests.Session | None = None
+) -> list[dict[Any, Any]]:
+    return get_user_library(
+        user_id, collections=frozenset({"albums"}), session=session
+    ).albums
+
+
+def get_cached_followed_artists_by_user_id(
+    user_id: int, session: requests.Session | None = None
+) -> list[dict[Any, Any]]:
+    return get_user_library(
+        user_id, collections=frozenset({"followed_artists"}), session=session
+    ).followed_artists

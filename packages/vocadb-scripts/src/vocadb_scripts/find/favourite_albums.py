@@ -7,8 +7,10 @@ from typing import Any
 import tabulate as tabulate_module
 from tabulate import tabulate
 
-from vdbpy.api.albums import get_cached_albums_by_user_id
-from vdbpy.api.songs import get_cached_rated_songs_with_ratings
+from vdbpy.api.user_library import (
+    get_cached_albums_by_user_id,
+    get_cached_rated_songs_with_ratings,
+)
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import WEBSITE
 from vdbpy.utils.cache import get_vdbpy_cache_dir

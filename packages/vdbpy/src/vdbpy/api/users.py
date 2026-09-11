@@ -133,27 +133,6 @@ def get_user_profile_by_id_1d(user_id: int) -> dict[Any, Any]:  # TODO type
     return get_user_profile_by_username_1d(username)
 
 
-def has_public_song_ratings(
-    user_id: int, session: requests.Session | None = None
-) -> bool | None:
-    """Check if the user's song ratings are public."""
-    from vdbpy.api.songs import (  # noqa: PLC0415
-        get_rated_songs_with_ratings,
-        get_song_ratings,
-    )
-
-    entries = get_rated_songs_with_ratings(user_id, max_results=1, session=session)
-    if not entries:
-        return None
-    song_id = entries[0]["song"]["id"]
-    ratings = get_song_ratings(song_id, session=session)
-    return any(
-        r.get("user", {}).get("id") == user_id
-        for r in ratings
-        if isinstance(r.get("user"), dict)
-    )
-
-
 def has_public_album_collection(user_id: int) -> bool:
     """Check if the user's album collection is public."""
     username = get_username_by_id(user_id)

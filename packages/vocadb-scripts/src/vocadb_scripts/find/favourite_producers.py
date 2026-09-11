@@ -12,13 +12,15 @@ from tabulate import tabulate
 from vdbpy.api.artists import (
     get_artist_by_id_7d,
     get_artist_details_by_id_7d,
-    get_cached_followed_artists_by_user_id,
 )
 from vdbpy.api.songs import (
-    get_cached_rated_songs_with_ratings,
     get_most_rated_song_by_artist_id_7d,
     get_most_recent_song_by_artist_id_1d,
     get_songs_with_total_count,
+)
+from vdbpy.api.user_library import (
+    get_cached_followed_artists_by_user_id,
+    get_cached_rated_songs_with_ratings,
 )
 from vdbpy.api.users import get_username_by_id
 from vdbpy.config import SONG_API_URL, WEBSITE

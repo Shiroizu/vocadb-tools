@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 import plotly.graph_objects as go
 
-from vdbpy.api.songs import get_cached_rated_songs_with_ratings
+from vdbpy.api.user_library import get_cached_rated_songs_with_ratings
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
