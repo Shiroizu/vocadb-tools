@@ -1,6 +1,7 @@
 import argparse
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import requests
 
@@ -10,22 +11,33 @@ from vdbpy.api.notifications import (
 )
 from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import WEBSITE
+from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.files import get_credentials, sanitize_filename, save_file
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
 CREDENTIALS_FILE = "credentials.env"
-OUTPUT_DIR = "output/dms"
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Save your VocaDB private messages as markdown files."
+            f" Credentials are read from '{CREDENTIALS_FILE}' in the current directory."
+        )
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default=None,
+    )
+    return parser.parse_args()
 
 
 def cli() -> None:
-    argparse.ArgumentParser(
-        description=(
-            f"Save your VocaDB private messages as files under '{OUTPUT_DIR}/'."
-            f" Credentials are read from '{CREDENTIALS_FILE}' in the current directory."
-        )
-    ).parse_args()
+    args = parse_args()
+    output_dir: Path = args.output_dir or get_vdbpy_cache_dir() / "dms"
 
     logger = get_logger("export_dms")
 
@@ -73,7 +85,9 @@ def cli() -> None:
             logger.info(filename)
             counter += 1
             filename = sanitize_filename(filename)
-            save_file(f"{OUTPUT_DIR}/{filename}.md", details["body"])
+            save_file(output_dir / f"{filename}.md", details["body"])
+
+        logger.info(f"\nMessages saved to '{output_dir}'")
 
 
 if __name__ == "__main__":

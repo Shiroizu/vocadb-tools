@@ -1,6 +1,8 @@
 import argparse
+from pathlib import Path
 
 from vdbpy.api.songs import get_cached_rated_songs_with_ratings
+from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 
@@ -21,6 +23,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="VocaDB user id",
     )
+    parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default=None,
+        help="Directory to write the CSV to (default: <vdbpy cache>/rated-songs)",
+    )
 
     return parser.parse_args()
 
@@ -31,7 +39,8 @@ def cli() -> None:
 
     user_id = args.user_id
 
-    output_file = f"output/rated-songs-{user_id}.csv"
+    output_dir: Path = args.output_dir or get_vdbpy_cache_dir() / "rated-songs"
+    output_file = output_dir / f"rated-songs-{user_id}.csv"
 
     rated_songs = get_cached_rated_songs_with_ratings(
         user_id,

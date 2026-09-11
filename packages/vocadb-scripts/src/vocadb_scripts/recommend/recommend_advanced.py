@@ -28,6 +28,7 @@ from vdbpy.api.user_library import get_user_library
 from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import WEBSITE
 from vdbpy.types.songs import SongEntry, SongSearchParams
+from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.dump import build_tag_info_map
 from vdbpy.utils.files import (
     get_credentials,
@@ -58,7 +59,7 @@ def _default_state_dir() -> Path:
     env = os.environ.get("VOCADB_RECOMMEND_STATE_DIR", "").strip()
     if env:
         return Path(env)
-    return Path(__file__).resolve().parents[2] / "data" / "state"
+    return get_vdbpy_cache_dir() / "recommend-advanced"
 
 
 def _seen_path(state_dir: Path) -> Path:

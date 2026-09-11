@@ -18,15 +18,16 @@ from vdbpy.api.songlists import (
 from vdbpy.api.songs import SongSearchParams, get_song_by_id, get_songs
 from vdbpy.api.users import find_user_by_username_1d
 from vdbpy.config import WEBSITE
-from vdbpy.utils.cache import cache_with_expiration
+from vdbpy.utils.cache import cache_with_expiration, get_vdbpy_cache_dir
 from vdbpy.utils.files import get_credentials, get_lines, save_file
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
 
 CREDENTIALS_FILE = "credentials.env"
-SEEN_SONG_IDS_FILE = Path("data") / "seen song ids.txt"
-NOTIF_LOG_FILE = Path("output") / "notifications.txt"
+STATE_DIR = get_vdbpy_cache_dir() / "notifications-to-songlist"
+SEEN_SONG_IDS_FILE = STATE_DIR / "seen song ids.txt"
+NOTIF_LOG_FILE = STATE_DIR / "notifications.txt"
 
 # TODO --skip_out_of_scope songs
 # TODO --skip_already_rated

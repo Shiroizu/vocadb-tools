@@ -13,7 +13,7 @@
     60      203  可不        https://vocadb.net/Ar/83928
     69      183  重音テト    https://vocadb.net/Ar/140308
 
-Table saved to 'output/favourite-vocalists-329.txt'
+Table saved to '~/.cache/vdb/cache/favourite-vocalists/329.txt'
 """
 
 import argparse
