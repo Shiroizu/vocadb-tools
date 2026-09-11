@@ -16,7 +16,7 @@ depends on all three.
 
 ```
 uv sync
-uv run check     # ruff check + ty check + pytest, stops at the first failure
+uv run check     # ruff format --check + ruff check + ty check + pytest, stops at the first failure
 ```
 
 Individually:
@@ -26,6 +26,15 @@ uv run ruff check
 uv run ty check
 uv run pytest
 ```
+
+## Upgrading dependencies
+
+```
+uv tree --outdated --depth 1
+uv lock --upgrade-package ruff --upgrade-package ty
+uv lock --upgrade  # everything
+```
+
 
 ## Testing
 

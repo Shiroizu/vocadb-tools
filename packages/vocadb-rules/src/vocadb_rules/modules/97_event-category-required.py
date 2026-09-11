@@ -26,7 +26,7 @@ def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleRe
     if not isinstance(version_data, ReleaseEventVersion):
         return "Wrong entry type"
 
-    if version_data.event_category and version_data.event_category != "Unspecified":
+    if version_data.event_category != "Unspecified":
         return "Valid"
 
     if version_data.series:

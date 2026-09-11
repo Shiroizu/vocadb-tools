@@ -133,6 +133,6 @@ def my_edit_function(
 
 # helper function for autofix
 @cache_with_expiration(days=7)
-def my_helper_function_7d(data: dict[Any, Any]) -> list[int]:
+def my_helper_function_7d(data: dict[Any, Any]) -> dict[Any, Any]:
     logger.info(data)
-    return [1, 2, 3]
+    return data

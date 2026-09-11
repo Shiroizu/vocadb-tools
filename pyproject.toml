@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vocadb-tools"
-version = "2.0.2"
+version = "2.0.3"
 
 [project.scripts]
 check = "check:main"
@@ -39,6 +39,6 @@ dev = [
     "pydeps>=3.0.1",
     "pytest>=8",
     "pytest-mock>=3",
-    "ruff>=0.15.2",
-    "ty>=0.0.18",
+    "ruff>=0.16.7",
+    "ty>=0.0.80",
 ]
