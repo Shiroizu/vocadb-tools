@@ -109,7 +109,7 @@ def autofix(
     entry: EntryTuple,
     base_update_note: str = "",
     prompt: bool = True,
-    args: Any = None,
+    _args: Any = None,
 ) -> bool:
     return edit_entry(
         session=session,
@@ -117,14 +117,11 @@ def autofix(
         edit_function=specify_default_name_language,
         prompt=prompt,
         base_update_note=base_update_note,
-        args=args,
     )
 
 
 def specify_default_name_language(
     data: dict[Any, Any],
-    base_update_note: str = "",
-    args: Any = None,
 ) -> dict[Any, Any]:
     # not supported for ReleaseEvents
     if data["defaultNameLanguage"] != "Unspecified":
@@ -150,5 +147,5 @@ def specify_default_name_language(
     update_notes = (
         f"Changed default name language to match the existing name ({name_language})"
     )
-    data["updateNotes"] = base_update_note + update_notes
+    data["updateNotes"] = update_notes
     return data

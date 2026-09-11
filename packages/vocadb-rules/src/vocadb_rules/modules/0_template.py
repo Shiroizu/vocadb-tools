@@ -1,3 +1,4 @@
+from functools import partial
 from pathlib import Path
 from typing import Any, Literal
 
@@ -96,16 +97,14 @@ def autofix(
     return edit_entry(
         session=session,
         entry=entry,
-        edit_function=my_edit_function,
+        edit_function=partial(my_edit_function, arg=args),
         base_update_note=base_update_note,
         prompt=prompt,
-        args=args,
     )
 
 
 def my_edit_function(
     data: dict[Any, Any],
-    base_update_note: str,
     arg: Any,
 ) -> dict[Any, Any]:
     if not arg:
@@ -128,7 +127,7 @@ def my_edit_function(
         return {}
 
     data["fieldName"] = field_items_to_keep
-    data["updateNotes"] = base_update_note + update_notes
+    data["updateNotes"] = update_notes
     return data
 
 

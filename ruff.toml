@@ -13,7 +13,6 @@ select = ["ALL"]
 #   [backlog] fix later + enable rule
 ignore = [
     "ANN",     # 39  [backlog] Missing return/type annotations
-    "ARG001",  # 13  [backlog] Unused function argument
     "C901",    # 15  [backlog] Function too complex
     "COM812",  # 213 [style]   Trailing comma missing (conflicts with the formatter)
     "CPY001",  # 135 [style]   Missing copyright notice

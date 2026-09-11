@@ -24,12 +24,7 @@ COMPLETE = True
 AUTOMATICALLY_FIXED: bool | Literal["Partially"] = False
 
 
-def check_entry_version_for_rule(
-    version_data: BaseEntryVersion,
-    is_relevant_entry=None,
-    # needed since currently param is supplied if
-    # find_relevant_entries() is present (TODO FIX)
-) -> RuleModuleResult:
+def check_entry_version_for_rule(version_data: BaseEntryVersion) -> RuleModuleResult:
     if not isinstance(version_data, TagVersion):
         return "Wrong entry type"
 
@@ -39,7 +34,7 @@ def check_entry_version_for_rule(
     return "Valid"
 
 
-def find_relevant_entries(save_dir) -> set[EntryTuple]:
+def find_relevant_entries(_save_dir) -> set[EntryTuple]:
     url = f"{TAG_API_URL}/by-categories"
     tags_by_category = fetch_json(url)
     last_category = tags_by_category[-1]

@@ -80,7 +80,7 @@ def autofix(
     entry: EntryTuple,
     base_update_note: str = "",
     prompt: bool = True,
-    args: Any = None,
+    _args: Any = None,
 ) -> bool:
     return edit_entry(
         session=session,
@@ -88,14 +88,11 @@ def autofix(
         edit_function=remove_redundant_character_designer_credit,
         base_update_note=base_update_note,
         prompt=prompt,
-        args=None,
     )
 
 
 def remove_redundant_character_designer_credit(
     data: dict[Any, Any],
-    base_update_note: str,
-    args: Any = None,
 ) -> dict[Any, Any]:
     update_notes: str = "Removed redundant character designer credit"
 
@@ -113,5 +110,5 @@ def remove_redundant_character_designer_credit(
         return {}
 
     data["associatedArtists"] = associated_artists_to_keep
-    data["updateNotes"] = base_update_note + update_notes
+    data["updateNotes"] = update_notes
     return data

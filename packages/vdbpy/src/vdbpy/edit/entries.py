@@ -1,5 +1,6 @@
 import json
 from collections.abc import Callable
+from functools import partial
 from typing import Any
 
 import requests
@@ -15,7 +16,6 @@ logger = get_logger()
 
 def _add_event_id_to_entry_data(
     data: dict[Any, Any],
-    base_update_notes: str,
     id_to_add: int,
 ) -> dict[Any, Any]:
     entry_event_ids = [event["id"] for event in data["releaseEvents"]]
@@ -73,10 +73,9 @@ def _remove_artist_id_from_entry_data(
 
 def _replace_artist_in_entry_data(
     data: dict[Any, Any],
-    base_update_note: str,
-    artist_ids: tuple[int, int],
+    id_to_remove: int,
+    id_to_add: int,
 ) -> dict[Any, Any]:
-    id_to_remove, id_to_add = artist_ids
     removed_data = _remove_artist_id_from_entry_data(data, id_to_remove)
     removed_notes = removed_data.get("updateNotes")
     if removed_notes:
@@ -95,7 +94,6 @@ def _replace_artist_in_entry_data(
 
 def _add_language_codes_to_entry_data(
     data: dict[Any, Any],
-    base_update_note: str,
     codes_to_add: list[str],
 ) -> dict[Any, Any]:
     existing: list[str] = list(data.get("cultureCodes") or [])
@@ -118,7 +116,6 @@ def _add_language_codes_to_entry_data(
 
 def _mark_pvs_unavailable_in_entry_data(
     data: dict[Any, Any],
-    base_update_note: str,
     service: Service | None,
 ) -> dict[Any, Any]:
     logger.info("Marking all original PVs unavailable.")
@@ -162,21 +159,22 @@ def trim_update_notes(update_notes: str, max_length: int = 200) -> str:
 def edit_entry(
     session: requests.Session,
     entry: EntryTuple,
-    edit_function: Callable[[dict[Any, Any], str, Any], dict[Any, Any]],
+    edit_function: Callable[[dict[Any, Any]], dict[Any, Any]],
     base_update_note: str = "",
     prompt: bool = True,
-    args: Any = None,
 ) -> bool:
     entry_type, entry_id = entry
     api_url = f"{api_urls_by_entry_type[entry_type]}/{entry_id}"
     url = f"{api_url}/for-edit"
     entry_data = fetch_with_retries(url=url, verb="get", session=session).json()
     logger.debug(f"{entry_data=}")
-    fixed_data = edit_function(entry_data, base_update_note, args)
+    fixed_data = edit_function(entry_data)
     if not fixed_data:
         logger.warning("Nothing to fix")
         return False
-    fixed_data["updateNotes"] = trim_update_notes(fixed_data["updateNotes"])
+    fixed_data["updateNotes"] = trim_update_notes(
+        base_update_note + fixed_data["updateNotes"]
+    )
     logger.info(f"Update notes: {fixed_data['updateNotes']}")
     assert fixed_data["updateNotes"]  # noqa: S101
     logger.debug(f"{fixed_data=}")
@@ -202,8 +200,11 @@ def replace_artist_in_entry(
     return edit_entry(
         session=session,
         entry=entry,
-        edit_function=_replace_artist_in_entry_data,
-        args=(id_to_remove, id_to_add),
+        edit_function=partial(
+            _replace_artist_in_entry_data,
+            id_to_remove=id_to_remove,
+            id_to_add=id_to_add,
+        ),
         prompt=prompt,
     )
 
@@ -218,8 +219,7 @@ def mark_pvs_unavailable_for_entry(
     return edit_entry(
         session=session,
         entry=entry,
-        edit_function=_mark_pvs_unavailable_in_entry_data,
-        args=service,
+        edit_function=partial(_mark_pvs_unavailable_in_entry_data, service=service),
         prompt=prompt,
     )
 
@@ -233,8 +233,7 @@ def add_event_to_entry(
     return edit_entry(
         session=session,
         entry=entry,
-        edit_function=_add_event_id_to_entry_data,
-        args=event_id,
+        edit_function=partial(_add_event_id_to_entry_data, id_to_add=event_id),
         prompt=prompt,
     )
 
@@ -248,7 +247,8 @@ def add_language_codes_to_entry(
     return edit_entry(
         session=session,
         entry=entry,
-        edit_function=_add_language_codes_to_entry_data,
-        args=codes_to_add,
+        edit_function=partial(
+            _add_language_codes_to_entry_data, codes_to_add=codes_to_add
+        ),
         prompt=prompt,
     )

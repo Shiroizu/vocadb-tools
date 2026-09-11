@@ -82,7 +82,7 @@ def autofix(
     entry: EntryTuple,
     base_update_note: str = "",
     prompt: bool = True,
-    args: Any = None,
+    _args: Any = None,
 ) -> bool:
     return edit_entry(
         session=session,
@@ -90,14 +90,11 @@ def autofix(
         edit_function=remove_duplicate_names,
         prompt=prompt,
         base_update_note=base_update_note,
-        args=args,
     )
 
 
 def remove_duplicate_names(
     data: dict[Any, Any],
-    base_update_note: str = "",
-    args: Any = None,
 ) -> dict[Any, Any]:
     # TODO full tests
     # "defaultNameLanguage":"Japanese",
@@ -143,7 +140,7 @@ def remove_duplicate_names(
 
         names_to_keep.append(name)
 
-    data["updateNotes"] = base_update_note + update_notes
+    data["updateNotes"] = update_notes
 
     if names_to_keep:
         data["names"] = names_to_keep

@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Any, Literal
 
 import requests
@@ -81,16 +82,16 @@ def autofix(
     return edit_entry(
         session=session,
         entry=entry,
-        edit_function=add_verified_artist_as_the_lyrics_source,
+        edit_function=partial(
+            add_verified_artist_as_the_lyrics_source, relevant_user_id=args
+        ),
         base_update_note=base_update_note,
         prompt=prompt,
-        args=args,
     )
 
 
 def add_verified_artist_as_the_lyrics_source(
     data: dict[Any, Any],
-    base_update_note: str,
     relevant_user_id: int,
 ) -> dict[Any, Any]:
     if not relevant_user_id:
@@ -132,7 +133,7 @@ def add_verified_artist_as_the_lyrics_source(
 
         logger.info(update_notes)
         data["lyrics"] = lyrics_to_keep
-        data["updateNotes"] = base_update_note + update_notes
+        data["updateNotes"] = update_notes
 
         return data
     logger.info("Couldn't find verified artists to source the lyrics")

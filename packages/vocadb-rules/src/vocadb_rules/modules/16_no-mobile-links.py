@@ -189,7 +189,7 @@ def autofix(
     entry: EntryTuple,
     base_update_note: str = "",
     prompt: bool = True,
-    args: Any = None,
+    _args: Any = None,
 ) -> bool:
     return edit_entry(
         session=session,
@@ -197,14 +197,11 @@ def autofix(
         edit_function=fix_mobile_links,
         prompt=prompt,
         base_update_note=base_update_note,
-        args=args,
     )
 
 
 def fix_mobile_links(
     data: dict[Any, Any],
-    base_update_note: str = "",
-    args: Any = None,
 ) -> dict[Any, Any]:
     # TODO full tests
     # "lyrics": [
@@ -253,6 +250,6 @@ def fix_mobile_links(
         return {}
 
     update_notes = f"Fixed {fix_count} mobile url(s): " + ", ".join(temp_notes)
-    data["updateNotes"] = base_update_note + update_notes
+    data["updateNotes"] = update_notes
 
     return data
