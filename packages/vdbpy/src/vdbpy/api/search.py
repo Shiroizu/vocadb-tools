@@ -103,7 +103,7 @@ def search_entry_links(name: str, entry_type: EntryType, max_results: int = 3) -
 
 
 def find_artist_id_by_links(
-    links: list[str], artist_type: ArtistType | None = None, lazy: bool = False
+    links: list[str], artist_type: ArtistType | None = None, *, lazy: bool = False
 ) -> int:
     links_to_check = [link.strip() for link in links if link.strip()]
     logger.info(f"Finding artist with links {links_to_check}")
@@ -138,7 +138,7 @@ def find_artist_id_by_links(
 
 
 def find_artist_id_by_name(
-    name: str, artist_type: ArtistType | None = None, lazy: bool = False
+    name: str, artist_type: ArtistType | None = None, *, lazy: bool = False
 ) -> int:
     logger.info(
         f"Searching artist id for '{name}' (artist type filter = {artist_type})"
@@ -167,7 +167,7 @@ def find_artist_id_by_name(
     return 0
 
 
-def find_vocalist_id_by_name(name: str, lazy: bool = False) -> int:
+def find_vocalist_id_by_name(name: str, *, lazy: bool = False) -> int:
     # 1) find by exact match
     #    - if 1 vocalist result, return that
     # 2) if multiple results, find unknown vb
@@ -238,6 +238,7 @@ def get_vocalists_ids(
     vocalist_id_mapping: dict[str, int],
     vocalist_mapping_file: Path,
     delimiter: str = ",",
+    *,
     lazy: bool = False,
 ) -> list[int]:
     logger.debug(f"Vocalists are '{vocalist_line}'")

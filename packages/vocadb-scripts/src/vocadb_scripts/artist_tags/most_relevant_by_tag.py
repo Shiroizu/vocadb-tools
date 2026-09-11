@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def get_relevant_tag_artists_table(
-    tag_id: int, skip_supporting_artists: bool = False, producers_only: bool = False
+    tag_id: int, *, skip_supporting_artists: bool = False, producers_only: bool = False
 ) -> tuple[list[dict[str, Any]], bool]:
     # TODO test
     songs_by_tag, total_count = get_songs_with_total_count(

@@ -49,7 +49,7 @@ def get_50_most_recent_users() -> list[dict[Any, Any]]:
     return fetch_json(USER_API_URL, params=params)["items"][::-1]
 
 
-def get_username_by_id(user_id: int, include_usergroup: bool = False) -> str:
+def get_username_by_id(user_id: int, *, include_usergroup: bool = False) -> str:
     user_api_url = f"{USER_API_URL}/{user_id}"
     data = fetch_json(user_api_url)
     if include_usergroup:
@@ -58,13 +58,15 @@ def get_username_by_id(user_id: int, include_usergroup: bool = False) -> str:
 
 
 @cache_without_expiration()
-def get_cached_username_by_id(user_id: int, include_usergroup: bool = False) -> str:
-    return get_username_by_id(user_id, include_usergroup)
+def get_cached_username_by_id(user_id: int, *, include_usergroup: bool = False) -> str:
+    return get_username_by_id(user_id, include_usergroup=include_usergroup)
 
 
 @cache_with_expiration(days=1)
-def get_cached_username_by_id_1d(user_id: int, include_usergroup: bool = False) -> str:
-    return get_username_by_id(user_id, include_usergroup)
+def get_cached_username_by_id_1d(
+    user_id: int, *, include_usergroup: bool = False
+) -> str:
+    return get_username_by_id(user_id, include_usergroup=include_usergroup)
 
 
 @cache_with_expiration(days=1)

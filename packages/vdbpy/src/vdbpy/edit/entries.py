@@ -161,6 +161,7 @@ def edit_entry(
     entry: EntryTuple,
     edit_function: Callable[[dict[Any, Any]], dict[Any, Any]],
     base_update_note: str = "",
+    *,
     prompt: bool = True,
 ) -> bool:
     entry_type, entry_id = entry
@@ -195,6 +196,7 @@ def replace_artist_in_entry(
     entry: EntryTuple,
     id_to_remove: int,
     id_to_add: int,
+    *,
     prompt: bool = True,
 ) -> bool:
     return edit_entry(
@@ -213,6 +215,7 @@ def mark_pvs_unavailable_for_entry(
     session: requests.Session,
     entry: EntryTuple,
     service: Service | None = None,
+    *,
     prompt: bool = True,
 ) -> bool:
     # Does not do an extra check if the PV is unavailable or not!
@@ -228,6 +231,7 @@ def add_event_to_entry(
     session: requests.Session,
     entry: EntryTuple,
     event_id: int,
+    *,
     prompt: bool = True,
 ) -> bool:
     return edit_entry(
@@ -242,6 +246,7 @@ def add_language_codes_to_entry(
     session: requests.Session,
     entry: EntryTuple,
     codes_to_add: list[str],
+    *,
     prompt: bool = True,
 ) -> bool:
     return edit_entry(

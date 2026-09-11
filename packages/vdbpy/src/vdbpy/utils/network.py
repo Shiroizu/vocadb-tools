@@ -132,6 +132,7 @@ def fetch_json_items_with_total_count(
     session: requests.Session | None = None,
     max_results: int = 10**9,
     limit: int | Callable[..., bool] | None = None,
+    *,
     suppress_total_count_warning: bool = False,
 ) -> tuple[list[Any], int]:
     if limit == 0:
@@ -207,10 +208,16 @@ def fetch_json_items(
     session: requests.Session | None = None,
     max_results: int = 10**9,
     limit: int | Callable[..., bool] | None = None,
+    *,
     suppress_total_count_warning: bool = False,
 ) -> list[Any]:
     return fetch_json_items_with_total_count(
-        url, params, session, max_results, limit, suppress_total_count_warning
+        url,
+        params,
+        session,
+        max_results,
+        limit,
+        suppress_total_count_warning=suppress_total_count_warning,
     )[0]
 
 

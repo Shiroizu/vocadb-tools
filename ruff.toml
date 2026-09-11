@@ -26,8 +26,6 @@ ignore = [
     "EM101",   # 10  [backlog] Exception must not use a string literal
     "EM102",   # 10  [backlog] Exception must not use an f-string literal
     "ERA001",  # 52  [backlog] Commented-out code
-    "FBT001",  # 59  [backlog] Boolean-typed positional argument in function definition
-    "FBT002",  # 53  [backlog] Boolean default positional argument in function definition
     "FIX002",  # 61  [backlog] Line contains TODO
     "G004",    # 354 [style]   Logging statement uses f-string
     "PLR0911", # 6   [backlog] Too many return statements

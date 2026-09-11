@@ -17,6 +17,7 @@ def create_artist_entry(
     artist_name: str,
     artist_type: ArtistType,
     link: str,
+    *,
     prompt: bool = True,
 ) -> int:
     name_language = get_name_language(artist_name)

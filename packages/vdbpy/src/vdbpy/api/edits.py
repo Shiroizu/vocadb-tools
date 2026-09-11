@@ -422,7 +422,7 @@ def get_most_recent_edit_by_user_id(user_id: int) -> UserEdit | None:
 
 
 def get_edits_by_entry(
-    entry_type: EntryType, entry_id: int, include_deleted: bool = False
+    entry_type: EntryType, entry_id: int, *, include_deleted: bool = False
 ) -> list[UserEdit]:
     url = get_versions_url(entry_type, entry_id)
     logger.debug(f"   Downloading version history {url}")
@@ -455,11 +455,15 @@ def get_deletion_edit(entry_type: EntryType, entry_id: int) -> UserEdit | None:
 
 @cache_without_expiration()
 def get_cached_edits_by_entry_before_version_id(
-    entry_type: EntryType, entry_id: int, version_id: int, include_deleted: bool = False
+    entry_type: EntryType,
+    entry_id: int,
+    version_id: int,
+    *,
+    include_deleted: bool = False,
 ) -> list[UserEdit]:
     entry_link = get_entry_link(entry_type, entry_id)
     logger.debug(
         f"   Downloading versions for {entry_link} to cache since v{version_id}:"
     )
-    edits = get_edits_by_entry(entry_type, entry_id, include_deleted)
+    edits = get_edits_by_entry(entry_type, entry_id, include_deleted=include_deleted)
     return [edit for edit in edits if edit.version_id <= version_id]

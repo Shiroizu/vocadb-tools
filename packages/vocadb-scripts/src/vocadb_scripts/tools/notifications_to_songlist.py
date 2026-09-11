@@ -59,6 +59,7 @@ def filter_notifications(
     user_id: int,
     all_notifications: list[Notification],
     session: requests.Session,
+    *,
     skip_covers: bool = False,
     skip_music_pvs: bool = False,
     skip_instruments: bool = False,

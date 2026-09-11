@@ -76,6 +76,7 @@ def autofix(
     session: requests.Session,
     entry: EntryTuple,
     base_update_note: str = "",
+    *,
     prompt: bool = True,
     args: Any = None,
 ) -> bool:

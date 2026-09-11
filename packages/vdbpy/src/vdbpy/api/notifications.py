@@ -24,6 +24,7 @@ def get_cached_notification_by_id(
 def get_messages_by_user_id(
     session: requests.Session,
     user_id: int,
+    *,
     include_sent: bool = True,
     include_received: bool = True,
     max_results: int = 50,
@@ -55,6 +56,7 @@ def get_messages_by_user_id(
 def get_notifications_by_user_id(
     user_id: int,
     session: requests.Session,
+    *,
     include_read: bool = False,
     max_notifs: int = 400,
 ) -> list[Notification]:

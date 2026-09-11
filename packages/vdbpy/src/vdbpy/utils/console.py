@@ -21,7 +21,7 @@ def get_credentials_from_console() -> tuple[str, str]:
     return account_name, password
 
 
-def prompt_choice(choices: list[str], allow_skip: bool = False) -> str:
+def prompt_choice(choices: list[str], *, allow_skip: bool = False) -> str:
     none = "None of these"
     if allow_skip:
         choices.insert(0, none)

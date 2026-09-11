@@ -115,7 +115,7 @@ def sanitize_filename(filename: str) -> str:
 
 
 def save_file(
-    filepath: str | Path, content: str | list[Any], append: bool = False
+    filepath: str | Path, content: str | list[Any], *, append: bool = False
 ) -> None:
     """Safely writes content to a file, creating necessary directories."""
     path = Path(filepath)
@@ -151,6 +151,7 @@ def replace_line_in_file(
     old_line: str,
     new_line: str,
     count: int = 1,
+    *,
     startswith: bool = False,
 ) -> None:
     lines = get_lines(filename)
@@ -169,6 +170,10 @@ def replace_line_in_file(
 
 
 def remove_line_from_file(
-    filename: str | Path, line_to_remove: str, count: int = 1, startswith: bool = False
+    filename: str | Path,
+    line_to_remove: str,
+    count: int = 1,
+    *,
+    startswith: bool = False,
 ) -> None:
-    replace_line_in_file(filename, line_to_remove, "", count, startswith)
+    replace_line_in_file(filename, line_to_remove, "", count, startswith=startswith)

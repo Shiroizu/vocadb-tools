@@ -57,7 +57,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main(user_id: int, max_results: int = 20, group_by_base_vb: bool = True) -> str:
+def main(user_id: int, max_results: int = 20, *, group_by_base_vb: bool = True) -> str:
     output_path = get_vdbpy_cache_dir() / "favourite-vocalists" / f"{user_id}.txt"
     if output_path.exists():
         age = datetime.now(tz=UTC) - datetime.fromtimestamp(
@@ -175,7 +175,11 @@ def main(user_id: int, max_results: int = 20, group_by_base_vb: bool = True) -> 
 def cli() -> None:
     logger = get_logger("find_favourite_vocalists")
     args = parse_args()
-    result = main(args.user_id, args.max_results, not args.do_not_group_by_base_vb)
+    result = main(
+        args.user_id,
+        args.max_results,
+        group_by_base_vb=not args.do_not_group_by_base_vb,
+    )
     logger.info(f"\n{result}")
 
 

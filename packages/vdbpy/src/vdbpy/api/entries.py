@@ -146,6 +146,7 @@ def delete_entry(
     session: requests.Session,
     entry_type: EntryType,
     entry_id: int,
+    *,
     force: bool = False,
     deletion_msg: str = "",
     prompt: bool = True,
@@ -252,6 +253,7 @@ def get_saved_entry_search(
     file: Path,
     search_url: str,
     params: dict[Any, Any] | None = None,
+    *,
     lazy_recheck: bool = True,
 ) -> tuple[list[EntryTuple], tuple[int, int]]:
     logger.debug(f"Fetching saved entry search with file '{file}'")

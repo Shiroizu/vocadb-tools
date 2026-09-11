@@ -151,6 +151,7 @@ def _save_library_cache(user_id: int, lib: UserLibrary) -> None:
 def _update_rated_songs(
     lib: UserLibrary,
     current_count: int,
+    *,
     force: bool,
     session: requests.Session | None = None,
 ) -> None:
@@ -203,6 +204,7 @@ def _update_rated_songs(
 def _update_albums(
     lib: UserLibrary,
     current_count: int,
+    *,
     _force: bool,
     session: requests.Session | None = None,
 ) -> None:
@@ -224,6 +226,7 @@ def _update_albums(
 def _update_followed_artists(
     lib: UserLibrary,
     current_count: int,
+    *,
     _force: bool,
     session: requests.Session | None = None,
 ) -> None:
@@ -268,6 +271,7 @@ def has_public_song_ratings(
 
 def get_user_library(
     user_id: int,
+    *,
     force_refresh: bool = False,
     collections: frozenset[str] | None = None,
     session: requests.Session | None = None,
@@ -291,7 +295,9 @@ def get_user_library(
                 session=session,
             )
             if force_refresh or rated_count != lib.rated_songs_count:
-                _update_rated_songs(lib, rated_count, force_refresh, session=session)
+                _update_rated_songs(
+                    lib, rated_count, force=force_refresh, session=session
+                )
             elif (
                 lib.rated_songs_count > 0
                 and len(lib.rated_songs) != lib.rated_songs_count
@@ -320,7 +326,7 @@ def get_user_library(
                 session=session,
             )
             if force_refresh or albums_count != lib.albums_count:
-                _update_albums(lib, albums_count, force_refresh, session=session)
+                _update_albums(lib, albums_count, _force=force_refresh, session=session)
             else:
                 logger.info(
                     f"Albums up to date for user {user_id} ({lib.albums_count})"
@@ -332,7 +338,7 @@ def get_user_library(
         )
         if force_refresh or followed_count != lib.followed_artists_count:
             _update_followed_artists(
-                lib, followed_count, force_refresh, session=session
+                lib, followed_count, _force=force_refresh, session=session
             )
         else:
             logger.info(

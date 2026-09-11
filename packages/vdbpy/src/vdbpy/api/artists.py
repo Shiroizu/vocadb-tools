@@ -56,6 +56,7 @@ def get_artists_by_tag_id(tag_id: int) -> list[dict[Any, Any]]:
 @cache_with_expiration(days=30)
 def get_song_count_by_artist_id_30d(
     artist_id: int,
+    *,
     only_main_songs: bool = False,
     extra_params: dict[Any, Any] | None = None,
 ) -> int:
@@ -66,7 +67,9 @@ def get_song_count_by_artist_id_30d(
     return fetch_total_count(SONG_API_URL, params)
 
 
-def get_base_voicebank_id_by_artist_id(artist_id: int, recursive: bool = True) -> int:
+def get_base_voicebank_id_by_artist_id(
+    artist_id: int, *, recursive: bool = True
+) -> int:
     """Get base voicebank id if it exists. Return current id otherwise."""
     entry: dict[Any, Any] = fetch_json(
         f"{ARTIST_API_URL}/{artist_id}", params={"fields": "baseVoiceBank"}
@@ -74,16 +77,16 @@ def get_base_voicebank_id_by_artist_id(artist_id: int, recursive: bool = True) -
     if "baseVoicebank" in entry and recursive:
         # Go through the cached variant so each middle layer is cached too
         return get_cached_base_voicebank_by_artist_id(
-            entry["baseVoicebank"]["id"], recursive
+            entry["baseVoicebank"]["id"], recursive=recursive
         )
     return entry["id"]
 
 
 @cache_without_expiration()
 def get_cached_base_voicebank_by_artist_id(
-    artist_id: int, recursive: bool = True
+    artist_id: int, *, recursive: bool = True
 ) -> int:
-    return get_base_voicebank_id_by_artist_id(artist_id, recursive)
+    return get_base_voicebank_id_by_artist_id(artist_id, recursive=recursive)
 
 
 def get_followed_artists_by_user_id(

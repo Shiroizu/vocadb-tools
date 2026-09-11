@@ -47,6 +47,7 @@ def _parse_mod_message(data: dict[str, Any], inbox: Inbox) -> ModMessage:
 def get_user_messages(
     session: requests.Session,
     user_id: str,
+    *,
     include_unread: bool = True,
     max_results: int = 20,
 ) -> list[ModMessage]:
@@ -106,6 +107,7 @@ def send_message(
     subject: str,
     message: str,
     sender_id: int,
+    *,
     prompt: bool = True,
 ) -> None:
     url = f"{USER_API_URL}/{sender_id}/messages"

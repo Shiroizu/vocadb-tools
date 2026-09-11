@@ -15,7 +15,7 @@ logger = get_logger()
 
 
 def create_song_entry(
-    session: requests.Session, data: dict[Any, Any], prompt: bool = True
+    session: requests.Session, data: dict[Any, Any], *, prompt: bool = True
 ) -> int:
     logger.debug(f"Creating song entry with data {data}")
     if prompt:
@@ -32,6 +32,7 @@ def create_song_entry_for_nico_video(
     producer_id: int,
     vocalist_mapping: dict[str, int],
     vocalist_mapping_file: Path,
+    *,
     prompt: bool = True,
     lazy: bool = False,
 ) -> int:
@@ -64,4 +65,4 @@ def create_song_entry_for_nico_video(
         "songType": "Original",
     }
 
-    return create_song_entry(session, data, prompt)
+    return create_song_entry(session, data, prompt=prompt)

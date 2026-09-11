@@ -32,6 +32,7 @@ def parse_args() -> argparse.Namespace:
 
 def get_artist_tag_table(
     artist_id: int,
+    *,
     include_collabs: bool = False,
     only_with_pvs: bool = False,
     max_results: int = 0,
