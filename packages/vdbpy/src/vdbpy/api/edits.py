@@ -128,14 +128,14 @@ def _verify_edits(edits: list[UserEdit]) -> None:
 def _merge_edit_lists(
     new_edits: list[UserEdit], previous_edits: list[UserEdit]
 ) -> list[UserEdit]:
-    logger.debug(f"Previous edits ({len(previous_edits)}=):")
+    logger.debug(f"Previous edits ({len(previous_edits)}):")
     if previous_edits:
         logger.debug(
             f"From {previous_edits[0].edit_date} to {previous_edits[-1].edit_date}"
         )
     seen: set[tuple[EntryType, int]] = set()
     duplicate_count = 0
-    logger.debug(f"New edits ({len(new_edits)}=):")
+    logger.debug(f"New edits ({len(new_edits)}):")
     if new_edits:
         logger.debug(f"From {new_edits[0].edit_date} to {new_edits[-1].edit_date}")
 
@@ -154,7 +154,7 @@ def _merge_edit_lists(
     if duplicate_count > 1:
         logger.warning(f"Found {duplicate_count} duplicate edits")
 
-    logger.debug(f"Combined edits ({len(combined_edits)}=):")
+    logger.debug(f"Combined edits ({len(combined_edits)}):")
     if combined_edits:
         logger.debug(
             f"From {combined_edits[0].edit_date} to {combined_edits[-1].edit_date}"

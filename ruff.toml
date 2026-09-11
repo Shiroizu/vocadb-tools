@@ -29,7 +29,7 @@ ignore = [
     "FBT001",  # 59  [backlog] Boolean-typed positional argument in function definition
     "FBT002",  # 53  [backlog] Boolean default positional argument in function definition
     "FIX002",  # 61  [backlog] Line contains TODO
-    "G004",    # 354 [backlog] Logging statement uses f-string
+    "G004",    # 354 [style]   Logging statement uses f-string
     "PLR0911", # 6   [backlog] Too many return statements
     "PLR0912", # 8   [backlog] Too many branches
     "PLR0913", # 13  [backlog] Too many arguments
