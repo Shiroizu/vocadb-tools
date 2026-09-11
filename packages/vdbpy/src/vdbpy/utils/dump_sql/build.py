@@ -1,0 +1,671 @@
+"""Dump zip -> SQLite ingest: row extractors, entity specs and bulk loading."""
+
+from __future__ import annotations
+
+import resource
+import sys
+import time
+import zipfile
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+import orjson
+from sqlalchemy import select
+
+from vdbpy.utils.dump import IncompleteDumpError
+from vdbpy.utils.dump_sql.models import Meta
+from vdbpy.utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from sqlalchemy import Engine
+
+logger = get_logger()
+
+
+# -------- dump helpers -------- #
+
+
+def _iter_raw(
+    dump_path: Path, folder: str, skipped: list[str] | None = None
+) -> Iterator[dict[str, Any]]:
+    with zipfile.ZipFile(dump_path) as z:
+        for name in sorted(z.namelist()):
+            if name.startswith(f"{folder}/") and name.endswith(".json"):
+                try:
+                    yield from orjson.loads(z.read(name))
+                except orjson.JSONDecodeError:
+                    logger.warning("dump_sql: skipping corrupt chunk %s", name)
+                    if skipped is not None:
+                        skipped.append(name)
+
+
+def inventory_dump_keys(dump_path: Path) -> dict[str, set[str]]:
+    """Return top-level JSON keys seen per dump folder."""
+    keys: dict[str, set[str]] = {}
+    with zipfile.ZipFile(dump_path) as z:
+        for name in sorted(z.namelist()):
+            if not name.endswith(".json"):
+                continue
+            folder = name.split("/")[0]
+            try:
+                entries = orjson.loads(z.read(name))
+            except orjson.JSONDecodeError:
+                continue
+            bucket = keys.setdefault(folder, set())
+            for entry in entries:
+                bucket.update(entry.keys())
+    return keys
+
+
+def _ref_id(key: str) -> Callable[[dict], object]:
+    return lambda e: (e.get(key) or {}).get("id")
+
+
+def _name_en(e: dict) -> str | None:
+    for n in e.get("names") or []:
+        if n.get("language") == "English" and (n.get("value") or "").strip():
+            return n["value"]
+    return None
+
+
+def _album_release(
+    e: dict,
+) -> tuple[str | None, int | None, int | None, int | None, int]:
+    rel = (e.get("originalRelease") or {}).get("releaseDate") or {}
+    year = rel.get("year")
+    month = rel.get("month")
+    day = rel.get("day")
+    is_empty = int(bool(rel.get("isEmpty", True)))
+    if is_empty or not year:
+        return None, year, month, day, is_empty
+    return (
+        f"{year:04d}-{(month or 0):02d}-{(day or 0):02d}",
+        year,
+        month,
+        day,
+        is_empty,
+    )
+
+
+def _name_rows(entry_type: str, e: dict) -> Iterator[tuple[str, int, str, str]]:
+    eid = e["id"]
+    for n in e.get("names") or []:
+        yield (entry_type, eid, n.get("language", "Unspecified"), n.get("value", ""))
+    for alias in e.get("aliases") or []:
+        yield (entry_type, eid, "Alias", alias)
+
+
+def _translated_name_row(entry_type: str, e: dict) -> tuple | None:
+    tn = e.get("translatedName")
+    if not tn:
+        return None
+    return (
+        entry_type,
+        e["id"],
+        tn.get("japanese") or None,
+        tn.get("romaji") or None,
+        tn.get("english") or None,
+        tn.get("default") or None,
+        tn.get("defaultLanguage") or None,
+    )
+
+
+def _culture_code_rows(entry_type: str, e: dict) -> Iterator[tuple[str, int, str]]:
+    eid = e["id"]
+    for code in e.get("cultureCodes") or []:
+        yield (entry_type, eid, code)
+
+
+def _tag_rows(
+    entry_type: str,
+    e: dict,
+) -> Iterator[tuple[str, int, int, int, str | None]]:
+    eid = e["id"]
+    for usage in e.get("tags") or []:
+        tag = usage.get("tag")
+        if tag:
+            yield (
+                entry_type,
+                eid,
+                tag["id"],
+                usage.get("count", 0),
+                tag.get("nameHint") or None,
+            )
+
+
+def _weblink_rows(
+    entry_type: str,
+    e: dict,
+) -> Iterator[tuple[str, int, str, str, str, int]]:
+    eid = e["id"]
+    for w in e.get("webLinks") or []:
+        yield (
+            entry_type,
+            eid,
+            w.get("category", ""),
+            w.get("description", ""),
+            w.get("url", ""),
+            int(bool(w.get("disabled"))),
+        )
+
+
+def _credit_rows(
+    parent_id: int,
+    artists: list | None,
+) -> Iterator[tuple[int, int, int, int, str | None]]:
+    for a in artists or []:
+        yield (
+            parent_id,
+            a["id"],
+            a.get("roles", 0),
+            int(bool(a.get("isSupport"))),
+            a.get("nameHint") or None,
+        )
+
+
+def _ref_rows(
+    parent_id: int,
+    items: list | None,
+) -> Iterator[tuple[int, int, str | None]]:
+    for item in items or []:
+        if isinstance(item, dict):
+            item_id = item.get("id")
+            name_hint = item.get("nameHint") or None
+        else:
+            item_id = item
+            name_hint = None
+        if item_id is not None:
+            yield (parent_id, item_id, name_hint)
+
+
+def _pv_metadata_json(pv: dict) -> str | None:
+    meta = pv.get("extendedMetadata")
+    if not meta:
+        return None
+    return orjson.dumps(meta).decode()
+
+
+def _pv_rows(parent_id: int, pvs: list | None) -> Iterator[tuple]:
+    for pv in pvs or []:
+        yield (
+            parent_id,
+            pv.get("service", ""),
+            pv.get("pvType", ""),
+            pv.get("pvId", ""),
+            pv.get("name") or None,
+            pv.get("author") or None,
+            pv.get("description") or None,
+            pv.get("length"),
+            pv.get("publishDate"),
+            pv.get("thumbUrl") or None,
+            int(bool(pv.get("disabled"))),
+            _pv_metadata_json(pv),
+        )
+
+
+@dataclass
+class _Col:
+    name: str
+    extract: Callable[[dict], object]
+
+
+@dataclass
+class _EntitySpec:
+    folder: str
+    table: str
+    entry_type: str
+    columns: list[_Col]
+
+
+_ENTITY_SPECS: list[_EntitySpec] = [
+    _EntitySpec(
+        "Songs",
+        "songs",
+        "Song",
+        columns=[
+            _Col("id", lambda e: e["id"]),
+            _Col("song_type", lambda e: e.get("songType", "Unspecified")),
+            _Col("publish_date", lambda e: e.get("publishDate")),
+            _Col("length_seconds", lambda e: e.get("lengthSeconds")),
+            _Col("original_id", _ref_id("originalVersion")),
+            _Col("nico_id", lambda e: e.get("nicoId") or None),
+            _Col("min_milli_bpm", lambda e: e.get("minMilliBpm")),
+            _Col("max_milli_bpm", lambda e: e.get("maxMilliBpm")),
+            _Col("notes", lambda e: e.get("notes") or None),
+            _Col("notes_eng", lambda e: e.get("notesEng") or None),
+            _Col("name_en", _name_en),
+        ],
+    ),
+    _EntitySpec(
+        "Albums",
+        "albums",
+        "Album",
+        columns=[
+            _Col("id", lambda e: e["id"]),
+            _Col("disc_type", lambda e: e.get("discType", "Unknown")),
+            _Col("description", lambda e: e.get("description") or None),
+            _Col("description_eng", lambda e: e.get("descriptionEng") or None),
+            _Col(
+                "cat_num",
+                lambda e: (e.get("originalRelease") or {}).get("catNum") or None,
+            ),
+            _Col("release_year", lambda e: _album_release(e)[1]),
+            _Col("release_month", lambda e: _album_release(e)[2]),
+            _Col("release_day", lambda e: _album_release(e)[3]),
+            _Col("release_is_empty", lambda e: _album_release(e)[4]),
+            _Col("main_picture_mime", lambda e: e.get("mainPictureMime") or None),
+            _Col("name_en", _name_en),
+        ],
+    ),
+    _EntitySpec(
+        "Artists",
+        "artists",
+        "Artist",
+        columns=[
+            _Col("id", lambda e: e["id"]),
+            _Col("artist_type", lambda e: e.get("artistType", "Unknown")),
+            _Col("base_voicebank_id", _ref_id("baseVoicebank")),
+            _Col("release_date", lambda e: e.get("releaseDate") or None),
+            _Col("description", lambda e: e.get("description") or None),
+            _Col("description_eng", lambda e: e.get("descriptionEng") or None),
+            _Col("main_picture_mime", lambda e: e.get("mainPictureMime") or None),
+            _Col("name_en", _name_en),
+        ],
+    ),
+    _EntitySpec(
+        "Events",
+        "events",
+        "ReleaseEvent",
+        columns=[
+            _Col("id", lambda e: e["id"]),
+            _Col("category", lambda e: e.get("category", "Unspecified")),
+            _Col("date", lambda e: e.get("date") or None),
+            _Col("series_id", _ref_id("series")),
+            _Col("series_number", lambda e: e.get("seriesNumber")),
+            _Col("venue_id", _ref_id("venue")),
+            _Col("venue_name", lambda e: e.get("venueName") or None),
+            _Col("song_list_id", _ref_id("songList")),
+            _Col("description", lambda e: e.get("description") or None),
+            _Col("name", lambda e: e.get("name") or None),
+            _Col("main_picture_mime", lambda e: e.get("mainPictureMime") or None),
+            _Col("name_en", _name_en),
+        ],
+    ),
+    _EntitySpec(
+        "EventSeries",
+        "event_series",
+        "ReleaseEventSeries",
+        columns=[
+            _Col("id", lambda e: e["id"]),
+            _Col("category", lambda e: e.get("category", "Unspecified")),
+            _Col("description", lambda e: e.get("description") or None),
+            _Col("main_picture_mime", lambda e: e.get("mainPictureMime") or None),
+            _Col("name_en", _name_en),
+        ],
+    ),
+    _EntitySpec(
+        "Tags",
+        "tags",
+        "Tag",
+        columns=[
+            _Col("id", lambda e: e["id"]),
+            _Col("category_name", lambda e: e.get("categoryName") or ""),
+            _Col("parent_id", _ref_id("parent")),
+            _Col("description", lambda e: e.get("description") or None),
+            _Col("description_eng", lambda e: e.get("descriptionEng") or None),
+            _Col(
+                "hide_from_suggestions",
+                lambda e: int(bool(e.get("hideFromSuggestions"))),
+            ),
+            _Col("targets", lambda e: e.get("targets")),
+            _Col("thumb_mime", lambda e: e.get("thumbMime") or None),
+            _Col("name_en", _name_en),
+        ],
+    ),
+]
+
+_CHILD_TABLE_COLUMNS: dict[str, str] = {
+    "entry_names": "entry_type,entry_id,language,value",
+    "entry_translated_names": (
+        "entry_type,entry_id,japanese,romaji,english,default_name,default_language"
+    ),
+    "entry_culture_codes": "entry_type,entry_id,code",
+    "entry_tags": "entry_type,entry_id,tag_id,count,tag_name_hint",
+    "entry_web_links": "entry_type,entry_id,category,description,url,disabled",
+    "song_artists": "song_id,artist_id,roles,is_support,name_hint",
+    "song_pvs": (
+        "song_id,service,pv_type,pv_id,name,author,description,"
+        "length,publish_date,thumb_url,disabled,extended_metadata_json"
+    ),
+    "song_events": "song_id,event_id,name_hint",
+    "song_albums": "song_id,album_id,disc_number,track_number,name_hint",
+    "album_artists": "album_id,artist_id,roles,is_support,name_hint",
+    "album_songs": "album_id,song_id,disc_number,track_number,name_hint",
+    "album_discs": "album_id,disc_number,disc_id,media_type,name",
+    "album_pvs": (
+        "album_id,service,pv_type,pv_id,name,author,description,"
+        "length,publish_date,thumb_url,disabled,extended_metadata_json"
+    ),
+    "album_identifiers": "album_id,value",
+    "album_events": "album_id,event_id,name_hint",
+    "artist_groups": "artist_id,linked_artist_id,link_type,name_hint",
+    "artist_members": "artist_id,member_artist_id,name_hint",
+    "event_artists": "event_id,artist_id,roles,is_support,name_hint",
+    "event_pvs": (
+        "event_id,service,pv_type,pv_id,name,author,description,"
+        "length,publish_date,thumb_url,disabled,extended_metadata_json"
+    ),
+    "tag_related_tags": "tag_id,related_tag_id,name_hint",
+    "tag_new_targets": "tag_id,target",
+}
+
+_FLUSH_ROWS = 50_000
+
+_LOG_EVERY = 25_000
+
+
+def _rss_mb() -> float | None:
+    """Return resident memory in MB, or None if it cannot be read."""
+    statm = Path("/proc/self/statm")
+    if statm.exists():
+        try:
+            return int(statm.read_text(encoding="utf-8").split()[1]) * 4096 / 1024**2
+        except OSError, IndexError, ValueError:
+            return None
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak / 1024**2 if sys.platform == "darwin" else peak / 1024
+
+
+def memory_note() -> str:
+    rss = _rss_mb()
+    return f", {rss:.0f} MB in use" if rss is not None else ""
+
+
+def _bulk_insert(cur: Any, table: str, columns: str, rows: list) -> None:
+    if not rows:
+        return
+    placeholders = ",".join("?" * len(columns.split(",")))
+    cur.executemany(
+        f"INSERT INTO {table}({columns}) VALUES({placeholders})",
+        rows,
+    )
+
+
+def _flush_buffers(cur: Any, buffers: dict[str, list], *, threshold: int) -> int:
+    written = 0
+    for table, rows in buffers.items():
+        if len(rows) < threshold:
+            continue
+        _bulk_insert(cur, table, _CHILD_TABLE_COLUMNS[table], rows)
+        written += len(rows)
+        rows.clear()
+    return written
+
+
+def _ingest_entity(
+    cur: Any,
+    dump_path: Path,
+    spec: _EntitySpec,
+    buffers: dict[str, list],
+    child_cb: Callable[[dict], None] | None,
+    skipped: list[str],
+) -> None:
+    column_names = [col.name for col in spec.columns]
+    placeholders = ",".join("?" * len(column_names))
+    insert = (
+        f"INSERT INTO {spec.table}({','.join(column_names)}) VALUES({placeholders})"
+    )
+    logger.info(f"dump_sql: ingesting {spec.folder}{memory_note()}")
+
+    started = time.monotonic()
+    rows: list[tuple] = []
+    entries = 0
+    child_rows = 0
+    for e in _iter_raw(dump_path, spec.folder, skipped):
+        rows.append(tuple(col.extract(e) for col in spec.columns))
+        buffers["entry_names"].extend(_name_rows(spec.entry_type, e))
+        tn = _translated_name_row(spec.entry_type, e)
+        if tn is not None:
+            buffers["entry_translated_names"].append(tn)
+        buffers["entry_culture_codes"].extend(_culture_code_rows(spec.entry_type, e))
+        buffers["entry_tags"].extend(_tag_rows(spec.entry_type, e))
+        buffers["entry_web_links"].extend(_weblink_rows(spec.entry_type, e))
+        if child_cb is not None:
+            child_cb(e)
+
+        entries += 1
+        if len(rows) >= _FLUSH_ROWS:
+            cur.executemany(insert, rows)
+            rows.clear()
+        child_rows += _flush_buffers(cur, buffers, threshold=_FLUSH_ROWS)
+        if entries % _LOG_EVERY == 0:
+            logger.info(
+                f"dump_sql: {spec.folder} {entries:,} entries,"
+                f" {child_rows:,} child rows written,"
+                f" {time.monotonic() - started:.0f}s{memory_note()}"
+            )
+
+    if rows:
+        cur.executemany(insert, rows)
+        rows.clear()
+    logger.info(
+        f"dump_sql: {spec.folder} done: {entries:,} entries in"
+        f" {time.monotonic() - started:.0f}s{memory_note()}"
+    )
+
+
+def _create_indexes(cur: Any) -> None:
+    statements = (
+        "CREATE INDEX ix_names_entry ON entry_names(entry_type,entry_id)",
+        (
+            "CREATE INDEX ix_translated_names_entry "
+            "ON entry_translated_names(entry_type,entry_id)"
+        ),
+        (
+            "CREATE INDEX ix_culture_codes_entry "
+            "ON entry_culture_codes(entry_type,entry_id)"
+        ),
+        "CREATE INDEX ix_tags_entry ON entry_tags(entry_type,entry_id)",
+        "CREATE INDEX ix_tags_tag ON entry_tags(tag_id)",
+        "CREATE INDEX ix_weblinks_entry ON entry_web_links(entry_type,entry_id)",
+        "CREATE INDEX ix_songs_orig ON songs(original_id)",
+        "CREATE INDEX ix_sa_song ON song_artists(song_id)",
+        "CREATE INDEX ix_sa_artist ON song_artists(artist_id)",
+        "CREATE INDEX ix_song_pvs_song ON song_pvs(song_id)",
+        "CREATE INDEX ix_song_events_song ON song_events(song_id)",
+        "CREATE INDEX ix_song_events_event ON song_events(event_id)",
+        "CREATE INDEX ix_song_albums_song ON song_albums(song_id)",
+        "CREATE INDEX ix_song_albums_album ON song_albums(album_id)",
+        "CREATE INDEX ix_album_artists ON album_artists(album_id)",
+        "CREATE INDEX ix_album_artists_artist ON album_artists(artist_id)",
+        "CREATE INDEX ix_album_songs ON album_songs(album_id)",
+        "CREATE INDEX ix_album_songs_song ON album_songs(song_id)",
+        "CREATE INDEX ix_album_discs ON album_discs(album_id)",
+        "CREATE INDEX ix_album_pvs ON album_pvs(album_id)",
+        "CREATE INDEX ix_album_idents ON album_identifiers(album_id)",
+        "CREATE INDEX ix_album_events_album ON album_events(album_id)",
+        "CREATE INDEX ix_album_events_event ON album_events(event_id)",
+        "CREATE INDEX ix_artist_groups_artist ON artist_groups(artist_id)",
+        "CREATE INDEX ix_artist_groups_linked ON artist_groups(linked_artist_id)",
+        "CREATE INDEX ix_artist_members_artist ON artist_members(artist_id)",
+        "CREATE INDEX ix_artist_members_member ON artist_members(member_artist_id)",
+        "CREATE INDEX ix_event_artists ON event_artists(event_id)",
+        "CREATE INDEX ix_event_artists_artist ON event_artists(artist_id)",
+        "CREATE INDEX ix_event_pvs ON event_pvs(event_id)",
+        "CREATE INDEX ix_tag_related ON tag_related_tags(tag_id)",
+        "CREATE INDEX ix_tag_new_targets ON tag_new_targets(tag_id)",
+    )
+    for statement in statements:
+        cur.execute(statement)
+
+
+def stored_mtime(engine: Engine) -> str | None:
+    try:
+        with engine.connect() as conn:
+            row = conn.execute(
+                select(Meta.value).where(Meta.key == "dump_mtime"),
+            ).first()
+    except Exception:  # noqa: BLE001
+        return None
+    return row[0] if row else None
+
+
+def ingest(engine: Engine, dump_path: Path, dump_mtime: str) -> None:
+    raw = engine.raw_connection()
+    try:
+        cur = raw.cursor()
+        cur.execute("PRAGMA journal_mode=OFF")
+        cur.execute("PRAGMA synchronous=OFF")
+
+        # Keyed off the column map so a new child table cannot be buffered
+        # without a matching INSERT, or flushed without a buffer.
+        buffers: dict[str, list] = {table: [] for table in _CHILD_TABLE_COLUMNS}
+
+        def _song_children(e: dict) -> None:
+            buffers["song_artists"].extend(_credit_rows(e["id"], e.get("artists")))
+            buffers["song_pvs"].extend(_pv_rows(e["id"], e.get("pvs")))
+            for _, event_id, name_hint in _ref_rows(
+                e["id"],
+                e.get("releaseEvents"),
+            ):
+                buffers["song_events"].append((e["id"], event_id, name_hint))
+            release_event = e.get("releaseEvent")
+            if isinstance(release_event, dict) and release_event.get("id") is not None:
+                buffers["song_events"].append(
+                    (
+                        e["id"],
+                        release_event["id"],
+                        release_event.get("nameHint") or None,
+                    )
+                )
+            for album in e.get("albums") or []:
+                buffers["song_albums"].append(
+                    (
+                        e["id"],
+                        album["id"],
+                        album.get("discNumber"),
+                        album.get("trackNumber"),
+                        album.get("nameHint") or None,
+                    )
+                )
+
+        def _album_children(e: dict) -> None:
+            buffers["album_artists"].extend(_credit_rows(e["id"], e.get("artists")))
+            for track in e.get("songs") or []:
+                buffers["album_songs"].append(
+                    (
+                        e["id"],
+                        track["id"],
+                        track.get("discNumber"),
+                        track.get("trackNumber"),
+                        track.get("nameHint") or None,
+                    )
+                )
+            for disc in e.get("discs") or []:
+                buffers["album_discs"].append(
+                    (
+                        e["id"],
+                        disc.get("discNumber"),
+                        disc.get("id"),
+                        disc.get("mediaType") or None,
+                        disc.get("name") or None,
+                    )
+                )
+            buffers["album_pvs"].extend(_pv_rows(e["id"], e.get("pvs")))
+            for ident in e.get("identifiers") or []:
+                value = ident["value"] if isinstance(ident, dict) else str(ident)
+                buffers["album_identifiers"].append((e["id"], value))
+            rel = e.get("originalRelease") or {}
+            for _, event_id, name_hint in _ref_rows(
+                e["id"],
+                rel.get("releaseEvents"),
+            ):
+                buffers["album_events"].append((e["id"], event_id, name_hint))
+            release_event = rel.get("releaseEvent")
+            if isinstance(release_event, dict) and release_event.get("id") is not None:
+                buffers["album_events"].append(
+                    (
+                        e["id"],
+                        release_event["id"],
+                        release_event.get("nameHint") or None,
+                    )
+                )
+
+        def _artist_children(e: dict) -> None:
+            for group in e.get("groups") or []:
+                if group.get("id") is not None:
+                    buffers["artist_groups"].append(
+                        (
+                            e["id"],
+                            group["id"],
+                            group.get("linkType", ""),
+                            group.get("nameHint") or None,
+                        )
+                    )
+            for member in e.get("members") or []:
+                if member.get("id") is not None:
+                    buffers["artist_members"].append(
+                        (
+                            e["id"],
+                            member["id"],
+                            member.get("nameHint") or None,
+                        )
+                    )
+
+        def _event_children(e: dict) -> None:
+            buffers["event_artists"].extend(_credit_rows(e["id"], e.get("artists")))
+            buffers["event_pvs"].extend(_pv_rows(e["id"], e.get("pvs")))
+
+        def _tag_children(e: dict) -> None:
+            for related in e.get("relatedTags") or []:
+                if related.get("id") is not None:
+                    buffers["tag_related_tags"].append(
+                        (
+                            e["id"],
+                            related["id"],
+                            related.get("nameHint") or None,
+                        )
+                    )
+            for target in e.get("newTargets") or []:
+                buffers["tag_new_targets"].append((e["id"], target))
+
+        child_cbs: dict[str, Callable[[dict], None]] = {
+            "Songs": _song_children,
+            "Albums": _album_children,
+            "Artists": _artist_children,
+            "Events": _event_children,
+            "Tags": _tag_children,
+        }
+
+        skipped: list[str] = []
+        for spec in _ENTITY_SPECS:
+            _ingest_entity(
+                cur,
+                dump_path,
+                spec,
+                buffers,
+                child_cbs.get(spec.folder),
+                skipped,
+            )
+
+        remaining = _flush_buffers(cur, buffers, threshold=1)
+        logger.info(
+            f"dump_sql: flushed the last {remaining:,} child rows,"
+            f" creating indexes{memory_note()}"
+        )
+
+        _create_indexes(cur)
+        if skipped:
+            msg = (
+                f"Ingest skipped {len(skipped)} unreadable chunk(s):"
+                f" {', '.join(skipped[:5])}"
+                f"{'...' if len(skipped) > 5 else ''}"
+            )
+            raise IncompleteDumpError(msg)
+        cur.execute("INSERT INTO meta(key,value) VALUES('dump_mtime',?)", (dump_mtime,))
+        raw.commit()
+    finally:
+        raw.close()

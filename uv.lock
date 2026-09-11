@@ -669,7 +669,7 @@ wheels = [
 
 [[package]]
 name = "vdbpy"
-version = "23.2.2"
+version = "23.2.3"
 source = { editable = "packages/vdbpy" }
 dependencies = [
     { name = "defusedxml" },
@@ -734,7 +734,7 @@ requires-dist = [
 
 [[package]]
 name = "vocadb-tools"
-version = "0.2.7"
+version = "0.2.8"
 source = { editable = "." }
 
 [package.dev-dependencies]
