@@ -1,6 +1,7 @@
 import os
 from collections.abc import Callable
 from datetime import timedelta
+from functools import wraps
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -54,9 +55,15 @@ def _make_cache_key(
     return f"{func_name}_{cache_args}_{cache_kwargs}"
 
 
-def cache_with_expiration(days: float = 1, *, hours: float | None = None) -> Any:
-    def decorator(func: Callable[..., Any]) -> Any:
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+type _Decorator[**P, R] = Callable[[Callable[P, R]], Callable[P, R]]
+
+
+def cache_with_expiration[**P, R](
+    days: float = 1, *, hours: float | None = None
+) -> _Decorator[P, R]:
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             key = _make_cache_key(func.__name__, args, kwargs)  # ty:ignore[unresolved-attribute]
 
             try:
@@ -81,9 +88,10 @@ def cache_with_expiration(days: float = 1, *, hours: float | None = None) -> Any
     return decorator
 
 
-def cache_without_expiration() -> Any:
-    def decorator(func: Callable[..., Any]) -> Any:
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+def cache_without_expiration[**P, R]() -> _Decorator[P, R]:
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             key = _make_cache_key(func.__name__, args, kwargs)  # ty:ignore[unresolved-attribute]
 
             try:
@@ -104,11 +112,12 @@ def cache_without_expiration() -> Any:
     return decorator
 
 
-def cache_conditionally(days: float = 1) -> Any:
+def cache_conditionally[**P, R](days: float = 1) -> _Decorator[P, R]:
     # Return values that are truthly are permanently cached
     # Falsy values are cached for the specified amount
-    def decorator(func: Callable[..., Any]) -> Any:
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             key = _make_cache_key(func.__name__, args, kwargs)  # ty:ignore[unresolved-attribute]
             try:
                 if key in cache:
