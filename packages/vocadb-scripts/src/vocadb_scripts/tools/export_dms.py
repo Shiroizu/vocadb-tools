@@ -55,7 +55,7 @@ def cli() -> None:
             logger.debug("Login successful!")
 
         _, user_id = find_user_by_username_1d(un)
-        messages = get_messages_by_user_id(user_id, session)
+        messages = get_messages_by_user_id(session, user_id)
 
         total = len(messages)
         counter = 1
