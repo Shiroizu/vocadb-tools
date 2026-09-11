@@ -3,7 +3,7 @@ from collections import defaultdict, deque
 from importlib.resources import files
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypeGuard, cast
 
 from bs4 import BeautifulSoup
 
@@ -60,7 +60,9 @@ def topo_sort_graph(graph: dict[int, list[int]], all_rules: set[int]) -> list[in
     return independent_rules + dep_sorted_rules
 
 
-def validate_rule_module(module: ModuleType, rulefile: Path) -> bool:
+def validate_rule_module(
+    module: ModuleType, rulefile: Path
+) -> TypeGuard[RuleModule | DumpSqlRuleModule]:
     if not isinstance(module, RuleModule) and not isinstance(
         module,
         DumpSqlRuleModule,
@@ -163,13 +165,13 @@ def get_rule_modules_by_id(
             logger.warning(f"Could not import rule check module {rulefile}")
             continue
 
-        valid_rule_module = validate_rule_module(module, rulefile)
-        if not valid_rule_module:
+        if not validate_rule_module(module, rulefile):
             logger.debug("Invalid rule module, continuing...")
             continue
 
-        if hasattr(module, "ASSUME_VALID_FOR_RULE_ID"):
-            rule_dependency_graph[rule_id] = module.ASSUME_VALID_FOR_RULE_ID
+        deps: list[int] | None = getattr(module, "ASSUME_VALID_FOR_RULE_ID", None)
+        if deps is not None:
+            rule_dependency_graph[rule_id] = deps
 
         rule_modules[rule_id] = (rule_name, module)
 

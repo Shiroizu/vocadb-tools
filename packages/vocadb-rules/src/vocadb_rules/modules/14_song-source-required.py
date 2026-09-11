@@ -14,10 +14,10 @@ from vdbpy.types.shared import (
 from vdbpy.types.songs import OptionalSongFieldName, SongEntry, SongVersion
 from vdbpy.utils.logger import get_logger
 from vocadb_rules.mod_types import (
-    CheckResult,
     CorrectEditCheckTestResult,
     CorrectEntryCheckTestResult,
     CorrectTestResults,
+    RuleModuleResult,
 )
 
 logger = get_logger()
@@ -52,7 +52,7 @@ def find_relevant_entries(save_dir: Path) -> set[EntryTuple]:
 def check_entry_version_for_rule(
     version_data: BaseEntryVersion,
     is_relevant_entry: bool | None = None,
-) -> CheckResult:
+) -> RuleModuleResult:
     if not isinstance(version_data, SongVersion):
         return "Wrong entry type"
 

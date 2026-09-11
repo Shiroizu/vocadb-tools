@@ -4,7 +4,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from types import ModuleType
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 # TODO: move to VDBPY
@@ -80,7 +79,7 @@ SavedEntryCheckResult = Literal[
 type CheckResult = Literal[SavedEntryCheckResult, "Wrong entry type", "No data"]
 
 type EntryWithVersionIds = tuple[EntryTuple, VersionId, VersionId]
-type RuleModules = dict[RuleId, tuple[str, ModuleType]]
+type RuleModules = dict[RuleId, tuple[str, RuleModule | DumpSqlRuleModule]]
 
 type ReportWithVersionIdAndRelevantEntries = tuple[
     EntryReport,

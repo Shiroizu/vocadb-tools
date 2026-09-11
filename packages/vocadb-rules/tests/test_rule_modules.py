@@ -34,6 +34,17 @@ def test_rule_modules_are_discoverable() -> None:
     assert RULE_MODULES, "No rule modules loaded"
 
 
+def test_every_rule_file_loads() -> None:
+    rule_file_ids = {
+        int(path.stem.split("_", 1)[0])
+        for path in MODULES_DIR.glob("*.py")
+        if path.stem[:1].isdigit() and not path.stem.startswith("0_")
+    }
+    assert rule_file_ids == set(RULE_MODULES), (
+        f"Rule files that failed to load: {sorted(rule_file_ids - set(RULE_MODULES))}"
+    )
+
+
 @pytest.mark.parametrize("rule_id", RULE_IDS)
 def test_rule_module_structure(rule_id: int) -> None:
     rule_name, rule_module = RULE_MODULES[rule_id]

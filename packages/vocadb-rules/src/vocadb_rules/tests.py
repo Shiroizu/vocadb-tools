@@ -523,16 +523,19 @@ def verify_wiki_rule_fields(
         rule_wiki_fields = rule_table[rule_id]
 
         def compare_entry_types(
-            code_fields: list[EntryType],
+            code_fields: list[EntryType] | Literal["All"],
             wiki_fields: list[str],
         ) -> bool:
-            # CODE: ["Song", "Artist", "Album", "Tag", "ReleaseEvent", "SongList",
+            # CODE: "All" (or an empty list)
+            #    or ["Song", "Artist", "Album", "Tag", "ReleaseEvent", "SongList",
             #        "Venue", "ReleaseEventSeries", "User"]
             # WIKI: "All"
             #    or ["Songs", "Albums", "Artists", "Events", "Tags", "Songlists"]
 
             if wiki_fields[0] == "All":
-                return not code_fields
+                return code_fields == "All" or not code_fields
+            if code_fields == "All":
+                return False
 
             if "Events" in wiki_fields:
                 wiki_fields.remove("Events")
