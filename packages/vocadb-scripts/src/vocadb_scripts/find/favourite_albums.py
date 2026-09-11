@@ -4,9 +4,6 @@ import argparse
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-import tabulate as tabulate_module
-from tabulate import tabulate
-
 from vdbpy.api.user_library import (
     get_cached_albums_by_user_id,
     get_cached_rated_songs_with_ratings,
@@ -17,8 +14,8 @@ from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.data import truncate_string_with_ellipsis
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.tables import github_table
 
-tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 
@@ -71,7 +68,7 @@ def main(user_id: int, max_results: int = 25) -> str:
     albums = get_favourite_albums_based_on_songs_by_user_id(user_id)
     albums_to_print = list(albums.values())
     albums_to_print.sort(key=lambda x: x["score"], reverse=True)
-    table = tabulate(albums_to_print[:max_results], headers="keys", tablefmt="github")
+    table = github_table(albums_to_print[:max_results])
     save_file(output_path, table)
     logger.info(f"\nTable saved to '{output_path}'")
     return table

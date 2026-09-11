@@ -15,42 +15,14 @@ from __future__ import annotations
 
 import argparse
 
-from wcwidth import wcswidth
-
 from vdbpy.utils.dump_sql import DumpDB, SqlError, SqlResult
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.tables import aligned_table_lines
 
 logger = get_logger()
 
 MAX_COL_WIDTH = 40
 DEFAULT_MAX_ROWS = 100
-
-
-def _display_width(text: str) -> int:
-    width = wcswidth(text)
-    return width if width >= 0 else len(text)
-
-
-def _truncate(text: str, width: int) -> str:
-    if _display_width(text) <= width:
-        return text
-    result = ""
-    used = 0
-    for char in text:
-        char_width = _display_width(char)
-        if used + char_width > width - 1:
-            break
-        result += char
-        used += char_width
-    return result + "…"
-
-
-def _pad(text: str, width: int) -> str:
-    return text + " " * max(0, width - _display_width(text))
-
-
-def _cell(value: object) -> str:
-    return "NULL" if value is None else str(value)
 
 
 def format_result(result: SqlResult) -> str:
@@ -60,23 +32,11 @@ def format_result(result: SqlResult) -> str:
     if not result.rows:
         return "Query returned no rows."
 
-    str_rows = [[_cell(value) for value in row] for row in result.rows]
-    widths = [_display_width(column) for column in result.columns]
-    for row in str_rows:
-        for index, cell in enumerate(row):
-            widths[index] = max(widths[index], _display_width(cell))
-    widths = [min(width, MAX_COL_WIDTH) for width in widths]
-
-    def render(cells: list[str]) -> str:
-        return " | ".join(
-            _pad(_truncate(cell, widths[index]), widths[index])
-            for index, cell in enumerate(cells)
-        )
-
-    separator = "-+-".join("-" * width for width in widths)
-    lines = [render(result.columns), separator, *(render(row) for row in str_rows)]
+    lines = aligned_table_lines(
+        result.columns, result.rows, max_col_width=MAX_COL_WIDTH
+    )
     if result.truncated:
-        lines.extend(("", f"(showing the first {len(str_rows)} rows; more matched)"))
+        lines.extend(("", f"(showing the first {len(result.rows)} rows; more matched)"))
     return "\n".join(lines)
 
 

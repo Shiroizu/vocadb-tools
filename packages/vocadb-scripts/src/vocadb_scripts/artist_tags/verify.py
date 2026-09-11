@@ -1,19 +1,16 @@
 import argparse
 from typing import Any
 
-import tabulate as tabulate_module
-from tabulate import tabulate
-
 from vdbpy.api.artists import (
     get_json_artists_with_total_count,
     get_song_count_by_artist_id_30d,
 )
 from vdbpy.config import WEBSITE
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.tables import github_table
 
 MAX_ARTISTS = 50
 
-tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 
@@ -77,7 +74,7 @@ def cli() -> None:
     logger.info(f"\nTag ({WEBSITE}/T/{args.tag_id}) - Most relevant artists:")
     if truncated:
         logger.warning(f"Results limited to first {MAX_ARTISTS} artists.")
-    logger.info(tabulate(table, headers="keys", tablefmt="github"))
+    logger.info(github_table(table))
 
 
 if __name__ == "__main__":

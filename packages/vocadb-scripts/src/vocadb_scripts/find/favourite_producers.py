@@ -6,9 +6,6 @@ import argparse
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-import tabulate as tabulate_module
-from tabulate import tabulate
-
 from vdbpy.api.artists import (
     get_artist_by_id_7d,
     get_artist_details_by_id_7d,
@@ -30,8 +27,8 @@ from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
 from vdbpy.utils.network import fetch_json
+from vdbpy.utils.tables import github_table
 
-tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 
@@ -386,9 +383,7 @@ def main(user_id: int, max_results: int = 20, artist_id: int | None = None) -> s
     headers, producer_table, hidden_gem = find_favourite_producers_by_user_id(
         user_id, max_results
     )
-    table = tabulate(
-        producer_table, headers=headers, tablefmt="github", numalign="right"
-    )
+    table = github_table(producer_table, headers=headers, numalign="right")
     if hidden_gem:
         name, score, followers, entry_url = hidden_gem
         table += (

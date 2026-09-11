@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vocadb-scripts"
-version = "3.0.0"
+version = "3.1.0"
 description = "Collection of VocaDB related scripts"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -12,7 +12,6 @@ dependencies = [
     "kaleido==0.2.1",
     "plotly",
     "vdbpy",
-    "wcwidth>=0.6.0",
 ]
 
 [project.scripts]

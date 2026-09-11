@@ -5,9 +5,6 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-import tabulate as tabulate_module
-from tabulate import tabulate
-
 from vdbpy.api.tags import get_tag_details_by_id_7d
 from vdbpy.api.user_library import get_cached_rated_songs_with_ratings
 from vdbpy.api.users import get_username_by_id
@@ -16,8 +13,8 @@ from vdbpy.utils.cache import get_vdbpy_cache_dir
 from vdbpy.utils.dump import build_tag_direct_parent_map, build_tag_info_map
 from vdbpy.utils.files import save_file
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.tables import github_table
 
-tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 GENRE_LIMIT = 20
@@ -125,10 +122,9 @@ def find_favourite_tags_by_user_id(user_id: int) -> str:
                 best_ratio = ratio
                 best_gem = (name, score, followers, entry_url)
             rows.append((score, name, favs, likes, ratio, entry_url))
-        section = tabulate(
+        section = github_table(
             rows,
             headers=["Score", "Tag", "Favs", "Likes", "Score/Followers", "Entry"],
-            tablefmt="github",
             numalign="right",
         )
         output_parts.append(f"## {category}\n\n{section}")

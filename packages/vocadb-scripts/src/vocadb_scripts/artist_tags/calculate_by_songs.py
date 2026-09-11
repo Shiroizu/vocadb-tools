@@ -1,14 +1,11 @@
 import argparse
 from typing import Any
 
-import tabulate as tabulate_module
-from tabulate import tabulate
-
 from vdbpy.api.artists import get_artist_by_id_7d
 from vdbpy.api.songs import SongSearchParams, get_songs_with_total_count
 from vdbpy.utils.logger import get_logger
+from vdbpy.utils.tables import github_table
 
-tabulate_module.WIDE_CHARS_MODE = True
 logger = get_logger()
 
 
@@ -101,7 +98,7 @@ def cli() -> None:
     )
     if truncated:
         logger.warning("Results were truncated.")
-    logger.info(tabulate(table, headers="keys", tablefmt="github"))
+    logger.info(github_table(table))
 
 
 if __name__ == "__main__":

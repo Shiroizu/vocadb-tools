@@ -669,7 +669,7 @@ wheels = [
 
 [[package]]
 name = "vdbpy"
-version = "24.0.0"
+version = "24.1.0"
 source = { editable = "packages/vdbpy" }
 dependencies = [
     { name = "defusedxml" },
@@ -681,6 +681,7 @@ dependencies = [
     { name = "requests" },
     { name = "sqlalchemy" },
     { name = "tabulate" },
+    { name = "wcwidth" },
 ]
 
 [package.metadata]
@@ -694,6 +695,7 @@ requires-dist = [
     { name = "requests", specifier = "==2.32.4" },
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "tabulate", specifier = "==0.9.0" },
+    { name = "wcwidth", specifier = ">=0.6.0" },
 ]
 
 [[package]]
@@ -715,13 +717,12 @@ requires-dist = [
 
 [[package]]
 name = "vocadb-scripts"
-version = "3.0.0"
+version = "3.1.0"
 source = { editable = "packages/vocadb-scripts" }
 dependencies = [
     { name = "kaleido" },
     { name = "plotly" },
     { name = "vdbpy" },
-    { name = "wcwidth" },
 ]
 
 [package.metadata]
@@ -729,12 +730,11 @@ requires-dist = [
     { name = "kaleido", specifier = "==0.2.1" },
     { name = "plotly" },
     { name = "vdbpy", editable = "packages/vdbpy" },
-    { name = "wcwidth", specifier = ">=0.6.0" },
 ]
 
 [[package]]
 name = "vocadb-tools"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "." }
 
 [package.dev-dependencies]
