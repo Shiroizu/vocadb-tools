@@ -3,8 +3,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from vdbpy.api.entries import get_entry_link, get_versions_url, is_entry_deleted
+from vdbpy.api.entries import get_entry_link, is_entry_deleted
 from vdbpy.api.users import find_user_by_username_1d
+from vdbpy.api.version_links import get_versions_url
 from vdbpy.config import ACTIVITY_API_URL
 from vdbpy.parsers.edits import parse_edits, parse_edits_from_archived_versions
 from vdbpy.types.shared import EditType, EntryType, UserEdit, VersionTuple

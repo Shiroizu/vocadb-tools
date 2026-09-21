@@ -5,6 +5,7 @@ from typing import Any, cast, get_args
 import requests
 
 from vdbpy.api.users import get_username_by_id
+from vdbpy.api.version_links import get_versions_url
 from vdbpy.config import (
     WEBSITE,
 )
@@ -185,11 +186,6 @@ def get_entry_creator_name(entry_type: EntryType, entry_id: int) -> str | None:
     except requests.exceptions.RequestException:
         return None
     return None
-
-
-def get_versions_url(entry_type: EntryType, entry_id: int) -> str:
-    # TODO fix
-    return f"{WEBSITE}/api/{add_s(entry_type)}/{entry_id}/versions"
 
 
 def get_entry_link(entry_type: EntryType, entry_id: int) -> str:
