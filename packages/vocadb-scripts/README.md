@@ -45,6 +45,7 @@ Find:
 | `vdb-find-favourite-tags` | A user's favourite tags |
 | `vdb-find-favourite-vocalists` | A user's favourite vocalists |
 | `vdb-rating-diff` | Compare the rated songs of two users |
+| `vdb-followed-artists-diff` | Compare the followed artists of two users |
 
 Graphs:
 
