@@ -7,6 +7,7 @@ import requests
 from vdbpy.api.users import get_username_by_id
 from vdbpy.api.version_links import get_versions_url
 from vdbpy.config import (
+    PROFILE_URL,
     WEBSITE,
 )
 from vdbpy.parsers.albums import parse_album_version
@@ -191,7 +192,7 @@ def get_entry_creator_name(entry_type: EntryType, entry_id: int) -> str | None:
 def get_entry_link(entry_type: EntryType, entry_id: int) -> str:
     if entry_type == "User":
         username = get_username_by_id(entry_id)
-        return f"{WEBSITE}/Profile/{username}"
+        return f"{PROFILE_URL}{username}"
     return f"{WEBSITE}/{entry_type_to_url[entry_type]}/{entry_id}"
 
 

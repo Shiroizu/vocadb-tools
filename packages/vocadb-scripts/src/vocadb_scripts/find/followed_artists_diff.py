@@ -7,10 +7,8 @@ import requests
 
 from vdbpy.api.user_library import get_user_library
 from vdbpy.api.users import get_username_by_id
-from vdbpy.config import WEBSITE
+from vdbpy.config import PROFILE_URL
 from vdbpy.utils.logger import get_logger
-
-PROFILE_URL = f"{WEBSITE}/Profile/"
 
 logger = get_logger()
 
