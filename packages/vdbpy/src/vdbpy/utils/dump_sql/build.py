@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import resource
 import sys
 import time
 import zipfile
@@ -375,6 +374,10 @@ def _rss_mb() -> float | None:
             return int(statm.read_text(encoding="utf-8").split()[1]) * 4096 / 1024**2
         except OSError, IndexError, ValueError:
             return None
+    if sys.platform == "win32":
+        return None
+    import resource  # noqa: PLC0415  # Unix-only
+
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return peak / 1024**2 if sys.platform == "darwin" else peak / 1024
 

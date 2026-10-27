@@ -1,12 +1,37 @@
-import fcntl
 import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 from vdbpy.utils.console import get_credentials_from_console, prompt_choice
 from vdbpy.utils.logger import get_logger
+
+if sys.platform == "win32":
+    import msvcrt
+
+    def _lock(f: IO[str]) -> None:
+        f.seek(0)
+        while True:
+            try:
+                msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+            except OSError:  # LK_LOCK gives up after ~10s
+                continue
+            return
+
+    def _unlock(f: IO[str]) -> None:
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+
+else:
+    import fcntl
+
+    def _lock(f: IO[str]) -> None:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+
+    def _unlock(f: IO[str]) -> None:
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
 
 logger = get_logger()
 
@@ -17,11 +42,11 @@ def file_lock(filepath: str | Path) -> Iterator[None]:
     path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = path.with_suffix(path.suffix + ".lock")
     with lock_path.open("a+", encoding="utf-8") as lock_file:
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        _lock(lock_file)
         try:
             yield
         finally:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            _unlock(lock_file)
 
 
 def verify_file(filename: str | Path) -> Path:
