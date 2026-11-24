@@ -41,7 +41,7 @@ def _add_artist_id_to_entry_data(
         artists_to_keep.append(artist)
 
     artists_to_keep.append({"artist": {"id": id_to_add}})
-    update_notes = f"Added arist {id_to_add}"
+    update_notes = f"Added artist {id_to_add}"
     logger.debug(f"Update_notes = {update_notes}")
     data["updateNotes"] = update_notes
     data["artists"] = artists_to_keep
