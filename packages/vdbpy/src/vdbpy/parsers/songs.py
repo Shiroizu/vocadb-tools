@@ -6,7 +6,7 @@ from vdbpy.parsers.events import parse_release_event
 from vdbpy.parsers.shared import (
     parse_base_entry,
     parse_base_entry_version,
-    parse_event_ids,
+    parse_events,
     parse_links,
     parse_names,
     parse_pvs,
@@ -183,7 +183,7 @@ def parse_song_version(data: dict[Any, Any]) -> SongVersion:
         if "publishDate" in version_data
         else None,
         pvs=parse_pvs(version_data["pvs"]) if "pvs" in version_data else [],
-        release_event_ids=parse_event_ids(version_data),
+        release_events=parse_events(version_data),
         song_type=version_data["songType"],
         **parse_base_entry_version(data).__dict__,
     )

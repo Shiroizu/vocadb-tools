@@ -89,7 +89,7 @@ class SongVersion(BaseEntryVersion):
     original_version_id: int
     publish_date: datetime | None
     pvs: list[PV]
-    release_event_ids: list[int]
+    release_events: dict[int, str]  # event ID -> name hint
     song_type: SongType
 
 

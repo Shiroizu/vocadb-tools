@@ -4,7 +4,7 @@ from typing import Any, get_args
 import requests
 
 from vdbpy.config import ACTIVITY_API_URL, USER_API_URL, WEBSITE
-from vdbpy.types.shared import EditType, EntryType
+from vdbpy.types.shared import ActivityEditEvent, EntryType
 from vdbpy.types.users import UserGroup
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import get_monthly_count
@@ -189,7 +189,7 @@ def find_cached_user_by_username(username: str) -> tuple[str, int]:
 @cache_with_expiration(days=1)
 def get_entry_matrix_by_user_id_1d(
     user_id: int, since: str = "", before: str = ""
-) -> dict[EntryType, dict[EditType, int]]:
+) -> dict[EntryType, dict[ActivityEditEvent, int]]:
     # 1) Check the total counts of the most common entryType/editEvent combinations:
     # 2) Stop when total count reached to reduce the number of API calls
     #
@@ -199,8 +199,8 @@ def get_entry_matrix_by_user_id_1d(
     # The API docs include three additional entryTypes: PV, DiscussionTopic, User
     # but these do not return anything
 
-    entry_matrix: dict[EntryType, dict[EditType, int]] = {
-        entry_type: dict.fromkeys(get_args(EditType), 0)
+    entry_matrix: dict[EntryType, dict[ActivityEditEvent, int]] = {
+        entry_type: dict.fromkeys(get_args(ActivityEditEvent), 0)
         for entry_type in get_args(EntryType)
     }
 
@@ -215,7 +215,9 @@ def get_entry_matrix_by_user_id_1d(
     total_count = fetch_json(ACTIVITY_API_URL, params=params)["totalCount"]
     logger.info(f"Total edits: {total_count}")
 
-    combinations: list[tuple[EditType, EntryType]] = [  # Sorted by how common they are
+    combinations: list[
+        tuple[ActivityEditEvent, EntryType]
+    ] = [  # Sorted by how common they are
         ("Updated", "Song"),
         ("Created", "Song"),
         ("Updated", "Artist"),

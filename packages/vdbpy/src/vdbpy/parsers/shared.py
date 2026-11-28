@@ -184,17 +184,18 @@ def parse_base_entry(data: dict[Any, Any]) -> BaseEntry:
     )
 
 
-def parse_event_ids(data: dict[Any, Any]) -> list[int]:
-    event_ids: set[int] = set()
+def parse_events(data: dict[Any, Any]) -> dict[int, str]:
+    """Event ID -> name hint, in API order."""
     # https://vocadb.net/api/albums/versions/256441
     # https://vocadb.net/api/albums/versions/158700
-
     original_release = data.get("originalRelease", data)
-    release_event = original_release.get("releaseEvent", {})
-    if release_event:
-        event_ids.add(release_event["id"])
-    release_events = original_release.get("releaseEvents", [])
-    if release_events:
-        for event in release_events:
-            event_ids.add(event["id"])
-    return list(event_ids)
+    release_event = original_release.get("releaseEvent")
+    events = [release_event] if release_event else []
+    events += original_release.get("releaseEvents") or []
+    return {
+        event["id"]: event.get("nameHint") or event.get("name", "") for event in events
+    }
+
+
+def parse_event_ids(data: dict[Any, Any]) -> list[int]:
+    return list(parse_events(data))

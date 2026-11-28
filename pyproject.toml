@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vocadb-tools"
-version = "4.1.3"
+version = "5.0.0"
 
 [project.scripts]
 check = "check:main"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vocadb-scripts"
-version = "4.1.1"
+version = "5.0.0"
 description = "Collection of VocaDB related scripts"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -34,6 +34,7 @@ vdb-artist-tags-by-songs = "vocadb_scripts.artist_tags.calculate_by_songs:cli"
 vdb-artist-tags-by-tag = "vocadb_scripts.artist_tags.most_relevant_by_tag:cli"
 vdb-artist-tags-verify = "vocadb_scripts.artist_tags.verify:cli"
 vdb-recommend = "vocadb_scripts.recommend.recommend_advanced:cli"
+vdb-entry-history = "vocadb_scripts.versions.cli:cli"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

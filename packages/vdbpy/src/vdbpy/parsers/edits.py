@@ -1,11 +1,17 @@
 from typing import Any
 
 from vdbpy.types.mappings import edit_event_map
-from vdbpy.types.shared import EntryType, UserEdit
+from vdbpy.types.shared import EditType, EntryType, UserEdit
 from vdbpy.utils.date import parse_date
 from vdbpy.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def _edit_event(reason: str, debug_line: str) -> EditType:
+    if reason not in edit_event_map:
+        logger.debug(f"Unknown edit type '{reason}' for {debug_line}")
+    return edit_event_map.get(reason, "Updated")
 
 
 def parse_edits_from_archived_versions(
@@ -20,16 +26,7 @@ def parse_edits_from_archived_versions(
         # https://github.com/VocaDB/vocadb/issues/1990
         return []
     for edit_object in data:
-        edit_type = edit_object["reason"]
         debug_line = f"{entry_type} {entry_id} v{edit_object['id']}"
-        if edit_type == "Merged":
-            logger.debug(f"Merge detected while parsing data for {debug_line}")
-            edit_type = "Updated"
-        elif edit_type not in edit_event_map:
-            logger.debug(f"Unknown edit type '{edit_type}' for {debug_line}")
-            edit_type = "Updated"
-        else:
-            edit_type = edit_event_map[edit_type]
         parsed_edits.append(
             UserEdit(
                 user_id=edit_object["author"]["id"],
@@ -37,9 +34,11 @@ def parse_edits_from_archived_versions(
                 entry_type=entry_type,
                 entry_id=entry_id,
                 version_id=edit_object["id"],
-                edit_event=edit_type,
+                edit_event=_edit_event(edit_object["reason"], debug_line),
                 changed_fields=edit_object["changedFields"],
                 update_notes=edit_object["notes"],
+                version_number=edit_object["version"],
+                hidden=edit_object["hidden"],
             )
         )
     return parsed_edits
@@ -78,12 +77,16 @@ def parse_edits(edit_objects: list[dict[Any, Any]]) -> list[UserEdit]:
         user_edit = UserEdit(
             user_id=edit_object["archivedVersion"]["author"]["id"],
             edit_date=parse_date(utc_date),
-            entry_type=edit_object["entry"]["entryType"],
-            entry_id=edit_object["entry"]["id"],
+            entry_type=entry_type,
+            entry_id=entry_id,
             version_id=version_id,
-            edit_event=edit_object["editEvent"],
+            edit_event=_edit_event(
+                edit_object["editEvent"], f"{entry_type} {entry_id} v{version_id}"
+            ),
             changed_fields=edit_object["archivedVersion"]["changedFields"],
             update_notes=edit_object["archivedVersion"]["notes"],
+            version_number=edit_object["archivedVersion"]["version"],
+            hidden=edit_object["archivedVersion"]["hidden"],
         )
 
         if (entry_type, version_id) in seen:

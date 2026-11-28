@@ -68,6 +68,8 @@ class UserEditJSONEncoder(json.JSONEncoder):
                 "edit_event": o.edit_event,
                 "changed_fields": o.changed_fields,
                 "update_notes": o.update_notes,
+                "version_number": o.version_number,
+                "hidden": o.hidden,
             }
         if isinstance(o, datetime):
             return o.isoformat()
@@ -84,6 +86,8 @@ def user_edit_from_dict(data: dict[Any, Any]) -> UserEdit:
         edit_event=data["edit_event"],
         changed_fields=data["changed_fields"],
         update_notes=data["update_notes"],
+        version_number=data.get("version_number"),
+        hidden=data.get("hidden", False),
     )
 
 

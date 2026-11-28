@@ -36,9 +36,11 @@ type VersionId = int
 type EntryTuple = tuple[EntryType, EntryId]
 type VersionTuple = tuple[EntryType, EntryId, VersionId]
 
-type EditType = Literal[
-    "Created", "Updated", "Deleted", "Reverted", "Restored"
-]  # MergedTo, MergedFrom
+ActivityEditEvent = Literal["Created", "Updated", "Deleted", "Reverted", "Restored"]
+type EditType = (
+    ActivityEditEvent | Literal["Merged"]
+)  # Merges only appear as archived version reasons
+
 type EntryStatus = Literal["Draft", "Finished", "Approved", "Locked"]
 
 type ExternalLinkCategory = Literal["Official", "Commercial", "Reference", "Other"]
@@ -85,6 +87,8 @@ class UserEdit:
     edit_event: EditType
     changed_fields: list[ChangedFields]
     update_notes: str
+    version_number: int | None = None  # None = loaded from cache
+    hidden: bool = False
 
 
 @dataclass

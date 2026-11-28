@@ -5,7 +5,7 @@ from typing import Any, cast, get_args
 import requests
 
 from vdbpy.api.users import get_username_by_id
-from vdbpy.api.version_links import get_versions_url
+from vdbpy.api.version_links import get_versions_url, parse_version_page_link
 from vdbpy.config import (
     PROFILE_URL,
     WEBSITE,
@@ -19,22 +19,16 @@ from vdbpy.parsers.series import (
 from vdbpy.parsers.songs import parse_song_version
 from vdbpy.parsers.tags import parse_tag_version
 from vdbpy.parsers.venus import parse_venue_version
-from vdbpy.types.albums import AlbumVersion
-from vdbpy.types.artists import ArtistVersion
-from vdbpy.types.events import ReleaseEventVersion
 from vdbpy.types.mappings import (
     entry_type_to_url,
     entry_types_by_api_url,
     entry_url_to_type,
 )
-from vdbpy.types.series import ReleaseEventSeriesVersion
 from vdbpy.types.shared import (
     EntryTuple,
     EntryType,
 )
-from vdbpy.types.songs import SongVersion
-from vdbpy.types.tags import TagVersion
-from vdbpy.types.venues import VenueVersion
+from vdbpy.types.versions import EntryVersion
 from vdbpy.utils.cache import cache_with_expiration, cache_without_expiration
 from vdbpy.utils.data import add_s
 from vdbpy.utils.files import get_lines, save_file
@@ -86,16 +80,7 @@ def get_cached_raw_entry_version(
 
 def get_cached_entry_version(
     entry_type: EntryType, version_id: int
-) -> (
-    AlbumVersion
-    | ArtistVersion
-    | SongVersion
-    | TagVersion
-    | ReleaseEventVersion
-    | ReleaseEventSeriesVersion
-    | VenueVersion
-    | None
-):
+) -> EntryVersion | None:
     try:
         data = get_cached_raw_entry_version(entry_type, version_id)
         if "versions" not in data:
@@ -198,7 +183,15 @@ def get_entry_link(entry_type: EntryType, entry_id: int) -> str:
 
 def get_entry_from_link(entry_link: str) -> EntryTuple:
     # https://vocadb.net/S/83619
+    # or https://vocadb.net/Song/Versions/83619
     # --> ("Song", 83619)
+    if parsed := parse_version_page_link(entry_link):
+        entry_type, kind, target_id = parsed
+        if kind == "entry":
+            return (entry_type, target_id)
+        msg = f"{entry_link} points at a single version, not an entry."
+        raise ValueError(msg)
+
     link = entry_link.split(WEBSITE + "/")[1]
     if "venue" in link.lower():
         entry_id = int(link.split("/")[2])

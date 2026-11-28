@@ -21,6 +21,7 @@ from vdbpy.types.changed_fields import (
     SharedChangedFields,
 )
 from vdbpy.types.shared import EditType, EntryType
+from vdbpy.utils.data import to_camel_case
 
 edit_event_map: dict[str, EditType] = {
     "Created": "Created",
@@ -28,8 +29,10 @@ edit_event_map: dict[str, EditType] = {
     "PropertiesUpdated": "Updated",
     "Reverted": "Reverted",
     "Deleted": "Deleted",
-    "Merged": "Updated",
+    "Merged": "Merged",
     "Restored": "Restored",
+    "AutoImportedFromMikuDb": "Created",
+    "Unknown": "Updated",
 }
 entry_type_to_url: dict[EntryType, str] = {
     "Song": "S",
@@ -58,8 +61,8 @@ entry_types_by_api_url: dict[str, EntryType] = {
 # from vdbpy.types.songs import SongVersion
 # Unsupported: "CultureCodes",
 renamed_version_fields_to_changed_fields_mapping_by_entry_type: dict[
-    str, dict[EntryType | Literal["Shared"], ChangedFields]
-] = {  # ty: ignore[invalid-assignment]
+    EntryType | Literal["Shared"], dict[str, str]
+] = {
     "Shared": {
         "name_non_english": "Names",
         "name_romaji": "Names",
@@ -74,9 +77,10 @@ renamed_version_fields_to_changed_fields_mapping_by_entry_type: dict[
         "description_eng": "Notes",
         "length_seconds": "Length",
         "original_version_id": "OriginalVersion",
-        "release_event_ids": "ReleaseEvents",
+        "release_events": "ReleaseEvents",
         "max_milli_bpm": "Bpm",
         "min_milli_bpm": "Bpm",
+        "pvs": "PVs",
     },
     "Artist": {
         "vb_base_id": "BaseVoicebank",
@@ -137,3 +141,13 @@ changed_fields_by_entry_type: dict[EntryType | Literal["Shared"], ChangedFields]
     "ReleaseEventSeries": ChangedReleaseEventSeriesFields,
     "Shared": SharedChangedFields,
 }
+
+
+def changed_field_for(field_name: str, entry_type: EntryType) -> str:
+    """Version dataclass fields --> changedFields."""
+    mapping = renamed_version_fields_to_changed_fields_mapping_by_entry_type
+    for scope in (entry_type, "Shared"):
+        if renamed := mapping.get(scope, {}).get(field_name):
+            return renamed
+    camel = to_camel_case(field_name)
+    return camel[0].upper() + camel[1:]
