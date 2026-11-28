@@ -75,6 +75,7 @@ class VersionDiff:
     previous_status: EntryStatus | None = None
     data_available: bool = True
     baseline_version_number: int | None = None
+    entry_version_count: int | None = None  # all versions, shown or not
 
     @property
     def is_creation(self) -> bool:

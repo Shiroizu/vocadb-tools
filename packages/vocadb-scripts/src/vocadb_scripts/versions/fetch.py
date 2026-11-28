@@ -74,7 +74,10 @@ def _fetch_state(edit: UserEdit) -> EntryVersion | None:
 
 
 def _diff_for_edit(
-    edit: UserEdit, baseline: _Baseline, state: EntryVersion | None
+    edit: UserEdit,
+    baseline: _Baseline,
+    state: EntryVersion | None,
+    entry_version_count: int,
 ) -> VersionDiff:
     """Diff one version against the baseline, then advance the baseline."""
     diff = VersionDiff(
@@ -90,6 +93,7 @@ def _diff_for_edit(
         reported_changed_fields=list(edit.changed_fields),
         data_available=state is not None,
         baseline_version_number=baseline.version_number,
+        entry_version_count=entry_version_count,
     )
 
     if state is None:
@@ -131,7 +135,7 @@ def get_entry_history(
     baseline = _Baseline()
     shown = set(wanted)
     diffs = [
-        (i, _diff_for_edit(edit, baseline, _fetch_state(edit)))
+        (i, _diff_for_edit(edit, baseline, _fetch_state(edit), len(edits)))
         for i, edit in enumerate(edits[start:], start)
     ]
     return [diff for i, diff in diffs if i in shown]
@@ -164,7 +168,7 @@ def get_version_diff(entry_type: EntryType, version_id: int) -> VersionDiff:
                 version_number=_version_number(previous),
             )
 
-    return _diff_for_edit(edits[index], baseline, state)
+    return _diff_for_edit(edits[index], baseline, state, len(edits))
 
 
 def get_history_from_url(

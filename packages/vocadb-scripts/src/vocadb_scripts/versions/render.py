@@ -96,6 +96,13 @@ def _verification_lines(diff: VersionDiff) -> list[str]:
     return lines
 
 
+def _revision_count(diffs: list[VersionDiff]) -> str:
+    shown, total = len(diffs), diffs[0].entry_version_count
+    if total is None or total == shown:
+        return f"{shown} revision(s)"
+    return f"showing {shown} of {total} revisions"
+
+
 def render_full_diffs(diffs: list[VersionDiff]) -> str:
     """All full diffs, unindented so `diff` highlighting applies."""
     return "\n\n".join(
@@ -124,7 +131,7 @@ def render_history(
     )
 
     lines = [
-        f"{first.entry_type} {first.entry_id} — {len(diffs)} revision(s)",
+        f"{first.entry_type} {first.entry_id} — {_revision_count(diffs)}",
         entry_link,
         "",
     ]
