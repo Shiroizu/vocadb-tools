@@ -433,6 +433,8 @@ def get_edits_by_entry(
     url = get_versions_url(entry_type, entry_id)
     logger.debug(f"   Downloading version history {url}")
     data = fetch_json(url)
+    if not data:
+        return []
     if not include_deleted:
         if entry_type in ["Album", "Tag", "ReleaseEvent", "ReleaseEventSeries"]:
             if is_entry_deleted(entry_type, entry_id):

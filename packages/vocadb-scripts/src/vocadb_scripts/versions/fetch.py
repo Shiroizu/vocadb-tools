@@ -1,6 +1,7 @@
 """Entry URL -> a list of diffs."""
 
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 import requests
 
@@ -8,6 +9,7 @@ from vdbpy.api.edits import get_edits_by_entry
 from vdbpy.api.entries import get_cached_entry_version, get_entry_from_link
 from vdbpy.api.users import find_user_by_username_1d, get_cached_username_by_id_1d
 from vdbpy.api.version_links import VersionLinkKind, parse_version_page_link
+from vdbpy.config import WEBSITE
 from vdbpy.types.shared import EntryStatus, EntryType, UserEdit
 from vdbpy.types.versions import EntryVersion
 from vdbpy.utils.logger import get_logger
@@ -27,11 +29,27 @@ class _Baseline:
     version_number: int | None = None
 
 
+def _normalize_url(url: str) -> str:
+    url = url.strip()
+    parsed = urlparse(url if "://" in url else f"https://{url}")
+    host = parsed.netloc.lower().removeprefix("www.")
+    site = urlparse(WEBSITE).netloc
+    if host != site:
+        msg = f"{url} is not a {site} link."
+        raise ValueError(msg)
+    return f"{WEBSITE}{parsed.path}"
+
+
 def resolve_target(url: str) -> tuple[EntryType, VersionLinkKind, int]:
     """Resolve any of the entry/version URL shapes."""
+    url = _normalize_url(url)
     if parsed := parse_version_page_link(url):
         return parsed
-    entry_type, entry_id = get_entry_from_link(url)
+    try:
+        entry_type, entry_id = get_entry_from_link(url)
+    except (IndexError, KeyError, ValueError) as e:
+        msg = f"Not a recognised entry or version URL: {url}"
+        raise ValueError(msg) from e
     return (entry_type, "entry", entry_id)
 
 
