@@ -82,7 +82,9 @@ def _format_bpm(value: Any) -> str:
 def _format_publish_date(value: Any) -> str:
     if value is None:
         return EMPTY_DISPLAY
-    return value.strftime("%Y-%m-%d") if isinstance(value, datetime) else str(value)
+    if not isinstance(value, datetime):
+        return str(value)
+    return value.strftime("%Y-%m-%d %H:%M" if value.time() else "%Y-%m-%d")
 
 
 def _format_original_version(value: Any) -> str:
